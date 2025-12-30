@@ -40,3 +40,10 @@ fun logError(throwable: Throwable, context: Any) {
 fun logDebug(message: String) {
     Vexo.logger.debug(message)
 }
+
+/**
+ * Removes Minecraft color and formatting codes from a string.
+ */
+fun String.removeFormatting(): String {
+    return this.replace(Regex("§x(§[0-9a-fA-F]){6}|§[0-9a-fk-orA-FK-OR]"), "")
+}
