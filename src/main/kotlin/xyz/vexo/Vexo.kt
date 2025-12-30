@@ -13,7 +13,7 @@ import xyz.vexo.features.ModuleManager
 import xyz.vexo.events.EventDispatcher
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.features.impl.ExampleModule
-
+import xyz.vexo.features.impl.misc.TyfrTrigger
 
 
 object Vexo : ClientModInitializer {
@@ -35,11 +35,13 @@ object Vexo : ClientModInitializer {
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			arrayOf(
-				VexoCommand
+				VexoCommand, TyfrCommand
 			).forEach { commodore -> commodore.register(dispatcher) }
 		}
 
 		arrayOf(
+			TyfrTrigger,
+
 			ExampleModule
 		).forEach { ModuleManager.register(it) }
 
