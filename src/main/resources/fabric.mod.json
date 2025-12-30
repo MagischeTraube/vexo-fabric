@@ -1,0 +1,46 @@
+{
+	"schemaVersion": 1,
+	"id": "vexo",
+	"version": "${version}",
+	"name": "Vexo",
+	"description": "Dungeon focused Hypixel Skyblock Mod",
+	"authors": [
+		"Traube", "Lloyd"
+	],
+	"contact": {
+		"homepage": "",
+		"sources": ""
+	},
+	"license": "BSD 3-Clause",
+	"icon": "assets/vexo/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"client": [
+			{
+				"value": "xyz.vexo.Vexo",
+				"adapter": "kotlin"
+			}
+		],
+		"modmenu": [
+			"xyz.vexo.clickgui.ModMenu"
+		]
+	},
+	"mixins": [
+		"vexo.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.3",
+		"minecraft": "~1.21.10",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	},
+	"custom": {
+		"modmenu": {
+			"links": {
+				"modmenu.discord": "https://discord.gg/wfW3aEEpVA"
+			},
+			"update_checker": true
+		}
+	}
+}

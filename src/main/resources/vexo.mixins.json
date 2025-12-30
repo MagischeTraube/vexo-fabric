@@ -1,0 +1,17 @@
+{
+	"required": true,
+	"package": "xyz.vexo.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ChatScreenMixin",
+		"ConnectionMixin",
+		"KeyMappingMixin",
+		"SoundManagerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

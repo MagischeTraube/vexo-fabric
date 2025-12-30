@@ -1,0 +1,81 @@
+package xyz.vexo.events
+
+import net.minecraft.network.protocol.common.ClientboundPingPacket
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
+import net.minecraft.resources.ResourceLocation
+import net.minecraft.resources.ResourceLocation.fromNamespaceAndPath
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
+import xyz.vexo.Vexo
+import xyz.vexo.events.impl.ChatMessagePacketEvent
+import xyz.vexo.events.impl.ClientTickEvent
+import xyz.vexo.events.impl.HudRenderEvent
+import xyz.vexo.events.impl.PacketReceiveEvent
+import xyz.vexo.events.impl.ServerTickEvent
+import xyz.vexo.events.impl.WorldJoinEvent
+import xyz.vexo.events.impl.WorldLeaveEvent
+import xyz.vexo.events.impl.WorldRenderDataReadyEvent
+import xyz.vexo.events.impl.WorldRenderEvent
+import xyz.vexo.events.impl.ChatMessageEvent
+
+object EventDispatcher {
+    private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
+
+    fun init() {
+        EventBus.subscribe(this)
+
+        ClientTickEvents.END_CLIENT_TICK.register { client ->
+            ClientTickEvent.postAndCatch()
+        }
+
+        HudElementRegistry.attachElementBefore(
+            VanillaHudElements.SLEEP,
+            HUD_LAYER
+        ) { context, _ ->
+            HudRenderEvent(context).postAndCatch()
+        }
+
+        ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
+            WorldJoinEvent.postAndCatch()
+        }
+
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            WorldLeaveEvent.postAndCatch()
+        }
+
+        WorldRenderEvents.END_EXTRACTION.register {
+            WorldRenderDataReadyEvent.postAndCatch()
+        }
+
+        WorldRenderEvents.END_MAIN.register { context ->
+            WorldRenderEvent.postAndCatch()
+        }
+
+        ClientReceiveMessageEvents.ALLOW_GAME.register { text, overlay ->
+            if (overlay) return@register true
+
+            val event = ChatMessageEvent(text.string)
+            event.postAndCatch()
+            !event.isCancelled()
+        }
+
+    }
+
+    @EventHandler
+    fun onPacket(event: PacketReceiveEvent) {
+        when(val packet = event.packet) {
+            is ClientboundPingPacket -> {
+                ServerTickEvent.postAndCatch()
+            }
+
+            is ClientboundSystemChatPacket -> {
+                ChatMessagePacketEvent(packet.content?.string ?: "").postAndCatch()
+            }
+
+        }
+    }
+}
