@@ -37,7 +37,7 @@ object AutoRejoin : Module(
                 modMessage("Rejoining in 30 Seconds!")
             }
             runAfterServerTicks(600){
-                modMessage("Rejoining now!")
+                modMessage("Rejoining Now!")
                 sendCommand("play skyblock")
                 }
             }
