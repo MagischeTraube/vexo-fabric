@@ -48,7 +48,6 @@ class ModulePanel(
         } childOf this
 
         val modules = ModuleManager.getModulesByCategory(category)
-            .filter { !it.alwaysActive }
 
         val filteredModules = if (searchText.isEmpty()) {
             modules
@@ -87,7 +86,6 @@ class ModulePanel(
         } childOf this
 
         val allModules = ModuleManager.getAllModules()
-            .filter { !it.alwaysActive }
             .filter {
                 it.name.contains(searchText, ignoreCase = true) ||
                         it.description.contains(searchText, ignoreCase = true)

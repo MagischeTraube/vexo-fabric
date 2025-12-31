@@ -3,14 +3,11 @@ package xyz.vexo.features.impl.misc
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.WorldJoinEvent
-import xyz.vexo.events.impl.WorldLeaveEvent
-import xyz.vexo.features.AlwaysActive
 import xyz.vexo.features.Module
 import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.sendCommand
 import xyz.vexo.utils.runAfterServerTicks
 
-@AlwaysActive
 object TyfrTrigger : Module(
     name = "Thank you for run",
     description = "Leaves the party after the run has ended"
@@ -30,6 +27,7 @@ object TyfrTrigger : Module(
             }
         }
     }
+
     @EventHandler
     fun worldLeave(event: WorldJoinEvent){
         tyfrToggle = false

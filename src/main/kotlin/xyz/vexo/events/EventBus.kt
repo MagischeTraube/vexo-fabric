@@ -1,6 +1,5 @@
 package xyz.vexo.events
 
-import xyz.vexo.events.Event
 import xyz.vexo.utils.logError
 import java.lang.reflect.Method
 import kotlin.reflect.full.declaredMemberFunctions

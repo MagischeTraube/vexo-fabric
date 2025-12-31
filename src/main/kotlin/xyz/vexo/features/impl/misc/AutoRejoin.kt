@@ -32,16 +32,17 @@ object AutoRejoin : Module(
 
         if (kickedMessage.any { it.containsMatchIn(cleanMessage) }){
             rejoining = true
+
             modMessage("Kicked from SkyBlock, rejoining automatically in 65 Seconds!")
-            runAfterServerTicks(700){
+            runAfterServerTicks(700) {
                 modMessage("Rejoining in 30 Seconds!")
-            }
-            runAfterServerTicks(600){
-                modMessage("Rejoining Now!")
-                sendCommand("play skyblock")
+                runAfterServerTicks(600) {
+                    modMessage("Rejoining Now!")
+                    sendCommand("play skyblock")
                 }
             }
         }
+    }
     @EventHandler
     fun worldJoin(event: WorldJoinEvent){
         if (!rejoining) return

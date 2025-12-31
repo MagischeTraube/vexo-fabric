@@ -1,6 +1,5 @@
 package xyz.vexo.features
 
-import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.KProperty1
 import kotlin.reflect.jvm.isAccessible
 import xyz.vexo.events.EventBus
@@ -21,20 +20,12 @@ abstract class Module(
     var enabled: Boolean = toggled
         private set
 
-    val alwaysActive: Boolean = this::class.hasAnnotation<AlwaysActive>()
-
-    init {
-        if (alwaysActive) {
-            EventBus.subscribe(this)
-        }
-    }
-
     open fun onEnable() {
-        if (!alwaysActive) EventBus.subscribe(this)
+        EventBus.subscribe(this)
     }
 
     open fun onDisable() {
-        if (!alwaysActive) EventBus.unsubscribe(this)
+        EventBus.unsubscribe(this)
     }
 
     fun toggle() {

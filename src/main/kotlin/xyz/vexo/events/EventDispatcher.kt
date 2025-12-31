@@ -17,7 +17,6 @@ import xyz.vexo.events.impl.HudRenderEvent
 import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
-import xyz.vexo.events.impl.WorldLeaveEvent
 import xyz.vexo.events.impl.WorldRenderDataReadyEvent
 import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
@@ -41,10 +40,6 @@ object EventDispatcher {
 
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             WorldJoinEvent.postAndCatch()
-        }
-
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
-            WorldLeaveEvent.postAndCatch()
         }
 
         WorldRenderEvents.END_EXTRACTION.register {

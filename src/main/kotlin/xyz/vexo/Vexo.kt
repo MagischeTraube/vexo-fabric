@@ -16,6 +16,8 @@ import xyz.vexo.features.impl.ExampleModule
 import xyz.vexo.features.impl.misc.AutoRejoin
 import xyz.vexo.features.impl.misc.ChatCleaner
 import xyz.vexo.features.impl.misc.TyfrTrigger
+import xyz.vexo.events.EventBus
+
 
 
 object Vexo : ClientModInitializer {
@@ -42,7 +44,11 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			TyfrTrigger, ChatCleaner, AutoRejoin,
+			TyfrTrigger,
+		).forEach { EventBus.subscribe(it) }
+
+		arrayOf(
+			ChatCleaner, AutoRejoin,
 
 			ExampleModule
 		).forEach { ModuleManager.register(it) }
