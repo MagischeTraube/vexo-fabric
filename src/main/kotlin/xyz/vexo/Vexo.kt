@@ -13,6 +13,7 @@ import xyz.vexo.features.ModuleManager
 import xyz.vexo.events.EventDispatcher
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.features.impl.ExampleModule
+import xyz.vexo.features.impl.misc.AutoRejoin
 import xyz.vexo.features.impl.misc.ChatCleaner
 import xyz.vexo.features.impl.misc.TyfrTrigger
 
@@ -41,7 +42,7 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			TyfrTrigger, ChatCleaner,
+			TyfrTrigger, ChatCleaner, AutoRejoin,
 
 			ExampleModule
 		).forEach { ModuleManager.register(it) }
