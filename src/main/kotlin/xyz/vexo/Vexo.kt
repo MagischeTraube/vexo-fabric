@@ -17,7 +17,7 @@ import xyz.vexo.features.impl.misc.AutoRejoin
 import xyz.vexo.features.impl.misc.ChatCleaner
 import xyz.vexo.features.impl.misc.TyfrTrigger
 import xyz.vexo.events.EventBus
-
+import xyz.vexo.features.impl.dungeons.PadTimer
 
 
 object Vexo : ClientModInitializer {
@@ -48,7 +48,7 @@ object Vexo : ClientModInitializer {
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin,
+			ChatCleaner, AutoRejoin, PadTimer,
 
 			ExampleModule
 		).forEach { ModuleManager.register(it) }
