@@ -2,6 +2,7 @@ package xyz.vexo.events
 
 import net.minecraft.network.protocol.common.ClientboundPingPacket
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
+import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.resources.ResourceLocation.fromNamespaceAndPath
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -20,6 +21,7 @@ import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.events.impl.WorldRenderDataReadyEvent
 import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
+import xyz.vexo.events.impl.TablistPacketEvent
 
 object EventDispatcher {
     private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
@@ -71,6 +73,10 @@ object EventDispatcher {
                 ChatMessagePacketEvent(packet.content?.string ?: "").postAndCatch()
             }
 
+            is ClientboundPlayerInfoUpdatePacket -> {
+                val tablist = packet.entries()?.mapNotNull { it.displayName?.string }?.ifEmpty { return } ?: return
+                TablistPacketEvent(tablist).postAndCatch()
+            }
         }
     }
 }
