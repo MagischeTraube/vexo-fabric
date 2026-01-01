@@ -123,6 +123,7 @@ object ChatCleaner : Module(
         Regex("""The Crusher hit you for .+ damage!"""),
         Regex("""Your Spirit Pet healed .+ for .+ health!"""),
         Regex(""".+ granted you .+"""),
+        Regex(""".+ Granted you .+"""),
         Regex("""Goldor's TNT Trap hit you for .+ true damage\."""),
         Regex("""A Blood Key was picked up"""),
         Regex("""This Terminal doesn't seem to be responsive at the moment\."""),
@@ -179,7 +180,8 @@ object ChatCleaner : Module(
         Regex("""Moved .+ from your Sacks to your inventory\."""),
         Regex("""◕ \w+ picked up your .+ Orb!"""),
         Regex("""Your tether with .+ healed you for .+ health!"""),
-        Regex("""Guided Sheep is now available!""")
+        Regex("""Guided Sheep is now available!"""),
+        Regex("""Your bone plating reduced the damage you took by .+""")
     )
 
     val autoPetRegex = listOf(
