@@ -8,10 +8,7 @@ import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.sendCommand
 import xyz.vexo.utils.runAfterServerTicks
 
-object TyfrTrigger : Module(
-    name = "Thank you for run",
-    description = "Leaves the party after the run has ended"
-) {
+object TyfrTrigger {
     var tyfrToggle = false
     val tyfrMessages = listOf(
         Regex("Score:"),
