@@ -5,4 +5,4 @@ import xyz.vexo.events.Event
 /**
  * Event fired when leaving a world.
  */
-object WorldLeaveEvent : Event()
+object ServerLeaveEvent : Event()

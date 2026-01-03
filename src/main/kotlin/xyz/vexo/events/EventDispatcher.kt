@@ -24,10 +24,13 @@ import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
 import xyz.vexo.events.impl.TablistPacketEvent
-import xyz.vexo.events.impl.WorldLeaveEvent
+import xyz.vexo.events.impl.ServerLeaveEvent
 
 object EventDispatcher : IInitializable {
     private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
+
+    var onServer = false
+        private set
 
     override fun init() {
         EventBus.subscribe(this)
@@ -45,6 +48,15 @@ object EventDispatcher : IInitializable {
 
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             WorldJoinEvent.postAndCatch()
+            if (!onServer) {
+                onServer = true
+                ServerConnectEvent.postAndCatch()
+            }
+        }
+
+        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+            onServer = false
+            ServerLeaveEvent.postAndCatch()
         }
 
         WorldRenderEvents.END_EXTRACTION.register {
@@ -62,10 +74,6 @@ object EventDispatcher : IInitializable {
             event.postAndCatch()
             !event.isCancelled()
         }
-        ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
-            WorldLeaveEvent.postAndCatch()
-        }
-
     }
 
     @EventHandler
@@ -85,21 +93,4 @@ object EventDispatcher : IInitializable {
             }
         }
     }
-
-    var onServer = false
-        private set
-
-    @EventHandler
-    fun onWorldJoin(event: WorldJoinEvent) {
-        if (!onServer) {
-            onServer = true
-            ServerConnectEvent.postAndCatch()
-        }
-    }
-
-    @EventHandler
-    fun onWorldLeave(event: WorldLeaveEvent) {
-        onServer = false
-    }
-
 }
