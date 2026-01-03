@@ -22,4 +22,3 @@ fun modMessage(message: Any?, prefix: String = "§d[Vexo]§r ") {
     val text = Component.literal("$prefix$message")
     mc.gui?.chat?.addMessage(text)
 }
-

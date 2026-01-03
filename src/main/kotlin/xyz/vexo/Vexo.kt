@@ -16,11 +16,14 @@ import xyz.vexo.commands.*
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.events.EventDispatcher
 import xyz.vexo.config.ConfigManager
+import xyz.vexo.features.impl.ExampleModule
+import xyz.vexo.features.impl.misc.*
 import xyz.vexo.features.impl.misc.AutoRejoin
 import xyz.vexo.features.impl.misc.ChatCleaner
 import xyz.vexo.features.impl.misc.TyfrTrigger
 import xyz.vexo.events.EventBus
 import xyz.vexo.features.impl.dungeons.PadTimer
+import xyz.vexo.utils.PartyUtils
 import xyz.vexo.utils.PriceUtils
 
 
@@ -57,7 +60,7 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			TyfrTrigger,
+			TyfrTrigger, PartyUtils,
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
