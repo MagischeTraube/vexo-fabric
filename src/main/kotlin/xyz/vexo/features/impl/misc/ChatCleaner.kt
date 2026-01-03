@@ -44,22 +44,27 @@ object ChatCleaner : Module(
 
         if (randomSpam && randomSpamRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
+            return
         }
 
         if (dungeonSpam && randomDungeonSpawnRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
+            return
         }
 
         if (autopetSpam && autoPetRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
+            return
         }
 
         if (rareDropSpam && rareDropRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
+            return
         }
 
         if (shardsSpam && shardRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
+            return
         }
     }
 
