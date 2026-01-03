@@ -41,11 +41,6 @@ object ApiUtils {
                 this.readTimeout = readTimeout
             }
 
-            val responseCode = connection.responseCode
-            if (responseCode !in 200..299) {
-                throw IOException("HTTP Error $responseCode: ${connection.responseMessage}")
-            }
-
             connection.inputStream.use { stream ->
                 gson.fromJson(stream.reader(), JsonObject::class.java)
             }

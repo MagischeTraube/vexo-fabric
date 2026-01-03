@@ -5,7 +5,6 @@ package xyz.vexo.features
  */
 enum class Category(val displayName: String) {
     DUNGEONS("Dungeons"),
-    RENDER("Render"),
     MISC("Misc");
 
     companion object {

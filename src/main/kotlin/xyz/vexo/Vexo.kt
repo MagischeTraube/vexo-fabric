@@ -16,7 +16,6 @@ import xyz.vexo.commands.*
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.events.EventDispatcher
 import xyz.vexo.config.ConfigManager
-import xyz.vexo.features.impl.ExampleModule
 import xyz.vexo.features.impl.misc.*
 import xyz.vexo.features.impl.misc.AutoRejoin
 import xyz.vexo.features.impl.misc.ChatCleaner
