@@ -43,6 +43,8 @@ object Vexo : ClientModInitializer {
 
     val logger: Logger = LoggerFactory.getLogger("Vexo")
 
+	val scope = CoroutineScope(SupervisorJob() + EmptyCoroutineContext)
+
 	override fun onInitializeClient() {
 		arrayOf(
 			EventDispatcher,  PriceUtils
