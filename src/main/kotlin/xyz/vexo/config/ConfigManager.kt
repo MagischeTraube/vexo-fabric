@@ -9,23 +9,14 @@ import xyz.vexo.features.ModuleManager
 import xyz.vexo.utils.logError
 import xyz.vexo.utils.logInfo
 import java.io.File
-
+import xyz.vexo.Vexo
 
 /**
  * Manages saving and loading of configuration data
  */
 object ConfigManager {
     private val gson = GsonBuilder().setPrettyPrinting().create()
-    private var configDir: File
-    private var configFile: File
-
-    init {
-        var configDirectory = FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile()
-        configDir = configDirectory.apply {
-            if (!exists()) mkdirs()
-        }
-        configFile = File(configDir, "config.json")
-    }
+    private var configFile = File(Vexo.configDir, "config.json")
 
     /**
      * Saves all modules and their settings to JSON
@@ -73,13 +64,11 @@ object ConfigManager {
             ModuleManager.getAllModules().forEach { module ->
                 val moduleJson = modulesJson.getAsJsonObject(module.name) ?: return@forEach
 
-                // Enabled-Status laden
                 val enabled = moduleJson.get("enabled")?.asBoolean ?: false
                 if (enabled != module.enabled) {
                     module.toggle()
                 }
 
-                // Settings laden
                 val settingsJson = moduleJson.getAsJsonObject("settings") ?: return@forEach
                 getSettingsFromModule(module).forEach { setting ->
                     settingsJson.get(setting.name)?.let { json ->

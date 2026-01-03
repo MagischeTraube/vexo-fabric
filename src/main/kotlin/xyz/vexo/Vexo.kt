@@ -28,6 +28,12 @@ object Vexo : ClientModInitializer {
 	}
 	val version: Version by lazy { metadata.version }
 
+	val configDir: File by lazy {
+		FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile().apply {
+			if (!exists()) mkdirs()
+		}
+	}
+
 	@JvmStatic
 	val mc: Minecraft = Minecraft.getInstance()
 
@@ -48,9 +54,7 @@ object Vexo : ClientModInitializer {
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin, PadTimer,
-
-			ExampleModule
+			ChatCleaner, AutoRejoin, PadTimer
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

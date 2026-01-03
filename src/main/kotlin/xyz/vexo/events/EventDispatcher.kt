@@ -12,6 +12,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import xyz.vexo.Vexo
+import xyz.vexo.utils.IInitializable
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.ClientTickEvent
 import xyz.vexo.events.impl.HudRenderEvent
@@ -23,10 +24,10 @@ import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.TablistPacketEvent
 
-object EventDispatcher {
+object EventDispatcher : IInitializable {
     private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
 
-    fun init() {
+    override fun init() {
         EventBus.subscribe(this)
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
