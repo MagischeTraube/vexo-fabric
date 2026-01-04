@@ -59,7 +59,7 @@ object Vexo : ClientModInitializer {
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue
+			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

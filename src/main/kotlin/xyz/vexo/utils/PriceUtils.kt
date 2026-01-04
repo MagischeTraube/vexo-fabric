@@ -96,7 +96,6 @@ object PriceUtils : IInitializable {
 
                 cachedPriceData.clear()
                 cachedPriceData.putAll(newPriceData)
-                println("PriceUtils: cachedPriceData: $cachedPriceData")
                 launch { saveCachedPriceData() }
 
                 PriceDataUpdateEvent.postAndCatch()

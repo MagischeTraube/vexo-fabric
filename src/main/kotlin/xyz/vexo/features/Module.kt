@@ -8,6 +8,10 @@ import xyz.vexo.config.Setting
 /**
  * Base class for all modules in the mod.
  * Provides core functionality for module management, settings, and event handling.
+ *
+ * @param name The name of the module.
+ * @param description The description of the module.
+ * @param toggled Whether the module is enabled by default.
  */
 abstract class Module(
     val name: String,

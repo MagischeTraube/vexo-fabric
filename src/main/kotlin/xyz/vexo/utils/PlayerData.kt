@@ -12,11 +12,6 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 object PlayerData {
-    private val gson = Gson()
-    private val gsonPretty = GsonBuilder().setPrettyPrinting().create()
-
-    private val PLAYER_DATA_DIR = File(Vexo.configDir, "player_data")
-
     private const val MOJANG_API = "https://api.mojang.com/users/profiles/minecraft"
     private const val PLAYER_API = "https://api.infm7.xyz/player"
 
@@ -25,9 +20,11 @@ object PlayerData {
 
     private var lastEvictionCheck = System.currentTimeMillis()
 
-    private val playerCache = ConcurrentHashMap<String, CachedPlayerData>()
+    val playerCache = ConcurrentHashMap<String, CachedPlayerData>()
+    val uuidCache = ConcurrentHashMap<String, String>()
 
-    private data class CachedPlayerData(
+
+    data class CachedPlayerData(
         val data: PlayerDataObject,
         var lastAccessed: Long
     )
@@ -35,14 +32,14 @@ object PlayerData {
     /**
      * Main player data class with accessor methods
      */
-    class PlayerDataObject(
+    data class PlayerDataObject(
         val uuid: String,
         val ign: String,
         val dungeons: DungeonsData?,
         val kuudra: KuudraData?,
         val lastUpdated: Long = System.currentTimeMillis(),
-
-    ) {
+    )
+    {
         val catacombsLevel: Int get() = dungeons?.catacombsLevel ?: 0
         val totalSecrets: Int get() = dungeons?.totalSecrets ?: 0
         val hasFairyPerk: Boolean get() = dungeons?.essenceShopPerks?.helpOfTheFairy ?: false
@@ -79,17 +76,14 @@ object PlayerData {
         val totalRuns: Map<String, Int>?
     )
 
-    private data class PlayerDataFile(
-        val uuid: String,
-        val ign: String,
-        val dungeons: DungeonsData?,
-        val kuudra: KuudraData?,
-        val lastUpdated: Long,
-    )
 
     init {
-        PLAYER_DATA_DIR.mkdirs()
         EventBus.subscribe(this)
+        getPlayerData(Vexo.mc.user?.name ?: "") { data ->
+            if (data != null) {
+                playerCache[data.uuid] = CachedPlayerData(data, System.currentTimeMillis())
+            }
+        }
     }
 
     @EventHandler
@@ -97,9 +91,7 @@ object PlayerData {
         val currentTime = System.currentTimeMillis()
 
         if (currentTime - lastEvictionCheck >= EVICTION_CHECK_INTERVAL_MS) {
-            Vexo.scope.launch {
-                evictOldPlayers()
-            }
+            evictOldPlayers()
             lastEvictionCheck = currentTime
         }
     }
@@ -119,6 +111,7 @@ object PlayerData {
 
     /**
      * Internal suspend function that does the actual loading
+     * Cache + API only (no file storage)
      */
     private suspend fun fetchPlayerData(username: String): PlayerDataObject? {
         return withContext(Dispatchers.IO) {
@@ -135,35 +128,16 @@ object PlayerData {
                     return@withContext cached.data
                 }
 
-                val fileData = loadFromFile(uuid)
+                val apiData = fetchFromApi(uuid, username) ?: return@withContext null
 
-                val apiData = fetchFromApi(uuid, username)
-
-                val mergedData =
-                    if (apiData != null && fileData != null) {
-                        PlayerDataObject(
-                            uuid = apiData.uuid,
-                            ign = apiData.ign,
-                            dungeons = apiData.dungeons,
-                            kuudra = apiData.kuudra,
-                            lastUpdated = currentTime,
-                        )
-                    } else if (apiData != null) {
-                        apiData
-                    } else if (fileData != null) {
-                        fileData
-                    } else {
-                        return@withContext null
-                    }
-
-                saveToFile(mergedData)
+                val data = apiData.copy(lastUpdated = currentTime)
 
                 playerCache[uuid] = CachedPlayerData(
-                    data = mergedData,
+                    data = data,
                     lastAccessed = currentTime
                 )
 
-                mergedData
+                data
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -173,13 +147,18 @@ object PlayerData {
         }
     }
 
+
     /**
      * Gets UUID from Mojang API
      */
     private suspend fun getUuidFromUsername(username: String): String? {
+        uuidCache[username.lowercase()]?.let { return it }
+
         return try {
             val json = ApiUtils.fetchJson("$MOJANG_API/$username")
-            json.get("id")?.asString
+            json.get("id")?.asString?.also {
+                uuidCache[username.lowercase()] = it
+            }
         } catch (e: Exception) {
             logError(e, this@PlayerData)
             null
@@ -194,7 +173,7 @@ object PlayerData {
             val json = ApiUtils.fetchJsonWithRetry("$PLAYER_API?uuid=$uuid", maxRetries = 2)
                 ?: return null
 
-            if (!json.get("success")?.asBoolean!!) {
+            if (json.get("success")?.asBoolean != true) {
                 return null
             }
 
@@ -219,9 +198,16 @@ object PlayerData {
                 personalBests = it.getAsJsonObject("personal_bests")?.let { pb ->
                     PersonalBests(
                         catacombs = pb.getAsJsonObject("catacombs")?.entrySet()
-                            ?.associate { (k, v) -> k to v.asInt },
+                            ?.mapNotNull { (k, v) ->
+                                if (v.isJsonNull) null else k to v.asInt
+                            }
+                            ?.toMap(),
+
                         masterCatacombs = pb.getAsJsonObject("master_catacombs")?.entrySet()
-                            ?.associate { (k, v) -> k to v.asInt }
+                            ?.mapNotNull { (k, v) ->
+                                if (v.isJsonNull) null else k to v.asInt
+                            }
+                            ?.toMap()
                     )
                 },
                 catacombsLevel = it.get("catacombs_level")?.asInt,
@@ -245,81 +231,18 @@ object PlayerData {
     }
 
     /**
-     * Loads player data from file
-     */
-    private fun loadFromFile(uuid: String): PlayerDataObject? {
-        val file = File(PLAYER_DATA_DIR, "$uuid.json")
-        if (!file.exists()) return null
-
-        return try {
-            val fileData = gson.fromJson(file.readText(), PlayerDataFile::class.java)
-            PlayerDataObject(
-                uuid = fileData.uuid,
-                ign = fileData.ign,
-                dungeons = fileData.dungeons,
-                kuudra = fileData.kuudra,
-                lastUpdated = fileData.lastUpdated,
-            )
-        } catch (e: Exception) {
-            logError(e, this@PlayerData)
-            null
-        }
-    }
-
-    /**
-     * Saves player data to file
-     */
-    private suspend fun saveToFile(data: PlayerDataObject) = withContext(Dispatchers.IO) {
-        try {
-            if (!PLAYER_DATA_DIR.exists()) {
-                PLAYER_DATA_DIR.mkdirs()
-            }
-
-            val file = File(PLAYER_DATA_DIR, "${data.uuid}.json")
-            val fileData = PlayerDataFile(
-                uuid = data.uuid,
-                ign = data.ign,
-                dungeons = data.dungeons,
-                kuudra = data.kuudra,
-                lastUpdated = data.lastUpdated,
-
-            )
-            file.writeText(gsonPretty.toJson(fileData))
-        } catch (e: Exception) {
-            logError(e, this@PlayerData)
-        }
-    }
-
-    /**
-     * Updates data for a player (without API call)
-     */
-    suspend fun updateData(username: String, update: (PlayerDataObject) -> Unit) {
-        withContext(Dispatchers.IO) {
-            try {
-                val uuid = getUuidFromUsername(username) ?: return@withContext
-
-                val data = playerCache[uuid]?.data ?: loadFromFile(uuid) ?: run {
-                    return@withContext
-                }
-
-                update(data)
-
-                saveToFile(data)
-                playerCache[uuid] = CachedPlayerData(data, System.currentTimeMillis())
-            } catch (e: Exception) {
-                logError(e, this@PlayerData)
-            }
-        }
-    }
-
-    /**
      * Removes players from cache that haven't been accessed in 60 minutes
      */
     private fun evictOldPlayers() {
         val currentTime = System.currentTimeMillis()
         val toRemove = mutableListOf<String>()
 
+        val ownName = Vexo.mc.user?.name ?: ""
+        val ownUuid = uuidCache[ownName.lowercase()]
+
         playerCache.forEach { (uuid, cached) ->
+            if (uuid == ownUuid) return@forEach
+
             val timeSinceLastAccess = currentTime - cached.lastAccessed
             if (timeSinceLastAccess >= CACHE_EVICTION_MS) {
                 toRemove.add(uuid)
@@ -332,18 +255,11 @@ object PlayerData {
     }
 
     /**
-     * Forces immediate save of a specific player
-     */
-    suspend fun forceSave(uuid: String) {
-        playerCache[uuid]?.let { cached ->
-            saveToFile(cached.data)
-        }
-    }
-
-    /**
      * Clears the entire cache
      */
     fun clearCache() {
         playerCache.clear()
     }
+
+
 }
