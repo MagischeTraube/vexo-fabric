@@ -130,7 +130,6 @@ object PartyFinder : Module(
         var foundMembers = false
 
         for (i in lines.indices) {
-            print(lines[i])
             val lineText = lines[i].string.removeFormatting().trim()
 
             if (lineText == "Members:") {

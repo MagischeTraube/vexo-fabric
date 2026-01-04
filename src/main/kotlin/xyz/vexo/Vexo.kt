@@ -13,7 +13,8 @@ import net.minecraft.client.Minecraft
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import xyz.vexo.commands.*
-import xyz.vexo.events.*
+import xyz.vexo.events.EventDispatcher
+import xyz.vexo.events.EventBus
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.features.impl.misc.*

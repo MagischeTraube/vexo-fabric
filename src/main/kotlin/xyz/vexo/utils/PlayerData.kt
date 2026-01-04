@@ -1,15 +1,12 @@
 package xyz.vexo.utils
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
+import java.util.concurrent.ConcurrentHashMap
 import com.google.gson.JsonObject
 import kotlinx.coroutines.*
 import xyz.vexo.Vexo
 import xyz.vexo.events.EventBus
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ServerTickEvent
-import java.io.File
-import java.util.concurrent.ConcurrentHashMap
 
 object PlayerData {
     private const val MOJANG_API = "https://api.mojang.com/users/profiles/minecraft"
