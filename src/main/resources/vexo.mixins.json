@@ -6,7 +6,8 @@
 		"ChatScreenMixin",
 		"ConnectionMixin",
 		"KeyMappingMixin",
-		"SoundManagerMixin"
+		"SoundManagerMixin",
+		"AbstractContainerScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
