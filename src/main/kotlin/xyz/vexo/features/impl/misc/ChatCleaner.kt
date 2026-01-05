@@ -37,6 +37,11 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val ringOfLove by BooleanSetting(
+        name = "Ring of Love messages",
+        default = false
+    )
+
     @EventHandler
     fun onChat(event: ChatMessageEvent) {
 
@@ -63,6 +68,11 @@ object ChatCleaner : Module(
         }
 
         if (shardsSpam && shardRegex.any { it.containsMatchIn(cleanMessage) }) {
+            event.cancel()
+            return
+        }
+
+        if (ringOfLove && ringOfLoveRegex.any { it.containsMatchIn(cleanMessage) }) {
             event.cancel()
             return
         }
@@ -201,6 +211,11 @@ object ChatCleaner : Module(
         Regex("""^NAGA.*$"""),
         Regex("""^CHARM.*$"""),
         Regex("""^SALT.*$""")
+    )
+
+    val ringOfLoveRegex = listOf(
+        Regex("""^Your Legendary Ring of Love requires higher quest completion!"""),
+        Regex("""^Its stats and effects don't apply!""")
     )
 
 }
