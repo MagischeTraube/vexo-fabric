@@ -60,7 +60,7 @@ object Vexo : ClientModInitializer {
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder, RagAxeNow
+			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder, RagAxeNow, HealerP5LeapAlert
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

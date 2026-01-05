@@ -30,7 +30,7 @@ object AutoRejoin : Module(
         }
 
 
-        if (kickedMessage.any { it.containsMatchIn(cleanMessage) }){
+        if (kickedMessage.any { it.containsMatchIn(cleanMessage) } && !rejoining){
             rejoining = true
 
             modMessage("Kicked from SkyBlock, rejoining automatically in 65 Seconds!")
