@@ -36,11 +36,12 @@ object AutoRejoin : Module(
             modMessage("Kicked from SkyBlock, rejoining automatically in 65 Seconds!")
             runAfterServerTicks(700) {
                 modMessage("Rejoining in 30 Seconds!")
-                runAfterServerTicks(600) {
-                    modMessage("Rejoining Now!")
-                    sendCommand("play skyblock")
-                }
             }
+            runAfterServerTicks(1300) {
+                modMessage("Rejoining Now!")
+                sendCommand("play skyblock")
+            }
+
         }
     }
     @EventHandler

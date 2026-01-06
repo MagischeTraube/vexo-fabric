@@ -56,11 +56,12 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			TyfrTrigger, PartyUtils,
+			TyfrTrigger, PartyUtils, GetDungeonFloorHelper
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder, RagAxeNow, HealerP5LeapAlert
+			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder, RagAxeNow, HealerP5LeapAlert,
+			PositionalMessages
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

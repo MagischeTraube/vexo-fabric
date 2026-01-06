@@ -63,3 +63,42 @@ fun getOwnPlayerCoordsFormat(): String? {
     val player = mc.player ?: return null
     return getAllPlayerCoordsFormat()[player.name.string]
 }
+
+fun inRadius(x: Double, y: Double, z: Double, radius: Double): Boolean {
+    val playerPos = getOwnPlayerCoords() ?: return false
+    val dx = playerPos.x - x
+    val dy = playerPos.y - y
+    val dz = playerPos.z - z
+
+    return dx * dx + dy * dy + dz * dz <= radius * radius
+}
+
+/**
+ * Checks whether the own player is inside a 3D area (axis-aligned bounding box).
+ *
+ * @param x1 X coordinate of the first corner
+ * @param y1 Y coordinate of the first corner
+ * @param z1 Z coordinate of the first corner
+ * @param x2 X coordinate of the opposite corner
+ * @param y2 Y coordinate of the opposite corner
+ * @param z2 Z coordinate of the opposite corner
+ *
+ * @return boolean value whether the player is inside the box
+ */
+fun inArea(
+    x1: Double, y1: Double, z1: Double,
+    x2: Double, y2: Double, z2: Double
+): Boolean {
+    val pos = getOwnPlayerCoords() ?: return false
+
+    val minX = minOf(x1, x2)
+    val maxX = maxOf(x1, x2)
+    val minY = minOf(y1, y2)
+    val maxY = maxOf(y1, y2)
+    val minZ = minOf(z1, z2)
+    val maxZ = maxOf(z1, z2)
+
+    return pos.x in minX..maxX &&
+            pos.y in minY..maxY &&
+            pos.z in minZ..maxZ
+}
