@@ -1,7 +1,7 @@
 package xyz.vexo.commands
 
 import com.github.stivais.commodore.Commodore
-import xyz.vexo.features.impl.misc.TyfrTrigger
+import xyz.vexo.utils.TyfrTrigger
 import xyz.vexo.utils.modMessage
 
 val TyfrCommand = Commodore("tyfr") {

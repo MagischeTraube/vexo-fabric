@@ -1,12 +1,8 @@
-package xyz.vexo.features.impl.misc
+package xyz.vexo.utils
 
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.WorldJoinEvent
-import xyz.vexo.features.Module
-import xyz.vexo.utils.removeFormatting
-import xyz.vexo.utils.sendCommand
-import xyz.vexo.utils.runAfterServerTicks
 
 object TyfrTrigger {
     var tyfrToggle = false
@@ -26,7 +22,7 @@ object TyfrTrigger {
     }
 
     @EventHandler
-    fun worldLeave(event: WorldJoinEvent){
+    fun onWorldJoin(event: WorldJoinEvent){
         tyfrToggle = false
     }
 }
