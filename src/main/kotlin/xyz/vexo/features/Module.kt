@@ -40,14 +40,21 @@ abstract class Module(
     fun initSettings() {
         if (settings.isNotEmpty()) return
 
-        this::class.members
-            .filterIsInstance<KProperty1<Module, *>>()
-            .forEach { prop ->
-                prop.isAccessible = true
-                val delegate = prop.getDelegate(this)
-                if (delegate is Setting<*> && delegate !in settings) {
-                    settings += delegate
-                }
+        val fields = this::class.java.declaredFields
+
+        fields.forEach { field ->
+            field.isAccessible = true
+            val value = runCatching { field.get(this) }.getOrNull()
+            if (value is Setting<*>) settings += value
+            else {
+                val prop = runCatching {
+                    this::class.members
+                        .filterIsInstance<KProperty1<Module, *>>()
+                        .firstOrNull { it.name == field.name.removeSuffix("\$delegate") }
+                }.getOrNull()
+                val delegate = prop?.getDelegate(this)
+                if (delegate is Setting<*> && delegate !in settings) settings += delegate
             }
+        }
     }
 }
