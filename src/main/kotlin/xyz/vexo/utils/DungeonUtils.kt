@@ -3,42 +3,37 @@ package xyz.vexo.utils
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 
+object DungeonUtils {
 
-val DungeonEnterMessage = listOf(
-    Regex("entered MM The Catacombs, Floor"),
-    Regex("entered The Catacombs, Floor")
-)
-var inDungeon = false
+    var inDungeon = false
+    var floor: String = ""
 
-@EventHandler
-fun onChat(event: ChatMessagePacketEvent) {
-    if (DungeonEnterMessage.any { it.containsMatchIn(event.message) }) {
-        inDungeon = true
-    }
-}
-
-var floor: String = ""
-object GetDungeonFloorHelper{
     @EventHandler
-        fun getDungeonHelper(event: ChatMessagePacketEvent){
-            val msg = event.message.removeFormatting()
-            when {
-                Regex(""".* entered The Catacombs, Floor I!""").matches(msg) -> floor = "F1"
-                Regex(""".* entered The Catacombs, Floor II!""").matches(msg) -> floor = "F2"
-                Regex(""".* entered The Catacombs, Floor III!""").matches(msg) -> floor = "F3"
-                Regex(""".* entered The Catacombs, Floor IV!""").matches(msg) -> floor = "F4"
-                Regex(""".* entered The Catacombs, Floor V!""").matches(msg) -> floor = "F5"
-                Regex(""".* entered The Catacombs, Floor VI!""").matches(msg) -> floor = "F6"
-                Regex(""".* entered The Catacombs, Floor VII!""").matches(msg) -> floor = "F7"
+    fun onDungeonChat(event: ChatMessagePacketEvent) {
+        val msg = event.message.removeFormatting()
 
-                Regex(""".* entered MM The Catacombs, Floor I!""").matches(msg) -> floor = "M1"
-                Regex(""".* entered MM The Catacombs, Floor II!""").matches(msg) -> floor = "M2"
-                Regex(""".* entered MM The Catacombs, Floor III!""").matches(msg) -> floor = "M3"
-                Regex(""".* entered MM The Catacombs, Floor IV!""").matches(msg) -> floor = "M4"
-                Regex(""".* entered MM The Catacombs, Floor V!""").matches(msg) -> floor = "M5"
-                Regex(""".* entered MM The Catacombs, Floor VI!""").matches(msg) -> floor = "M6"
-                Regex(""".* entered MM The Catacombs, Floor VII!""").matches(msg) -> floor = "M7"
+        val enterDungeonMatch = Regex(""".* entered (MM )?The Catacombs, Floor ([IVX]+)!""").find(msg)
+        if (enterDungeonMatch != null) {
+            inDungeon = true
+
+            val mmPrefix = enterDungeonMatch.groupValues[1]
+            val roman = enterDungeonMatch.groupValues[2]
+
+            val num = when (roman) {
+                "I" -> "1"
+                "II" -> "2"
+                "III" -> "3"
+                "IV" -> "4"
+                "V" -> "5"
+                "VI" -> "6"
+                "VII" -> "7"
+                else -> ""
             }
+
+            floor = if (mmPrefix.isNotEmpty()) "M$num" else "F$num"
         }
+    }
+
+
+    fun getDungeonFloor(): String { return floor }
 }
-fun getDungeonFloor(): String { return floor }
