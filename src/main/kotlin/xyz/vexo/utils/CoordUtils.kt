@@ -35,8 +35,7 @@ fun getAllPlayerCoordsFormat(): Map<String, String> {
 
     for ((name, pos) in allCoords) {
         val formatted = String.format(
-            "X: %.1f, Y: %.1f, Z: %.1f",
-            pos.x, pos.y, pos.z
+            "X: %.1f, Y: %.1f, Z: %.1f", pos.x, pos.y, pos.z
         )
         formattedCoords[name] = formatted
     }
@@ -51,7 +50,7 @@ fun getAllPlayerCoordsFormat(): Map<String, String> {
  */
 fun getOwnPlayerCoords(): Vec3? {
     val player = mc.player ?: return null
-    return getAllPlayerCoords()[player.name.string]
+    return Vec3(player.x, player.y, player.z)
 }
 
 /**
@@ -91,14 +90,7 @@ fun inArea(
 ): Boolean {
     val pos = getOwnPlayerCoords() ?: return false
 
-    val minX = minOf(x1, x2)
-    val maxX = maxOf(x1, x2)
-    val minY = minOf(y1, y2)
-    val maxY = maxOf(y1, y2)
-    val minZ = minOf(z1, z2)
-    val maxZ = maxOf(z1, z2)
-
-    return pos.x in minX..maxX &&
-            pos.y in minY..maxY &&
-            pos.z in minZ..maxZ
+    return  pos.x in minOf(x1, x2)..maxOf(x1, x2) &&
+            pos.y in minOf(y1, y2)..maxOf(y1, y2) &&
+            pos.z in minOf(z1, z2)..maxOf(z1, z2)
 }
