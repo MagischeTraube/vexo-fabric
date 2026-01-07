@@ -3,6 +3,7 @@ package xyz.vexo.events
 import net.minecraft.network.protocol.common.ClientboundPingPacket
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.resources.ResourceLocation.fromNamespaceAndPath
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -25,6 +26,7 @@ import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
 import xyz.vexo.events.impl.TablistPacketEvent
 import xyz.vexo.events.impl.ServerLeaveEvent
+import xyz.vexo.events.impl.ParticleReceiveEvent
 
 object EventDispatcher : IInitializable {
     private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
@@ -74,6 +76,7 @@ object EventDispatcher : IInitializable {
             event.postAndCatch()
             !event.isCancelled()
         }
+
     }
 
     @EventHandler
@@ -90,6 +93,14 @@ object EventDispatcher : IInitializable {
             is ClientboundPlayerInfoUpdatePacket -> {
                 val tablist = packet.entries()?.mapNotNull { it.displayName?.string }?.ifEmpty { return } ?: return
                 TablistPacketEvent(tablist).postAndCatch()
+            }
+
+            is ClientboundLevelParticlesPacket -> {
+                val particleEvent = ParticleReceiveEvent(packet)
+                particleEvent.postAndCatch()
+                if (particleEvent.isCancelled()) {
+                    event.cancel()
+                }
             }
         }
     }
