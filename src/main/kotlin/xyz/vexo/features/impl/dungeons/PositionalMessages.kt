@@ -3,7 +3,7 @@ package xyz.vexo.features.impl.dungeons
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.SliderSetting
 import xyz.vexo.events.EventHandler
-import xyz.vexo.events.impl.ClientTickEvent
+import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.DungeonUtils
@@ -47,7 +47,7 @@ object PositionalMessages : Module(
 
     private val spotDefs = listOf(
         SpotDef(
-            message = "SimonSays",
+            message = "Simon Says",
             settingEnabled = { simonSays },
             check = { inRadius(108.0, 120.0, 93.0, radius) }
         ),
@@ -92,7 +92,7 @@ object PositionalMessages : Module(
     private val sentSpot = BooleanArray(spotDefs.size)
 
     @EventHandler
-    fun onServerTick(event: ClientTickEvent) {
+    fun onServerTick(event: ServerTickEvent) {
         val floor = DungeonUtils.getDungeonFloor()
         if (floor != "M7" && floor != "F7") return
 

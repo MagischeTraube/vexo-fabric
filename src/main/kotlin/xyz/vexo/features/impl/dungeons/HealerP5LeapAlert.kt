@@ -8,10 +8,8 @@ import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.getAllPlayerCoords
-import xyz.vexo.utils.modMessage
 import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.runAfterServerTicks
-import xyz.vexo.utils.writeInFile
 
 object HealerP5LeapAlert : Module(
     name = "Healer P5 Leap Alert",
@@ -36,7 +34,6 @@ object HealerP5LeapAlert : Module(
         if (cleanMessage == "[BOSS] Necron: Let's make some space!") inP5 = true
     }
 
-    var ticks = 80
     @EventHandler
     fun onTick(event: ServerTickEvent) {
 

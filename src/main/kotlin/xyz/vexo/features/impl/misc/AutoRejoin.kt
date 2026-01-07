@@ -44,6 +44,7 @@ object AutoRejoin : Module(
 
         }
     }
+
     @EventHandler
     fun worldJoin(event: WorldJoinEvent){
         if (!rejoining) return

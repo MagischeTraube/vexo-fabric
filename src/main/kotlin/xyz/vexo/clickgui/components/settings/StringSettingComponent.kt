@@ -64,7 +64,11 @@ class StringSettingComponent(
         }
 
         textInput.onUpdate { text ->
-            setting.updateValue(text)
+            setting.updateValue(text.replace("&&", "§"))
+        }
+
+        textInput.onFocusLost {
+            textInput.setText(setting.getCurrentValue())
         }
 
         return container
