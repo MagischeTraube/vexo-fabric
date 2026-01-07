@@ -46,7 +46,7 @@ object Vexo : ClientModInitializer {
 
 	override fun onInitializeClient() {
 		arrayOf(
-			EventDispatcher,  PriceUtils
+			EventDispatcher, PriceUtils
 		).forEach { it.init() }
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
@@ -56,12 +56,18 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			TyfrTrigger, PartyUtils, GetDungeonFloorHelper
+			DungeonUtils, PartyUtils, TyfrTrigger
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
-			ChatCleaner, AutoRejoin, PadTimer, AutoKuudraRequeue, PartyFinder, RagAxeNow, HealerP5LeapAlert,
-			PositionalMessages
+			// dungeons
+			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow,
+
+			// kuudra
+			AutoKuudraRequeue,
+
+			// misc
+			AutoRejoin, ChatCleaner,
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

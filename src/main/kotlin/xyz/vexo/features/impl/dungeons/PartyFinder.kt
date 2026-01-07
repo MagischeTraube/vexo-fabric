@@ -83,6 +83,7 @@ object PartyFinder : Module(
      * @return The floor
      */
     private fun parseFloor(text: String): Int? = when (text.substringAfter("Floor:").trim()) {
+        "Entrance" -> 0
         "Floor I" -> 1
         "Floor II" -> 2
         "Floor III" -> 3
@@ -169,10 +170,18 @@ object PartyFinder : Module(
         isMaster: Boolean
     ): Component {
         val cachedData = playerDataCache[playerName]
-        val uuidCached = playerUuidCache[playerName]
 
-        if (cachedData != null && uuidCached != null) {
-            return formatTooltipComponent(originalLine, playerName, cachedData, floor, isMaster)
+        if (cachedData != null) {
+            if (cachedData.isError) {
+                return Component.empty()
+                    .append(originalLine)
+                    .append(Component.literal(" [API DOWN]").withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFF0000))))
+            }
+
+            val uuidCached = playerUuidCache[playerName]
+            if (uuidCached != null) {
+                return formatTooltipComponent(originalLine, playerName, cachedData, floor, isMaster)
+            }
         }
 
         if (!fetchingPlayers.containsKey(playerName)) {
@@ -182,7 +191,9 @@ object PartyFinder : Module(
                     fetchingPlayers.remove(playerName)
                     data?.let {
                         playerDataCache[playerName] = it
-                        playerUuidCache[playerName] = it.uuid
+                        if (!it.isError) {
+                            playerUuidCache[playerName] = it.uuid
+                        }
                     }
                 }
             }
@@ -215,12 +226,12 @@ object PartyFinder : Module(
         base.append(recolorClassComponent(originalLine))
 
         base.append(
-            Component.literal(" ${getLevelColor(data.catacombsLevel)}${data.catacombsLevel}")
+            Component.literal(" ${getLevelColor(data.catacombsLevel)}C${data.catacombsLevel}")
         )
 
         val pbText = floor
             ?.let { data.getBestTime(it, isMaster)?.let { formatTime(it) } ?: "NO PB" }
-            ?: "ERROR"
+            ?: "1ERROR"
 
         base.append(
             Component.literal(" $pbText")
@@ -351,7 +362,9 @@ object PartyFinder : Module(
                     mc.execute {
                         data?.let {
                             playerDataCache[own] = it
-                            playerUuidCache[own] = it.uuid
+                            if (!it.isError) {
+                                playerUuidCache[own] = it.uuid
+                            }
                         }
                     }
                 }

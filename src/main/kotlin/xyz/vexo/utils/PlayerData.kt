@@ -35,6 +35,7 @@ object PlayerData {
         val dungeons: DungeonsData?,
         val kuudra: KuudraData?,
         val lastUpdated: Long = System.currentTimeMillis(),
+        val isError: Boolean = false
     )
     {
         val catacombsLevel: Int get() = dungeons?.catacombsLevel ?: 0
@@ -115,7 +116,13 @@ object PlayerData {
             try {
                 val uuid = getUuidFromUsername(username) ?: run {
                     logInfo("Player not found: $username")
-                    return@withContext null
+                    return@withContext PlayerDataObject(
+                        uuid = "",
+                        ign = username,
+                        dungeons = null,
+                        kuudra = null,
+                        isError = true
+                    )
                 }
 
                 val currentTime = System.currentTimeMillis()
@@ -125,7 +132,13 @@ object PlayerData {
                     return@withContext cached.data
                 }
 
-                val apiData = fetchFromApi(uuid, username) ?: return@withContext null
+                val apiData = fetchFromApi(uuid, username) ?: return@withContext PlayerDataObject(
+                    uuid = uuid,
+                    ign = username,
+                    dungeons = null,
+                    kuudra = null,
+                    isError = true
+                )
 
                 val data = apiData.copy(lastUpdated = currentTime)
 
@@ -139,7 +152,13 @@ object PlayerData {
                 throw e
             } catch (e: Exception) {
                 logError(e, this@PlayerData)
-                null
+                PlayerDataObject(
+                    uuid = "",
+                    ign = username,
+                    dungeons = null,
+                    kuudra = null,
+                    isError = true
+                )
             }
         }
     }
@@ -224,7 +243,7 @@ object PlayerData {
             )
         }
 
-        return PlayerDataObject(uuid, ign, dungeons, kuudra)
+        return PlayerDataObject(uuid, ign, dungeons, kuudra, isError = false)
     }
 
     /**
@@ -257,6 +276,4 @@ object PlayerData {
     fun clearCache() {
         playerCache.clear()
     }
-
-
 }
