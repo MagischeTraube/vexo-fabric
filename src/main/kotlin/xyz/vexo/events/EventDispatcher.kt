@@ -2,7 +2,6 @@ package xyz.vexo.events
 
 import net.minecraft.network.protocol.common.ClientboundPingPacket
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
-import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.resources.ResourceLocation.fromNamespaceAndPath
@@ -24,7 +23,6 @@ import xyz.vexo.events.impl.WorldRenderDataReadyEvent
 import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
-import xyz.vexo.events.impl.TablistPacketEvent
 import xyz.vexo.events.impl.ServerLeaveEvent
 import xyz.vexo.events.impl.ParticleReceiveEvent
 
@@ -90,10 +88,6 @@ object EventDispatcher : IInitializable {
                 ChatMessagePacketEvent(packet.content?.string ?: "").postAndCatch()
             }
 
-            is ClientboundPlayerInfoUpdatePacket -> {
-                val tablist = packet.entries()?.mapNotNull { it.displayName?.string }?.ifEmpty { return } ?: return
-                TablistPacketEvent(tablist).postAndCatch()
-            }
 
             is ClientboundLevelParticlesPacket -> {
                 val particleEvent = ParticleReceiveEvent(packet)
