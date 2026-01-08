@@ -29,7 +29,6 @@ object AutoRejoin : Module(
             return
         }
 
-
         if (kickedMessage.any { it.containsMatchIn(cleanMessage) } && !rejoining){
             rejoining = true
 
@@ -41,7 +40,6 @@ object AutoRejoin : Module(
                 modMessage("Rejoining Now!")
                 sendCommand("play skyblock")
             }
-
         }
     }
 

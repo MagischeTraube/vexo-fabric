@@ -46,7 +46,7 @@ object PartyFinder : Module(
         if (lines.isEmpty()) return
 
         val firstLine = lines[0].string.removeFormatting()
-        if (!firstLine.endsWith("'s Party")) return
+        if (!firstLine.endsWith("Party")) return
 
         val dungeonInfo = parseDungeonInfo(lines)
         parsePartyMembers(lines)
@@ -231,7 +231,7 @@ object PartyFinder : Module(
 
         val pbText = floor
             ?.let { data.getBestTime(it, isMaster)?.let { formatTime(it) } ?: "NO PB" }
-            ?: "1ERROR"
+            ?: "ERROR"
 
         base.append(
             Component.literal(" $pbText")

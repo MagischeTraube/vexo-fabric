@@ -3,7 +3,6 @@ package xyz.vexo.utils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlinx.coroutines.*
-import java.io.IOException
 import java.net.URI
 import java.net.HttpURLConnection
 

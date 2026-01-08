@@ -35,8 +35,7 @@ object HealerP5LeapAlert : Module(
     }
 
     @EventHandler
-    fun onTick(event: ServerTickEvent) {
-
+    fun onServerTick(event: ServerTickEvent) {
         if (notifiedAll || !inP5) return
 
         if (getAllPlayerCoords().values.all { it.y < 20.0 }) {
@@ -46,9 +45,8 @@ object HealerP5LeapAlert : Module(
         }
     }
 
-
     @EventHandler
-    fun worldJoin(event: WorldJoinEvent) {
+    fun onWorldJoin(event: WorldJoinEvent) {
         inP5 = false
         notifiedAll = false
     }

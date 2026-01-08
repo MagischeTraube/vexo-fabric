@@ -8,8 +8,7 @@
 		"Traube", "Lloyd"
 	],
 	"contact": {
-		"homepage": "",
-		"sources": ""
+		"sources": "https://github.com/MagischeTraube/vexo-fabric"
 	},
 	"license": "BSD 3-Clause",
 	"icon": "assets/vexo/icon.png",
