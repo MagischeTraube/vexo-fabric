@@ -1,75 +1,81 @@
 package xyz.vexo.events
 
-import xyz.vexo.utils.logError
-import java.lang.reflect.Method
-import kotlin.reflect.full.declaredMemberFunctions
-import kotlin.reflect.full.hasAnnotation
-import kotlin.reflect.jvm.javaMethod
+import java.lang.invoke.MethodHandle
+import java.lang.invoke.MethodHandles
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 object EventBus {
-    private val subscribers = mutableMapOf<Any, MutableList<EventSubscriber>>()
+
+    private val subscribersByEvent =
+        ConcurrentHashMap<Class<*>, CopyOnWriteArrayList<EventSubscriber>>()
+
+    private val instanceIndex =
+        ConcurrentHashMap<Any, MutableList<Class<*>>>()
 
     /**
-     * Subscribes an object to receive events.
+     * Subscribe an object to receive events.
+     *
      * @param obj The object to subscribe
      */
     fun subscribe(obj: Any) {
-        if (subscribers.containsKey(obj)) return
+        if (instanceIndex.containsKey(obj)) return
 
-        val eventSubscribers = mutableListOf<EventSubscriber>()
+        val eventTypes = mutableListOf<Class<*>>()
+        val lookup = MethodHandles.lookup()
 
-        obj::class.declaredMemberFunctions.forEach { function ->
-            if (function.hasAnnotation<EventHandler>()) {
-                val method = function.javaMethod ?: return@forEach
+        for (method in obj.javaClass.declaredMethods) {
+            if (!method.isAnnotationPresent(EventHandler::class.java)) continue
+            if (method.parameterCount != 1) continue
 
-                if (method.parameterCount == 1) {
-                    val eventType = method.parameterTypes[0]
+            val eventType = method.parameterTypes[0]
+            if (!Event::class.java.isAssignableFrom(eventType)) continue
 
-                    if (Event::class.java.isAssignableFrom(eventType)) {
-                        method.isAccessible = true
-                        eventSubscribers.add(EventSubscriber(obj, method, eventType))
-                    }
-                }
-            }
+            method.isAccessible = true
+
+            val handle = lookup
+                .unreflect(method)
+                .bindTo(obj)
+
+            val subscriber = EventSubscriber(obj, handle)
+
+            subscribersByEvent
+                .computeIfAbsent(eventType) { CopyOnWriteArrayList() }
+                .add(subscriber)
+
+            eventTypes.add(eventType)
         }
 
-        subscribers[obj] = eventSubscribers
+        if (eventTypes.isNotEmpty()) {
+            instanceIndex[obj] = eventTypes
+        }
     }
 
     /**
-     * Unsubscribes an object from receiving events.
-     * @param obj The object to unsubscribe
+     * Unsubscribe an object from receiving events.
      */
     fun unsubscribe(obj: Any) {
-        subscribers.remove(obj)
+        val eventTypes = instanceIndex.remove(obj) ?: return
+
+        for (eventType in eventTypes) {
+            subscribersByEvent[eventType]?.removeIf {
+                it.instance === obj
+            }
+        }
     }
 
     /**
-     * Posts an event to all registered subscribers.
-     * @param event The event to post
-     * @return true if all subscribers handled the event successfully, false otherwise
+     * Post an event to all subscribers.
+     * @return true if no subscriber threw an exception
      */
-    fun post(event: Event): Boolean {
-        var success = true
-        val eventClass = event::class.java
-
-        subscribers.values.flatten()
-            .filter { it.eventType.isAssignableFrom(eventClass) }
-            .forEach { subscriber ->
-                try {
-                    subscriber.method.invoke(subscriber.instance, event)
-                } catch (e: Exception) {
-                    logError(e, this)
-                    success = false
-                }
-            }
-
-        return success
+    fun post(event: Event) {
+        subscribersByEvent[event.javaClass]?.forEach { subscriber ->
+            subscriber.handle.invoke(event)
+        }
     }
 
     private data class EventSubscriber(
         val instance: Any,
-        val method: Method,
-        val eventType: Class<*>
+        val handle: MethodHandle
     )
 }

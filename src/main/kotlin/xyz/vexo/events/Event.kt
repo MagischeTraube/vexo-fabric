@@ -7,11 +7,11 @@ import xyz.vexo.utils.logError
  * Events are posted to the event bus and can be handled by event handlers.
  */
 abstract class Event {
-    fun postAndCatch(): Boolean {
-        return runCatching {
+    fun postAndCatch() {
+        runCatching {
             EventBus.post(this)
         }.onFailure {
             logError(it, this)
-        }.isSuccess
+        }
     }
 }
