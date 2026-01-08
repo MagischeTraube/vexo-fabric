@@ -66,7 +66,8 @@ object EventBus {
 
     /**
      * Post an event to all subscribers.
-     * @return true if no subscriber threw an exception
+     *
+     * @param event The event to post
      */
     fun post(event: Event) {
         subscribersByEvent[event.javaClass]?.forEach { subscriber ->

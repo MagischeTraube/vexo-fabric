@@ -35,8 +35,8 @@ public class AbstractContainerScreenMixin {
                 lines
         );
 
-        if (event.postAndCatch()) {
-            cir.setReturnValue(event.lines);
-        }
+        event.postAndCatch();
+
+        cir.setReturnValue(event.lines);
     }
 }
