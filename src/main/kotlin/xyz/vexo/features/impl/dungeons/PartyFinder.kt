@@ -246,39 +246,12 @@ object PartyFinder : Module(
         }
 
         if (showFairyPerk && data.hasFairyPerk) {
-            val pos = calculateUuidPosition(playerName)
             base.append(
-                Component.literal(" §7[§a$pos§7]")
+                Component.literal(" §7[§a❤§7]")
             )
         }
 
         return base
-    }
-
-    /**
-     * Calculates the position of a player in the party based on their UUID
-     *
-     * @param playerName The name of the player to calculate the position for
-     * @return The position of the player in the party
-     */
-    private fun calculateUuidPosition(playerName: String): Int {
-        val uuids = currentPartyMembers.mapNotNull { member ->
-            val data = playerDataCache[member]
-            val uuid = playerUuidCache[member]
-            if (data != null && uuid != null && data.hasFairyPerk) member to uuid else null
-        }.toMap().toMutableMap()
-
-        mc.user?.name?.let { own ->
-            val ownData = playerDataCache[own]
-            val ownUuid = playerUuidCache[own]
-            if (ownData != null && ownUuid != null && ownData.hasFairyPerk) uuids.putIfAbsent(own, ownUuid)
-        }
-
-        val targetUuid = uuids[playerName] ?: return 0
-        val normalizedTarget = targetUuid.replace("-", "").lowercase()
-        val sorted = uuids.values.map { it.replace("-", "").lowercase() }.sorted()
-
-        return sorted.indexOf(normalizedTarget) + 1
     }
 
     /**

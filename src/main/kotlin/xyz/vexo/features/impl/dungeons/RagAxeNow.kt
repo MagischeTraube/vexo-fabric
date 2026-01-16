@@ -28,7 +28,7 @@ object RagAxeNow : Module (
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         if (RagAxeTriggers.any { it.containsMatchIn(event.message.removeFormatting()) }) {
-            modMessage("RagAxe Now!")
+            modMessage("Rag Axe Now!")
             ragAxeNowTitle.visible = true
             runAfterServerTicks(40){ ragAxeNowTitle.visible =false }
         }
