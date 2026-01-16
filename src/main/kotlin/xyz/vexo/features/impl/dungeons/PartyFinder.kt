@@ -19,15 +19,12 @@ object PartyFinder : Module(
     description = "Adds more information to the party finder",
     toggled = false
 ) {
-
     private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
     private val showSecrets by BooleanSetting("Show Secrets", "Shows Secrets in the tooltip")
 
-    private val playerDataCache = ConcurrentHashMap<String, PlayerData.PlayerDataObject>()
     private val fetchingPlayers = ConcurrentHashMap<String, Boolean>()
     private val originalLinesCache = ConcurrentHashMap<String, Component>()
-    private val playerUuidCache = ConcurrentHashMap<String, String>()
-    private val currentPartyMembers = mutableSetOf<String>()
+    private val processedLinesCache = ConcurrentHashMap<String, Component>()
 
     @EventHandler
     fun onWorldJoin(event: WorldJoinEvent) {
@@ -49,7 +46,6 @@ object PartyFinder : Module(
         if (!firstLine.endsWith("Party")) return
 
         val dungeonInfo = parseDungeonInfo(lines)
-        parsePartyMembers(lines)
         updateTooltipLines(lines, dungeonInfo.floor, dungeonInfo.isMaster)
     }
 
@@ -76,49 +72,25 @@ object PartyFinder : Module(
         return DungeonInfo(floor, isMaster)
     }
 
+    private val FLOOR_MAP = mapOf(
+        "Entrance" to 0,
+        "Floor I" to 1,
+        "Floor II" to 2,
+        "Floor III" to 3,
+        "Floor IV" to 4,
+        "Floor V" to 5,
+        "Floor VI" to 6,
+        "Floor VII" to 7
+    )
+
     /**
      * Parses the floor from the tooltip
      *
      * @param text The text of the tooltip
      * @return The floor
      */
-    private fun parseFloor(text: String): Int? = when (text.substringAfter("Floor:").trim()) {
-        "Entrance" -> 0
-        "Floor I" -> 1
-        "Floor II" -> 2
-        "Floor III" -> 3
-        "Floor IV" -> 4
-        "Floor V" -> 5
-        "Floor VI" -> 6
-        "Floor VII" -> 7
-        else -> null
-    }
-
-    /**
-     * Parses the party members from the tooltip
-     *
-     * @param lines The lines of the tooltip
-     */
-    private fun parsePartyMembers(lines: List<Component>) {
-        currentPartyMembers.clear()
-        var foundMembers = false
-
-        for (line in lines) {
-            val text = line.string.removeFormatting().trim()
-            if (text == "Members:") {
-                foundMembers = true
-                continue
-            }
-
-            if (foundMembers) {
-                if (text.isEmpty() || text.startsWith("Click to join")) break
-                if (text.startsWith("Empty")) continue
-
-                val playerName = text.substringBefore(':').trim()
-                if (playerName.isNotEmpty()) currentPartyMembers.add(playerName)
-            }
-        }
-    }
+    private fun parseFloor(text: String): Int? =
+        FLOOR_MAP[text.substringAfter("Floor:").trim()]
 
     /**
      * Updates the tooltip lines
@@ -127,7 +99,11 @@ object PartyFinder : Module(
      * @param floor The floor of the dungeon
      * @param isMaster Whether the dungeon is in master mode
      */
-    private fun updateTooltipLines(lines: MutableList<Component>, floor: Int?, isMaster: Boolean) {
+    private fun updateTooltipLines(
+        lines: MutableList<Component>,
+        floor: Int?,
+        isMaster: Boolean
+    ) {
         var foundMembers = false
 
         for (i in lines.indices) {
@@ -149,8 +125,20 @@ object PartyFinder : Module(
             }
 
             val originalLine = originalLinesCache[playerName]!!
+            val cacheKey = "$playerName|$floor|$isMaster|$showSecrets|$showFairyPerk"
 
-            lines[i] = buildLineComponent(originalLine, playerName, floor, isMaster)
+            val cachedLine = processedLinesCache[cacheKey]
+            if (cachedLine != null) {
+                lines[i] = cachedLine
+                continue
+            }
+
+            val newLine = buildLineComponent(originalLine, playerName, floor, isMaster)
+            lines[i] = newLine
+
+            if (!newLine.string.contains("[...]")) {
+                processedLinesCache[cacheKey] = newLine
+            }
         }
     }
 
@@ -169,19 +157,18 @@ object PartyFinder : Module(
         floor: Int?,
         isMaster: Boolean
     ): Component {
-        val cachedData = playerDataCache[playerName]
+        val uuid = PlayerData.uuidCache[playerName.lowercase()]
+        val cachedData = uuid?.let { PlayerData.playerCache[it]?.data }
 
         if (cachedData != null) {
             if (cachedData.isError) {
                 return Component.empty()
                     .append(originalLine)
-                    .append(Component.literal(" [API DOWN]").withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFF0000))))
+                    .append(Component.literal(" [API DOWN]")
+                        .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFF0000))))
             }
 
-            val uuidCached = playerUuidCache[playerName]
-            if (uuidCached != null) {
-                return formatTooltipComponent(originalLine, playerName, cachedData, floor, isMaster)
-            }
+            return formatTooltipComponent(originalLine, cachedData, floor, isMaster)
         }
 
         if (!fetchingPlayers.containsKey(playerName)) {
@@ -189,26 +176,20 @@ object PartyFinder : Module(
             PlayerData.getPlayerData(playerName) { data ->
                 mc.execute {
                     fetchingPlayers.remove(playerName)
-                    data?.let {
-                        playerDataCache[playerName] = it
-                        if (!it.isError) {
-                            playerUuidCache[playerName] = it.uuid
-                        }
-                    }
                 }
             }
         }
 
         return Component.empty()
             .append(originalLine)
-            .append(Component.literal(" [...]").withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0x808080))))
+            .append(Component.literal(" [...]")
+                .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0x808080))))
     }
 
     /**
      * Formats the tooltip component
      *
      * @param originalLine The original line of the tooltip
-     * @param playerName The name of the player
      * @param data The player data
      * @param floor The floor of the dungeon
      * @param isMaster Whether the dungeon is in master mode
@@ -216,13 +197,11 @@ object PartyFinder : Module(
      */
     private fun formatTooltipComponent(
         originalLine: Component,
-        playerName: String,
         data: PlayerData.PlayerDataObject,
         floor: Int?,
         isMaster: Boolean
     ): Component {
         val base = Component.empty()
-
         base.append(recolorClassComponent(originalLine))
 
         base.append(
@@ -247,19 +226,17 @@ object PartyFinder : Module(
 
         if (showFairyPerk && data.hasFairyPerk) {
             base.append(
-                Component.literal(" §7[§a❤§7]")
+                Component.literal(" [")
+                    .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xAAAAAA)))
+                    .append(Component.literal("❤")
+                        .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0x55FF55))))
+                    .append(Component.literal("]"))
             )
         }
 
         return base
     }
 
-    /**
-     * Formats a time in milliseconds to a string in the format "XmYs"
-     *
-     * @param ms The time in milliseconds
-     * @return The formatted time string
-     */
     private fun formatTime(ms: Int): String {
         val totalSec = ms / 1000
         val min = totalSec / 60
@@ -287,6 +264,8 @@ object PartyFinder : Module(
         else -> "§7"
     }
 
+    private val CLASS_REGEX = Regex("(Mage|Archer|Berserk|Healer|Tank) \\((\\d+)\\)")
+
     /**
      * Recolors the class component
      *
@@ -294,75 +273,36 @@ object PartyFinder : Module(
      * @return The recolored component
      */
     private fun recolorClassComponent(original: Component): Component {
-        val regex = Regex("(Mage|Archer|Berserk|Healer|Tank) \\((\\d+)\\)")
         val base = Component.empty()
-
         val fullText = buildString {
             append(original.string)
             original.siblings.forEach { append(it.string) }
         }.removeFormatting()
 
-        val match = regex.find(fullText)
-
-        if (match == null) {
-            return original.copy()
-        }
+        val match = CLASS_REGEX.find(fullText) ?: return original.copy()
 
         val clazz = match.groupValues[1]
         val level = match.groupValues[2].toIntOrNull() ?: 0
 
-        var foundClass = false
-        for (sibling in original.siblings) {
-            val text = sibling.string
-
-            if (!foundClass && !text.removeFormatting().contains(Regex("Mage|Archer|Berserk|Healer|Tank"))) {
-                base.append(sibling.copy())
-            } else if (!foundClass) {
-                foundClass = true
-                break
-            }
+        if (original.siblings.isNotEmpty()) {
+            base.append(original.siblings[0].copy())
+            base.append(original.siblings[1].copy())
+            base.append(original.siblings[2].copy())
         }
 
-        base.append(Component.literal("${getLevelColor(level)}$clazz ($level)"))
+        base.append(
+            Component.literal("${getLevelColor(level)}$clazz ($level)")
+        )
 
         return base
-    }
-
-    override fun onEnable() {
-        mc.user?.name?.let { own ->
-            if (!playerDataCache.containsKey(own)) {
-                PlayerData.getPlayerData(own) { data ->
-                    mc.execute {
-                        data?.let {
-                            playerDataCache[own] = it
-                            if (!it.isError) {
-                                playerUuidCache[own] = it.uuid
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        super.onEnable()
     }
 
     /**
      * Clears all caches
      */
     private fun clearCaches() {
-        val ownName = mc.user?.name
-        val ownData = ownName?.let { playerDataCache[it] }
-        val ownUuid = ownName?.let { playerUuidCache[it] }
-
-        playerDataCache.clear()
         fetchingPlayers.clear()
         originalLinesCache.clear()
-        playerUuidCache.clear()
-        currentPartyMembers.clear()
-
-        if (ownName != null && ownData != null && ownUuid != null) {
-            playerDataCache[ownName] = ownData
-            playerUuidCache[ownName] = ownUuid
-        }
+        processedLinesCache.clear()
     }
 }
