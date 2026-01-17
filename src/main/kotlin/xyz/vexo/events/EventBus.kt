@@ -53,6 +53,8 @@ object EventBus {
 
     /**
      * Unsubscribe an object from receiving events.
+     *
+     * @param obj The object to unsubscribe
      */
     fun unsubscribe(obj: Any) {
         val eventTypes = instanceIndex.remove(obj) ?: return

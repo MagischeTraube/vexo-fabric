@@ -1,5 +1,7 @@
 package xyz.vexo.features.impl.dungeons
 
+import net.minecraft.world.phys.Vec3
+
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.SliderSetting
 import xyz.vexo.events.EventHandler
@@ -10,6 +12,7 @@ import xyz.vexo.utils.DungeonUtils
 import xyz.vexo.utils.inArea
 import xyz.vexo.utils.inRadius
 import xyz.vexo.utils.sendCommand
+import xyz.vexo.utils.getOwnPlayerCoords
 
 object PositionalMessages : Module(
     name = "Positional Messages",
@@ -42,50 +45,51 @@ object PositionalMessages : Module(
     private data class SpotDef(
         val message: String,
         val settingEnabled: () -> Boolean,
-        val check: () -> Boolean
+        val check: (Vec3) -> Boolean
     )
+
 
     private val spotDefs = listOf(
         SpotDef(
             message = "Simon Says",
             settingEnabled = { simonSays },
-            check = { inRadius(108.0, 120.0, 93.0, radius) }
+            check = { pos -> inRadius(pos, 108.0, 120.0, 93.0, radius) }
         ),
 
         SpotDef(
             message = "High EE2",
             settingEnabled = { hee2 },
-            check = { inRadius(60.0, 132.0, 140.0, radius) }
+            check = { pos -> inRadius(pos, 60.0, 132.0, 140.0, radius) }
         ),
 
         SpotDef(
             message = "EE3",
             settingEnabled = { ee3 },
-            check = { inRadius(2.0, 109.0, 104.0, radius) }
+            check = { pos -> inRadius(pos,2.0, 109.0, 104.0, radius) }
         ),
 
         SpotDef(
             message = "High EE3",
             settingEnabled = { hee3 },
-            check = { inRadius(18.0, 121.0, 91.0, radius) }
+            check = { pos -> inRadius(pos, 18.0, 121.0, 91.0, radius) }
         ),
 
         SpotDef(
             message = "Inside Core",
             settingEnabled = { insideCore },
-            check = { inArea(50.0, 116.0, 58.0, 58.0, 114.0, 55.0) }
+            check = { pos -> inArea(pos, 50.0, 116.0, 58.0, 58.0, 114.0, 55.0) }
         ),
 
         SpotDef(
             message = "Outside Core",
             settingEnabled = { outsideCore },
-            check = { inRadius(54.0, 115.0, 51.0, radius) }
+            check = { pos -> inRadius(pos, 54.0, 115.0, 51.0, radius) }
         ),
 
         SpotDef(
             message = "Mid",
             settingEnabled = { mid },
-            check = { inArea(61.0, 64.0, 83.0, 47.0, 68.0, 69.0) }
+            check = { pos -> inArea(pos, 61.0, 64.0, 83.0, 47.0, 68.0, 69.0) }
         )
     )
 
@@ -96,6 +100,7 @@ object PositionalMessages : Module(
         val floor = DungeonUtils.getDungeonFloor()
         if (floor != "M7" && floor != "F7") return
 
+        val playerPos = getOwnPlayerCoords() ?: return
         var foundSpot = false
 
         spotDefs.forEachIndexed { index, spot ->
@@ -104,7 +109,7 @@ object PositionalMessages : Module(
                 return@forEachIndexed
             }
 
-            val atSpot = spot.check()
+            val atSpot = spot.check(playerPos)
 
             if (atSpot && spot.settingEnabled()) {
                 if (!sentSpot[index]) {
@@ -117,6 +122,7 @@ object PositionalMessages : Module(
             }
         }
     }
+
 
     @EventHandler
     fun onWorldJoin(event: WorldJoinEvent) {

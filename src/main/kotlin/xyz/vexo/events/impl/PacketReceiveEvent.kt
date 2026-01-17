@@ -5,6 +5,7 @@ import xyz.vexo.events.CancellableEvent
 
 /**
  * Event fired when a packet is received from the server.
+ *
  * @param packet The received packet
  */
 class PacketReceiveEvent(

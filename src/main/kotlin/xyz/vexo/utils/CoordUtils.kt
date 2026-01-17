@@ -63,34 +63,53 @@ fun getOwnPlayerCoordsFormat(): String? {
     return getAllPlayerCoordsFormat()[player.name.string]
 }
 
-fun inRadius(x: Double, y: Double, z: Double, radius: Double): Boolean {
-    val playerPos = getOwnPlayerCoords() ?: return false
-    val dx = playerPos.x - x
-    val dy = playerPos.y - y
-    val dz = playerPos.z - z
-
+/**
+ * Checks whether a position is within a certain radius of a given point.
+ *
+ * @param pos The position to check
+ * @param x The X coordinate of the center point
+ * @param y The Y coordinate of the center point
+ * @param z The Z coordinate of the center point
+ * @param radius The radius to check
+ * @return boolean value whether the position is within the radius
+ */
+fun inRadius(
+    pos: Vec3,
+    x: Double, y: Double, z: Double,
+    radius: Double
+): Boolean {
+    val dx = pos.x - x
+    val dy = pos.y - y
+    val dz = pos.z - z
     return dx * dx + dy * dy + dz * dz <= radius * radius
 }
+
 
 /**
  * Checks whether the own player is inside a 3D area (axis-aligned bounding box).
  *
+ * @param pos The position to check
  * @param x1 X coordinate of the first corner
  * @param y1 Y coordinate of the first corner
  * @param z1 Z coordinate of the first corner
  * @param x2 X coordinate of the opposite corner
  * @param y2 Y coordinate of the opposite corner
  * @param z2 Z coordinate of the opposite corner
- *
  * @return boolean value whether the player is inside the box
  */
 fun inArea(
+    pos: Vec3,
     x1: Double, y1: Double, z1: Double,
     x2: Double, y2: Double, z2: Double
 ): Boolean {
-    val pos = getOwnPlayerCoords() ?: return false
+    val minX = minOf(x1, x2)
+    val maxX = maxOf(x1, x2)
+    val minY = minOf(y1, y2)
+    val maxY = maxOf(y1, y2)
+    val minZ = minOf(z1, z2)
+    val maxZ = maxOf(z1, z2)
 
-    return  pos.x in minOf(x1, x2)..maxOf(x1, x2) &&
-            pos.y in minOf(y1, y2)..maxOf(y1, y2) &&
-            pos.z in minOf(z1, z2)..maxOf(z1, z2)
+    return pos.x >= minX && pos.x <= maxX &&
+            pos.y >= minY && pos.y <= maxY &&
+            pos.z >= minZ && pos.z <= maxZ
 }
