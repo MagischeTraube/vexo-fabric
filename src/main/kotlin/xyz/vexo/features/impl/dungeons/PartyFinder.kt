@@ -1,11 +1,12 @@
 package xyz.vexo.features.impl.dungeons
 
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
-import xyz.vexo.Vexo.mc
+import xyz.vexo.Vexo
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.TooltipEvent
 import xyz.vexo.events.impl.WorldJoinEvent
@@ -13,6 +14,7 @@ import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.features.Module
 import xyz.vexo.utils.PlayerData
 import xyz.vexo.utils.removeFormatting
+
 
 object PartyFinder : Module(
     name = "Party Finder",
@@ -22,7 +24,6 @@ object PartyFinder : Module(
     private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
     private val showSecrets by BooleanSetting("Show Secrets", "Shows Secrets in the tooltip")
 
-    private val fetchingPlayers = ConcurrentHashMap<String, Boolean>()
     private val originalLinesCache = ConcurrentHashMap<String, Component>()
     private val processedLinesCache = ConcurrentHashMap<String, Component>()
 
@@ -171,13 +172,8 @@ object PartyFinder : Module(
             return formatTooltipComponent(originalLine, cachedData, floor, isMaster)
         }
 
-        if (!fetchingPlayers.containsKey(playerName)) {
-            fetchingPlayers[playerName] = true
-            PlayerData.getPlayerData(playerName) { data ->
-                mc.execute {
-                    fetchingPlayers.remove(playerName)
-                }
-            }
+        Vexo.scope.launch {
+            PlayerData.fetchAndCachePlayerData(playerName)
         }
 
         return Component.empty()
@@ -301,7 +297,6 @@ object PartyFinder : Module(
      * Clears all caches
      */
     private fun clearCaches() {
-        fetchingPlayers.clear()
         originalLinesCache.clear()
         processedLinesCache.clear()
     }

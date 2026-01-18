@@ -5,8 +5,6 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.*
 import xyz.vexo.Vexo
 import xyz.vexo.events.EventBus
-import xyz.vexo.events.EventHandler
-import xyz.vexo.events.impl.ServerTickEvent
 
 object PlayerData {
     private const val MOJANG_API = "https://api.mojang.com/users/profiles/minecraft"
@@ -15,11 +13,10 @@ object PlayerData {
     private const val CACHE_EVICTION_MS = 60 * 60 * 1000L // 60 min
     private const val EVICTION_CHECK_INTERVAL_MS = 15 * 60 * 1000L // 15 min
 
-    private var lastEvictionCheck = System.currentTimeMillis()
-
     val playerCache = ConcurrentHashMap<String, CachedPlayerData>()
     val uuidCache = ConcurrentHashMap<String, String>()
 
+    private val pendingPlayerRequests = ConcurrentHashMap<String, Deferred<PlayerDataObject?>>()
 
     data class CachedPlayerData(
         val data: PlayerDataObject,
@@ -28,13 +25,18 @@ object PlayerData {
 
     /**
      * Main player data class with accessor methods
+     *
+     * @property uuid The player's UUID
+     * @property ign The player's in-game name
+     * @property dungeons The player's dungeon data
+     * @property kuudra The player's kuudra data
+     * @property isError Whether the data is an error (e.g. player not found)
      */
     data class PlayerDataObject(
         val uuid: String,
         val ign: String,
         val dungeons: DungeonsData?,
         val kuudra: KuudraData?,
-        val lastUpdated: Long = System.currentTimeMillis(),
         val isError: Boolean = false
     )
     {
@@ -54,6 +56,14 @@ object PlayerData {
         val totalKuudraRuns: Int get() = kuudra?.totalRuns?.values?.sum() ?: 0
     }
 
+    /**
+     * Dungeons data class
+     *
+     * @property personalBests The player's personal best times
+     * @property catacombsLevel The player's catacombs level
+     * @property totalSecrets The player's total secrets
+     * @property essenceShopPerks The player's essence shop perks
+     */
     data class DungeonsData(
         val personalBests: PersonalBests?,
         val catacombsLevel: Int?,
@@ -61,36 +71,48 @@ object PlayerData {
         val essenceShopPerks: EssenceShopPerks?
     )
 
+    /**
+     * Personal bests data class
+     *
+     * @property catacombs The player's personal best times for normal catacombs
+     * @property masterCatacombs The player's personal best times for master catacombs
+     */
     data class PersonalBests(
         val catacombs: Map<String, Int>?,
         val masterCatacombs: Map<String, Int>?
     )
 
+    /**
+     * Essence shop perks data class
+     *
+     * @property helpOfTheFairy Whether the player has the help of the fairy perk
+     */
     data class EssenceShopPerks(
         val helpOfTheFairy: Boolean = false
     )
 
+    /**
+     * Kuudra data class
+     *
+     * @property totalRuns The player's total kuudra runs by tier
+     */
     data class KuudraData(
         val totalRuns: Map<String, Int>?
     )
 
-
     init {
         EventBus.subscribe(this)
-        getPlayerData(Vexo.mc.user?.name ?: "") { data ->
-            if (data != null) {
-                playerCache[data.uuid] = CachedPlayerData(data, System.currentTimeMillis())
-            }
+
+        Vexo.scope.launch {
+            val name = Vexo.mc.user?.name ?: return@launch
+            fetchPlayerData(name)
         }
-    }
 
-    @EventHandler
-    private fun onServerTick(event: ServerTickEvent) {
-        val currentTime = System.currentTimeMillis()
-
-        if (currentTime - lastEvictionCheck >= EVICTION_CHECK_INTERVAL_MS) {
-            evictOldPlayers()
-            lastEvictionCheck = currentTime
+        Vexo.scope.launch {
+            while (isActive) {
+                delay(EVICTION_CHECK_INTERVAL_MS)
+                evictOldPlayers()
+            }
         }
     }
 
@@ -102,14 +124,53 @@ object PlayerData {
      */
     fun getPlayerData(username: String, callback: (PlayerDataObject?) -> Unit) {
         Vexo.scope.launch {
-            val data = fetchPlayerData(username)
-            callback(data)
+            val key = username.lowercase()
+
+            val deferred = pendingPlayerRequests.computeIfAbsent(key) {
+                async { fetchPlayerData(username) }
+            }
+
+            val result = deferred.await()
+            pendingPlayerRequests.remove(key)
+
+            callback(result)
         }
     }
 
     /**
+     * Fetches and caches player data without a callback.
+     *
+     * @param username The Minecraft username
+     * @return The fetched PlayerDataObject or null if not found/error
+     */
+    suspend fun fetchAndCachePlayerData(username: String): PlayerDataObject? {
+        val key = username.lowercase()
+
+        val deferred = pendingPlayerRequests.computeIfAbsent(key) {
+            Vexo.scope.async { fetchPlayerData(username) }
+        }
+
+        val result = try {
+            deferred.await()
+        } finally {
+            pendingPlayerRequests.remove(key)
+        }
+
+        result?.let { data ->
+            if (data.uuid.isNotEmpty()) {
+                playerCache[data.uuid] = CachedPlayerData(data, System.currentTimeMillis())
+                uuidCache[username.lowercase()] = data.uuid
+            }
+        }
+
+        return result
+    }
+
+    /**
      * Internal suspend function that does the actual loading
-     * Cache + API only (no file storage)
+     *
+     * @param username The Minecraft username
+     * @return PlayerDataObject or null if player not found
      */
     private suspend fun fetchPlayerData(username: String): PlayerDataObject? {
         return withContext(Dispatchers.IO) {
@@ -132,7 +193,7 @@ object PlayerData {
                     return@withContext cached.data
                 }
 
-                val apiData = fetchFromApi(uuid, username) ?: return@withContext PlayerDataObject(
+                val errorData = fetchFromApi(uuid, username) ?: return@withContext PlayerDataObject(
                     uuid = uuid,
                     ign = username,
                     dungeons = null,
@@ -140,14 +201,9 @@ object PlayerData {
                     isError = true
                 )
 
-                val data = apiData.copy(lastUpdated = currentTime)
+                playerCache[uuid] = CachedPlayerData(errorData, System.currentTimeMillis())
+                return@withContext errorData
 
-                playerCache[uuid] = CachedPlayerData(
-                    data = data,
-                    lastAccessed = currentTime
-                )
-
-                data
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -166,6 +222,9 @@ object PlayerData {
 
     /**
      * Gets UUID from Mojang API
+     *
+     * @param username The Minecraft username
+     * @return The UUID or null if not found
      */
     private suspend fun getUuidFromUsername(username: String): String? {
         uuidCache[username.lowercase()]?.let { return it }
@@ -183,6 +242,10 @@ object PlayerData {
 
     /**
      * Fetches player data from the API
+     *
+     * @param uuid The player's UUID
+     * @param ign The player's in-game name
+     * @return PlayerDataObject or null if not found
      */
     private suspend fun fetchFromApi(uuid: String, ign: String): PlayerDataObject? {
         return try {
@@ -203,7 +266,12 @@ object PlayerData {
     }
 
     /**
-     * Parses JSON into PlayerDataObject
+     * Parses player data from JSON
+     *
+     * @param uuid The player's UUID
+     * @param ign The player's in-game name
+     * @param playerData The player data JSON
+     * @return PlayerDataObject
      */
     private fun parsePlayerData(uuid: String, ign: String, playerData: JsonObject): PlayerDataObject {
         val dungeonsJson = playerData.getAsJsonObject("dungeons")
@@ -247,33 +315,19 @@ object PlayerData {
     }
 
     /**
-     * Removes players from cache that haven't been accessed in 60 minutes
+     * Removes players from cache that haven't been accessed for CACHE_EVICTION_MS
      */
     private fun evictOldPlayers() {
-        val currentTime = System.currentTimeMillis()
-        val toRemove = mutableListOf<String>()
+        val now = System.currentTimeMillis()
+        val ownUuid = uuidCache[Vexo.mc.user?.name?.lowercase() ?: return]
 
-        val ownName = Vexo.mc.user?.name ?: ""
-        val ownUuid = uuidCache[ownName.lowercase()]
-
-        playerCache.forEach { (uuid, cached) ->
-            if (uuid == ownUuid) return@forEach
-
-            val timeSinceLastAccess = currentTime - cached.lastAccessed
-            if (timeSinceLastAccess >= CACHE_EVICTION_MS) {
-                toRemove.add(uuid)
+        playerCache.entries.removeIf { (uuid, cached) ->
+            val expired = uuid != ownUuid && now - cached.lastAccessed >= CACHE_EVICTION_MS
+            if (expired) {
+                uuidCache.entries.removeIf { it.value == uuid }
+                pendingPlayerRequests.remove(uuid)?.cancel()
             }
+            expired
         }
-
-        if (toRemove.isNotEmpty()) {
-            toRemove.forEach { playerCache.remove(it) }
-        }
-    }
-
-    /**
-     * Clears the entire cache
-     */
-    fun clearCache() {
-        playerCache.clear()
     }
 }
