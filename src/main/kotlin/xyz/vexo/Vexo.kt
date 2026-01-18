@@ -1,6 +1,7 @@
 package xyz.vexo
 
-import java.io.File
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.EmptyCoroutineContext
@@ -31,11 +32,14 @@ object Vexo : ClientModInitializer {
 	}
 	val version: Version by lazy { metadata.version }
 
-	val configDir: File by lazy {
+	val configDir =
 		FabricLoader.getInstance().configDir.resolve(MOD_ID).toFile().apply {
 			if (!exists()) mkdirs()
 		}
-	}
+
+	val gson: Gson = GsonBuilder()
+		.setPrettyPrinting()
+		.create()
 
 	@JvmStatic
 	val mc: Minecraft = Minecraft.getInstance()

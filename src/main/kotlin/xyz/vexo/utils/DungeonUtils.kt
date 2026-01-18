@@ -9,7 +9,7 @@ object DungeonUtils {
     var floor: String = ""
 
     @EventHandler
-    fun onDungeonChat(event: ChatMessagePacketEvent) {
+    fun onChat(event: ChatMessagePacketEvent) {
         val msg = event.message.removeFormatting()
 
         val enterDungeonMatch = Regex(""".* entered (MM )?The Catacombs, Floor ([IVX]+)!""").find(msg)

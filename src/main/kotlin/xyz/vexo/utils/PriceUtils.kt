@@ -1,18 +1,15 @@
 package xyz.vexo.utils
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import kotlinx.coroutines.*
-import xyz.vexo.Vexo
+import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.*
+import xyz.vexo.Vexo
 import xyz.vexo.events.EventBus
-import xyz.vexo.events.EventHandler
-import xyz.vexo.events.impl.ClientTickEvent
 import xyz.vexo.events.impl.PriceDataUpdateEvent
 
 object PriceUtils : IInitializable {
-    private val gson = Gson()
+    private val gson get() = Vexo.gson
     private val PRICE_DATA_FILE = File(Vexo.configDir, "price_data.json")
 
     private const val API_URL = "https://api.infm7.xyz/prices"
@@ -40,19 +37,19 @@ object PriceUtils : IInitializable {
     override fun init() {
         loadCachedPriceData()
         EventBus.subscribe(this)
-    }
 
-    @EventHandler
-    private fun onServerTick(event: ClientTickEvent) {
-        val currentTime = System.currentTimeMillis()
+        Vexo.scope.launch {
+            while (isActive) {
+                delay(FETCH_INTERVAL_MS)
 
-        val shouldFetch = (forceFetch && currentTime - lastFetchTime >= FORCE_FETCH_INTERVAL_MS) ||
-                (currentTime - lastFetchTime >= FETCH_INTERVAL_MS)
+                if (forceFetch) {
+                    forceFetch = false
+                    continue
+                }
 
-        if (shouldFetch) {
-            fetchPrices()
-            forceFetch = false
-            lastFetchTime = currentTime
+                fetchPrices()
+                lastFetchTime = System.currentTimeMillis()
+            }
         }
     }
 
@@ -60,7 +57,22 @@ object PriceUtils : IInitializable {
      * Forces a price fetch.
      */
     fun forceFetch() {
-        forceFetch = true
+        val currentTime = System.currentTimeMillis()
+
+        if (currentTime - lastFetchTime < FORCE_FETCH_INTERVAL_MS) return
+
+        lastFetchTime = currentTime
+
+        if (currentFetchJob?.isActive == true) return
+
+        currentFetchJob = Vexo.scope.launch {
+            try {
+                fetchPrices()
+                lastFetchTime = System.currentTimeMillis()
+            } catch (e: Exception) {
+                logError(e, this@PriceUtils)
+            }
+        }
     }
 
     /**
@@ -163,13 +175,12 @@ object PriceUtils : IInitializable {
         try {
             PRICE_DATA_FILE.parentFile?.mkdirs()
 
-            val gsonPretty = GsonBuilder().setPrettyPrinting().create()
             val backup = PriceBackup(
                 lastFetchTime = lastFetchTime,
                 prices = cachedPriceData.toMap()
             )
 
-            PRICE_DATA_FILE.writeText(gsonPretty.toJson(backup))
+            PRICE_DATA_FILE.writeText(gson.toJson(backup))
         } catch (e: Exception) {
             logError(e, this@PriceUtils)
         }
@@ -185,7 +196,7 @@ object PriceUtils : IInitializable {
         }
 
         try {
-            val type = object : com.google.gson.reflect.TypeToken<PriceBackup>() {}.type
+            val type = object : TypeToken<PriceBackup>() {}.type
             val backup: PriceBackup = gson.fromJson(PRICE_DATA_FILE.readText(), type)
 
             cachedPriceData.putAll(backup.prices)

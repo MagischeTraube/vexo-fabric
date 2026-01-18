@@ -86,7 +86,7 @@ fun inRadius(
 
 
 /**
- * Checks whether the own player is inside a 3D area (axis-aligned bounding box).
+ * Checks whether the given position is inside a 3D area.
  *
  * @param pos The position to check
  * @param x1 X coordinate of the first corner
@@ -109,7 +109,7 @@ fun inArea(
     val minZ = minOf(z1, z2)
     val maxZ = maxOf(z1, z2)
 
-    return pos.x >= minX && pos.x <= maxX &&
+    return  pos.x >= minX && pos.x <= maxX &&
             pos.y >= minY && pos.y <= maxY &&
             pos.z >= minZ && pos.z <= maxZ
 }

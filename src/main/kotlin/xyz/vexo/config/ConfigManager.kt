@@ -1,9 +1,6 @@
 package xyz.vexo.config
 
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import net.fabricmc.loader.api.FabricLoader
-import xyz.vexo.Vexo.MOD_ID
 import xyz.vexo.features.Module
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.utils.logError
@@ -15,7 +12,7 @@ import xyz.vexo.Vexo
  * Manages saving and loading of configuration data
  */
 object ConfigManager {
-    private val gson = GsonBuilder().setPrettyPrinting().create()
+    private val gson get() = Vexo.gson
     private var configFile = File(Vexo.configDir, "config.json")
 
     /**
