@@ -11,26 +11,34 @@ import xyz.vexo.utils.runAfterServerTicks
 
 
 object RagAxeNow : Module (
-    name = "RagAxe Alert",
+    name = "Rag Axe Alert",
     description = "Triggers when RagAxe is mentioned in chat.",
     toggled = false
 ) {
-    private val ragAxeNowText by StringSetting(
+    private val ragAxeNowTextSetting = StringSetting(
         name = "HUD Text",
         default = "§cRag Axe Now!"
     )
+
+    private val ragAxeNowText by ragAxeNowTextSetting
 
     private val ragAxeNowTitle by HudSetting(
         name = "Move HUD",
         defaultText = ragAxeNowText
     )
 
+    init {
+        ragAxeNowTextSetting.onChange = {
+            ragAxeNowTitle.text = it
+        }
+    }
+
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         if (RagAxeTriggers.any { it.containsMatchIn(event.message.removeFormatting()) }) {
             modMessage("Rag Axe Now!")
             ragAxeNowTitle.visible = true
-            runAfterServerTicks(40){ ragAxeNowTitle.visible =false }
+            runAfterServerTicks(40){ ragAxeNowTitle.visible = false }
         }
     }
 

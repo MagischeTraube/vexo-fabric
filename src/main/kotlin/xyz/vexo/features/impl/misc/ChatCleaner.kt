@@ -210,12 +210,12 @@ object ChatCleaner : Module(
     val shardRegex = listOf(
         Regex("""^NAGA.*$"""),
         Regex("""^CHARM.*$"""),
-        Regex("""^SALT.*$""")
+        Regex("""^SALT.*$"""),
+        Regex("""LOOT SHARE You received .* Shards for assisting .*!""")
     )
 
     val ringOfLoveRegex = listOf(
         Regex("""^Your Legendary Ring of Love requires higher quest completion!"""),
         Regex("""^Its stats and effects don't apply!""")
     )
-
 }

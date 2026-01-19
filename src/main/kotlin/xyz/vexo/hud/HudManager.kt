@@ -16,6 +16,7 @@ import xyz.vexo.utils.renderString
  */
 object HudManager {
     private val registeredHuds = mutableListOf<HudSetting>()
+    private val visibleHuds = mutableListOf<HudSetting>()
 
     init {
         EventBus.subscribe(this)
@@ -32,6 +33,28 @@ object HudManager {
     }
 
     /**
+     * Updates the visibility of a specific HUD setting.
+     * Called when a module's enabled state or dependency conditions change.
+     *
+     * @param hudSetting The HUD setting to update
+     */
+    fun updateHudVisibility(hudSetting: HudSetting) {
+        val module = ModuleManager.getAllModules().find {
+            it.settings.contains(hudSetting)
+        }
+
+        val shouldBeVisible = module?.enabled == true && hudSetting.shouldRender()
+
+        if (shouldBeVisible) {
+            if (hudSetting !in visibleHuds) {
+                visibleHuds.add(hudSetting)
+            }
+        } else {
+            visibleHuds.remove(hudSetting)
+        }
+    }
+
+    /**
      * Event handler that renders all active HUDs.
      * This is automatically called via the EventBus when RenderEvent is posted.
      */
@@ -42,21 +65,15 @@ object HudManager {
     }
 
     /**
-     * Renders all active HUDs that should be visible.
+     * Renders all visible HUDs.
      *
      * @param context The drawing context
      */
     private fun renderHuds(context: GuiGraphics) {
-        registeredHuds.forEach { hudSetting ->
-            val module = ModuleManager.getAllModules().find { module ->
-                module.settings.contains(hudSetting)
-            }
-            if (module?.enabled == true && hudSetting.shouldRender()) {
-                val hudElement = hudSetting.getCurrentValue()
-
-                if (hudElement.visible && hudElement.text.isNotEmpty()) {
-                    renderHud(context, hudElement)
-                }
+        visibleHuds.forEach { hudSetting ->
+            val hudElement = hudSetting.getCurrentValue()
+            if (hudElement.text.isNotEmpty()) {
+                renderHud(context, hudElement)
             }
         }
     }

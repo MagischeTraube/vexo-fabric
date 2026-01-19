@@ -18,10 +18,13 @@ class HudSetting(
     description: String = "",
     defaultText: String = name,
     defaultVisibility: Boolean = false,
-) : Setting<HudElement>(name, description, HudElement(name, defaultText, visible = defaultVisibility)) {
+) : Setting<HudElement>(name, description, HudElement(name, defaultText, initialVisible = defaultVisibility)) {
 
     init {
         HudManager.registerHud(this)
+        getCurrentValue().setVisibilityCallback {
+            HudManager.updateHudVisibility(this)
+        }
     }
 
     fun setPos(x: Int, y: Int) {

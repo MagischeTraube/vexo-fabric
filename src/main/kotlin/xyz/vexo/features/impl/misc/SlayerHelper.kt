@@ -32,7 +32,7 @@ object SlayerHelper : Module(
     private var avgKillTimeMs = 0L
 
     private val recentKillTimes = mutableListOf<Long>()
-    private val maxRecentKills = 5
+    private const val MAX_RECENT_KILLS = 5
 
     private val slayerXpRegex = """- Next LVL in ([\d,]+) XP!""".toRegex()
 
@@ -88,7 +88,7 @@ object SlayerHelper : Module(
 
             recentKillTimes.add(timeDiff)
 
-            if (recentKillTimes.size > maxRecentKills) {
+            if (recentKillTimes.size > MAX_RECENT_KILLS) {
                 recentKillTimes.removeAt(0)
             }
 

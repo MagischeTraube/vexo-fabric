@@ -21,8 +21,8 @@ object PartyFinder : Module(
     description = "Adds more information to the party finder",
     toggled = false
 ) {
-    private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
     private val showSecrets by BooleanSetting("Show Secrets", "Shows Secrets in the tooltip")
+    private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
 
     private val originalLinesCache = ConcurrentHashMap<String, Component>()
     private val processedLinesCache = ConcurrentHashMap<String, Component>()

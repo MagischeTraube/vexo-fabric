@@ -1,7 +1,6 @@
 package xyz.vexo.features
 
 import kotlin.reflect.KProperty1
-import kotlin.reflect.jvm.isAccessible
 import xyz.vexo.events.EventBus
 import xyz.vexo.config.Setting
 
