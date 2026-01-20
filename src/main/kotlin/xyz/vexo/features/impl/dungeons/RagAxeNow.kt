@@ -6,7 +6,6 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
-import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.runAfterServerTicks
 
 
@@ -35,7 +34,7 @@ object RagAxeNow : Module (
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        if (RagAxeTriggers.any { it.containsMatchIn(event.message.removeFormatting()) }) {
+        if (RagAxeTriggers.any { it.containsMatchIn(event.unformattedMessage) }) {
             modMessage("Rag Axe Now!")
             ragAxeNowTitle.visible = true
             runAfterServerTicks(40){ ragAxeNowTitle.visible = false }

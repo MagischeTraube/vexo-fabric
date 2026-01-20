@@ -5,7 +5,6 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
-import xyz.vexo.utils.removeFormatting
 import kotlin.math.ceil
 
 object SlayerHelper : Module(
@@ -38,9 +37,7 @@ object SlayerHelper : Module(
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        val message = event.message.removeFormatting()
-
-        val matched = updateSlayerStatistics(message)
+        val matched = updateSlayerStatistics(event.unformattedMessage)
         if (!matched) return
 
         if (xpPerKill <= 0 || avgKillTimeMs <= 0L) {

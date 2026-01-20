@@ -4,7 +4,6 @@ import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.features.Module
-import xyz.vexo.utils.removeFormatting
 import kotlin.text.Regex
 
 object ChatCleaner : Module(
@@ -45,34 +44,32 @@ object ChatCleaner : Module(
     @EventHandler
     fun onChat(event: ChatMessageEvent) {
 
-        val cleanMessage = event.message.removeFormatting()
-
-        if (randomSpam && randomSpamRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (randomSpam && randomSpamRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }
 
-        if (dungeonSpam && randomDungeonSpawnRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (dungeonSpam && randomDungeonSpawnRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }
 
-        if (autopetSpam && autoPetRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (autopetSpam && autoPetRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }
 
-        if (rareDropSpam && rareDropRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (rareDropSpam && rareDropRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }
 
-        if (shardsSpam && shardRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (shardsSpam && shardRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }
 
-        if (ringOfLove && ringOfLoveRegex.any { it.containsMatchIn(cleanMessage) }) {
+        if (ringOfLove && ringOfLoveRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
             event.cancel()
             return
         }

@@ -8,7 +8,6 @@ import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.getAllPlayerCoords
-import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.runAfterServerTicks
 
 object HealerP5LeapAlert : Module(
@@ -30,8 +29,7 @@ object HealerP5LeapAlert : Module(
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        val cleanMessage = event.message.removeFormatting()
-        if (cleanMessage == "[BOSS] Necron: Let's make some space!") inP5 = true
+        if (event.unformattedMessage == "[BOSS] Necron: Let's make some space!") { inP5 = true }
     }
 
     @EventHandler

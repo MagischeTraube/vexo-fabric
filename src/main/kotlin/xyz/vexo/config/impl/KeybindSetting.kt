@@ -7,7 +7,7 @@ import xyz.vexo.config.Setting
 class KeybindSetting(
     name: String,
     description: String = "",
-    default: Int = -1 // -1 = keine Taste
+    default: Int = -1
 ) : Setting<Int>(name, description, default) {
 
     var listening: Boolean = false

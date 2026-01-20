@@ -5,7 +5,6 @@ import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
-import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.runAfterServerTicks
 import xyz.vexo.utils.sendCommand
 
@@ -21,15 +20,12 @@ object AutoRejoin : Module(
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-
-        val cleanMessage = event.message.removeFormatting()
-
-        if (rejoining && cleanMessage == "Welcome to Hypixel SkyBlock!") {
+        if (rejoining && event.unformattedMessage == "Welcome to Hypixel SkyBlock!") {
             rejoining = false
             return
         }
 
-        if (kickedMessage.any { it.containsMatchIn(cleanMessage) } && !rejoining){
+        if (kickedMessage.any { it.containsMatchIn(event.unformattedMessage) } && !rejoining){
             rejoining = true
 
             modMessage("Kicked from SkyBlock, rejoining automatically in 65 Seconds!")

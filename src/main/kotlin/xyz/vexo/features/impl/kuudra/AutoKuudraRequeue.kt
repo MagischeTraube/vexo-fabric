@@ -7,7 +7,6 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.PartyUtils
-import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.runAfterServerTicks
 import xyz.vexo.utils.sendCommand
 
@@ -48,14 +47,12 @@ object AutoKuudraRequeue : Module(
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent){
-        val cleanMessage = event.message.removeFormatting()
-
-        if (Regex("""^Party.*!dt""", RegexOption.IGNORE_CASE) matches cleanMessage) {
+        if (Regex("""^Party.*!dt""", RegexOption.IGNORE_CASE) matches event.unformattedMessage) {
             downtime = true
             return
         }
 
-        if (Regex("Tokens Earned:") matches cleanMessage){
+        if (Regex("Tokens Earned:") matches event.unformattedMessage){
 
             if (downtime) {
                 sendCommand("pchat downtime request -> canceled auto-requeue after this run")

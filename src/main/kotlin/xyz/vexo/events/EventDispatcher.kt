@@ -25,6 +25,7 @@ import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
 import xyz.vexo.events.impl.ServerLeaveEvent
 import xyz.vexo.events.impl.ParticleReceiveEvent
+import xyz.vexo.utils.removeFormatting
 
 object EventDispatcher : IInitializable {
     private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
@@ -70,7 +71,7 @@ object EventDispatcher : IInitializable {
         ClientReceiveMessageEvents.ALLOW_GAME.register { text, overlay ->
             if (overlay) return@register true
 
-            val event = ChatMessageEvent(text.string)
+            val event = ChatMessageEvent(text.string, text.string.removeFormatting())
             event.postAndCatch()
             !event.isCancelled()
         }
@@ -85,7 +86,10 @@ object EventDispatcher : IInitializable {
             }
 
             is ClientboundSystemChatPacket -> {
-                ChatMessagePacketEvent(packet.content?.string ?: "").postAndCatch()
+                ChatMessagePacketEvent(
+                    packet.content?.string ?: "",
+                    packet.content?.string?.removeFormatting() ?: ""
+                ).postAndCatch()
             }
 
 
