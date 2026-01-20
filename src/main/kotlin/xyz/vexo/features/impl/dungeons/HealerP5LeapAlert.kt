@@ -14,15 +14,23 @@ object HealerP5LeapAlert : Module(
     name = "Healer P5 Leap Alert",
     description = "Alerts the Healer when all Players have Leaped to p5 in M7"
 ) {
-    private val LeapAlert by StringSetting(
+    private val leapAlertTextSetting = StringSetting(
         name = "HUD Text",
         default = "§c§fAll Leaped!"
     )
 
-    private val healerAlert by HudSetting(
+    private val leapAlertText by leapAlertTextSetting
+
+    private val healerAlertHud by HudSetting(
         name = "Move HUD",
-        defaultText = LeapAlert
+        defaultText = leapAlertText
     )
+
+    init {
+        leapAlertTextSetting.onChange = {
+            healerAlertHud.text = it
+        }
+    }
 
     var inP5 = false
     var notifiedAll = false
@@ -37,9 +45,9 @@ object HealerP5LeapAlert : Module(
         if (notifiedAll || !inP5) return
 
         if (getAllPlayerCoords().values.all { it.y < 20.0 }) {
-            healerAlert.visible = true
+            healerAlertHud.visible = true
             notifiedAll = true
-            runAfterServerTicks(40) { healerAlert.visible = false }
+            runAfterServerTicks(40) { healerAlertHud.visible = false }
         }
     }
 
