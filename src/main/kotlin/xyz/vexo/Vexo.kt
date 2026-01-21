@@ -68,13 +68,13 @@ object Vexo : ClientModInitializer {
 
 		arrayOf(
 			// dungeons
-			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow,
+			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow, ParticleHider,
 
 			// kuudra
 			AutoKuudraRequeue,
 
 			// misc
-			AutoRejoin, ChatCleaner, SlayerHelper
+			AutoRejoin, ChatCleaner, SlayerHelper, ParticleHiderDev
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()
