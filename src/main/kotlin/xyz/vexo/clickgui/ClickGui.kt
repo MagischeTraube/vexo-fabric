@@ -6,6 +6,7 @@ import gg.essential.elementa.components.*
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.elementa.effects.OutlineEffect
+import gg.essential.universal.UKeyboard
 import xyz.vexo.clickgui.components.ClickGuiColor
 import xyz.vexo.clickgui.components.panels.HeaderPanel
 import xyz.vexo.clickgui.components.panels.CategoryPanel
@@ -14,6 +15,8 @@ import xyz.vexo.clickgui.components.panels.SettingsPanel
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.config.impl.KeybindSetting
 import xyz.vexo.features.Category
+import xyz.vexo.Vexo.mc
+import xyz.vexo.utils.runAfterClientTicks
 
 /**
  * Main GUI to configure settings
@@ -30,6 +33,19 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
 
     init {
         setupUI()
+        window.onKeyType { charTyped, keyCode ->
+            if (activeKeybindSettings.any { it.listening }) {
+                return@onKeyType
+            }
+
+            if (keyCode == UKeyboard.KEY_ESCAPE) {
+                mc.execute {
+                    runAfterClientTicks(1) {
+                        displayScreen(null)
+                    }
+                }
+            }
+        }
     }
 
     private fun setupUI() {
@@ -88,7 +104,7 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
     }
 
     override fun shouldCloseOnEsc(): Boolean {
-        return !activeKeybindSettings.any { it.listening }
+        return false
     }
 
     override fun isPauseScreen(): Boolean = false

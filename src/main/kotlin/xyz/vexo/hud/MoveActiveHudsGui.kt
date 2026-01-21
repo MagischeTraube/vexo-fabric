@@ -6,9 +6,12 @@ import gg.essential.elementa.components.*
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.elementa.effects.OutlineEffect
+import gg.essential.universal.UKeyboard
+import xyz.vexo.Vexo.mc
 import xyz.vexo.clickgui.components.ClickGuiColor
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.config.ConfigManager
+import xyz.vexo.utils.runAfterClientTicks
 
 /**
  * GUI for moving, scaling, and positioning active HUD elements.
@@ -19,6 +22,15 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
 
     init {
         setupUI()
+        window.onKeyType { charTyped, keyCode ->
+            if (keyCode == UKeyboard.KEY_ESCAPE) {
+                mc.execute {
+                    runAfterClientTicks(1) {
+                        displayScreen(null)
+                    }
+                }
+            }
+        }
     }
 
     private fun setupUI() {

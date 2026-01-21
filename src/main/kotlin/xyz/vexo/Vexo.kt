@@ -74,7 +74,7 @@ object Vexo : ClientModInitializer {
 			AutoKuudraRequeue,
 
 			// misc
-			AutoRejoin, ChatCleaner, SlayerHelper, ParticleHiderDev
+			AutoRejoin, ChatCleaner, SlayerHelper
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()
