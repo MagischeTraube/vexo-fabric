@@ -1,12 +1,10 @@
 package xyz.vexo.features.impl.dungeons
 
-import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
-import xyz.vexo.Vexo
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.TooltipEvent
 import xyz.vexo.events.impl.WorldJoinEvent
@@ -24,8 +22,24 @@ object PartyFinder : Module(
     private val showSecrets by BooleanSetting("Show Secrets", "Shows Secrets in the tooltip")
     private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
 
+    private const val MAX_CACHE_SIZE = 300
+
     private val originalLinesCache = ConcurrentHashMap<String, Component>()
-    private val processedLinesCache = ConcurrentHashMap<String, Component>()
+
+    private val playerDataComponentCache = ConcurrentHashMap<PlayerDataCacheKey, PlayerDataComponent>()
+
+    private data class PlayerDataCacheKey(
+        val playerName: String,
+        val floor: Int?,
+        val isMaster: Boolean
+    )
+
+    private data class PlayerDataComponent(
+        val levelText: Component,
+        val pbText: Component,
+        val secretsCount: Int,
+        val hasFairy: Boolean
+    )
 
     @EventHandler
     fun onWorldJoin(event: WorldJoinEvent) {
@@ -105,41 +119,32 @@ object PartyFinder : Module(
         floor: Int?,
         isMaster: Boolean
     ) {
-        var foundMembers = false
+        val membersIndex = lines.indexOfFirst {
+            it.string.removeFormatting().trim() == "Members:"
+        }
 
-        for (i in lines.indices) {
+        if (membersIndex == -1) return
+
+        for (i in (membersIndex + 1) until lines.size) {
             val lineText = lines[i].string.removeFormatting().trim()
 
-            if (lineText == "Members:") {
-                foundMembers = true
-                continue
+            if (lineText.isEmpty() || lineText.startsWith("Click to join") || lineText.startsWith("Empty")) {
+                break
             }
-
-            if (!foundMembers) continue
-            if (lineText.isEmpty() || lineText.startsWith("Click to join") || lineText.startsWith("Empty")) break
 
             val playerName = lineText.substringBefore(':').trim()
             if (playerName.isEmpty()) continue
 
             if (!originalLinesCache.containsKey(playerName)) {
+                if (originalLinesCache.size >= MAX_CACHE_SIZE) {
+                    originalLinesCache.clear()
+                }
                 originalLinesCache[playerName] = lines[i]
             }
 
             val originalLine = originalLinesCache[playerName]!!
-            val cacheKey = "$playerName|$floor|$isMaster|$showSecrets|$showFairyPerk"
 
-            val cachedLine = processedLinesCache[cacheKey]
-            if (cachedLine != null) {
-                lines[i] = cachedLine
-                continue
-            }
-
-            val newLine = buildLineComponent(originalLine, playerName, floor, isMaster)
-            lines[i] = newLine
-
-            if (!newLine.string.contains("[...]")) {
-                processedLinesCache[cacheKey] = newLine
-            }
+            lines[i] = buildLineComponent(originalLine, playerName, floor, isMaster)
         }
     }
 
@@ -158,7 +163,7 @@ object PartyFinder : Module(
         floor: Int?,
         isMaster: Boolean
     ): Component {
-        val uuid = PlayerData.uuidCache[playerName.lowercase()]
+        val uuid = PlayerData.uuidCache[playerName.lowercase()]?.uuid
         val cachedData = uuid?.let { PlayerData.playerCache[it]?.data }
 
         if (cachedData != null) {
@@ -172,9 +177,7 @@ object PartyFinder : Module(
             return formatTooltipComponent(originalLine, cachedData, floor, isMaster)
         }
 
-        Vexo.scope.launch {
-            PlayerData.fetchAndCachePlayerData(playerName)
-        }
+        PlayerData.fetchAndCachePlayerData(playerName)
 
         return Component.empty()
             .append(originalLine)
@@ -197,30 +200,39 @@ object PartyFinder : Module(
         floor: Int?,
         isMaster: Boolean
     ): Component {
+        val cacheKey = PlayerDataCacheKey(data.ign, floor, isMaster)
+
+        val playerDataComp = playerDataComponentCache.computeIfAbsent(cacheKey) {
+            if (playerDataComponentCache.size >= MAX_CACHE_SIZE) {
+                playerDataComponentCache.clear()
+            }
+
+            val pbText = floor
+                ?.let { data.getBestTime(it, isMaster)?.let { formatTime(it) } ?: "NO PB" }
+                ?: "ERROR"
+
+            PlayerDataComponent(
+                levelText = Component.literal(" ${getLevelColor(data.catacombsLevel)}C${data.catacombsLevel}"),
+                pbText = Component.literal(" $pbText")
+                    .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFF55))),
+                secretsCount = data.totalSecrets,
+                hasFairy = data.hasFairyPerk
+            )
+        }
+
         val base = Component.empty()
         base.append(recolorClassComponent(originalLine))
-
-        base.append(
-            Component.literal(" ${getLevelColor(data.catacombsLevel)}C${data.catacombsLevel}")
-        )
-
-        val pbText = floor
-            ?.let { data.getBestTime(it, isMaster)?.let { formatTime(it) } ?: "NO PB" }
-            ?: "ERROR"
-
-        base.append(
-            Component.literal(" $pbText")
-                .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFF55)))
-        )
+        base.append(playerDataComp.levelText)
+        base.append(playerDataComp.pbText)
 
         if (showSecrets) {
             base.append(
-                Component.literal(" ${data.totalSecrets}")
+                Component.literal(" ${playerDataComp.secretsCount}")
                     .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFF55FF)))
             )
         }
 
-        if (showFairyPerk && data.hasFairyPerk) {
+        if (showFairyPerk && playerDataComp.hasFairy) {
             base.append(
                 Component.literal(" [")
                     .withStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xAAAAAA)))
@@ -269,18 +281,17 @@ object PartyFinder : Module(
      * @return The recolored component
      */
     private fun recolorClassComponent(original: Component): Component {
-        val base = Component.empty()
-        val fullText = buildString {
-            append(original.string)
-            original.siblings.forEach { append(it.string) }
-        }.removeFormatting()
+        val text = original.string.removeFormatting()
+        val match = CLASS_REGEX.find(text)
 
-        val match = CLASS_REGEX.find(fullText) ?: return original.copy()
+        if (match == null) return original.copy()
 
         val clazz = match.groupValues[1]
         val level = match.groupValues[2].toIntOrNull() ?: 0
 
-        if (original.siblings.isNotEmpty()) {
+        val base = Component.empty()
+
+        if (original.siblings.size >= 3) {
             base.append(original.siblings[0].copy())
             base.append(original.siblings[1].copy())
             base.append(original.siblings[2].copy())
@@ -298,6 +309,6 @@ object PartyFinder : Module(
      */
     private fun clearCaches() {
         originalLinesCache.clear()
-        processedLinesCache.clear()
+        playerDataComponentCache.clear()
     }
 }

@@ -12,14 +12,20 @@ object PlayerData {
 
     private const val CACHE_EVICTION_MS = 60 * 60 * 1000L // 60 min
     private const val EVICTION_CHECK_INTERVAL_MS = 15 * 60 * 1000L // 15 min
+    private const val MAX_UUID_CACHE_SIZE = 300
 
     val playerCache = ConcurrentHashMap<String, CachedPlayerData>()
-    val uuidCache = ConcurrentHashMap<String, String>()
+    val uuidCache = ConcurrentHashMap<String, CachedUuid>()
 
     private val pendingPlayerRequests = ConcurrentHashMap<String, Deferred<PlayerDataObject?>>()
 
     data class CachedPlayerData(
         val data: PlayerDataObject,
+        var lastAccessed: Long
+    )
+
+    data class CachedUuid(
+        val uuid: String,
         var lastAccessed: Long
     )
 
@@ -130,10 +136,12 @@ object PlayerData {
                 async { fetchPlayerData(username) }
             }
 
-            val result = deferred.await()
-            pendingPlayerRequests.remove(key)
-
-            callback(result)
+            try {
+                val result = deferred.await()
+                callback(result)
+            } finally {
+                pendingPlayerRequests.remove(key, deferred)
+            }
         }
     }
 
@@ -141,29 +149,21 @@ object PlayerData {
      * Fetches and caches player data without a callback.
      *
      * @param username The Minecraft username
-     * @return The fetched PlayerDataObject or null if not found/error
      */
-    suspend fun fetchAndCachePlayerData(username: String): PlayerDataObject? {
-        val key = username.lowercase()
+    fun fetchAndCachePlayerData(username: String) {
+        Vexo.scope.launch {
+            val key = username.lowercase()
 
-        val deferred = pendingPlayerRequests.computeIfAbsent(key) {
-            Vexo.scope.async { fetchPlayerData(username) }
-        }
+            val deferred = pendingPlayerRequests.computeIfAbsent(key) {
+                async { fetchPlayerData(username) }
+            }
 
-        val result = try {
-            deferred.await()
-        } finally {
-            pendingPlayerRequests.remove(key)
-        }
-
-        result?.let { data ->
-            if (data.uuid.isNotEmpty()) {
-                playerCache[data.uuid] = CachedPlayerData(data, System.currentTimeMillis())
-                uuidCache[username.lowercase()] = data.uuid
+            try {
+                deferred.await()
+            } finally {
+                pendingPlayerRequests.remove(key, deferred)
             }
         }
-
-        return result
     }
 
     /**
@@ -193,16 +193,20 @@ object PlayerData {
                     return@withContext cached.data
                 }
 
-                val errorData = fetchFromApi(uuid, username) ?: return@withContext PlayerDataObject(
+                val data = fetchFromApi(uuid, username)
+
+                if (data != null && !data.isError) {
+                    playerCache[uuid] = CachedPlayerData(data, currentTime)
+                    return@withContext data
+                }
+
+                return@withContext PlayerDataObject(
                     uuid = uuid,
                     ign = username,
                     dungeons = null,
                     kuudra = null,
                     isError = true
                 )
-
-                playerCache[uuid] = CachedPlayerData(errorData, System.currentTimeMillis())
-                return@withContext errorData
 
             } catch (e: CancellationException) {
                 throw e
@@ -227,12 +231,21 @@ object PlayerData {
      * @return The UUID or null if not found
      */
     private suspend fun getUuidFromUsername(username: String): String? {
-        uuidCache[username.lowercase()]?.let { return it }
+        val key = username.lowercase()
+        val currentTime = System.currentTimeMillis()
+
+        uuidCache[key]?.let { cached ->
+            cached.lastAccessed = currentTime
+            return cached.uuid
+        }
 
         return try {
             val json = ApiUtils.fetchJson("$MOJANG_API/$username")
-            json.get("id")?.asString?.also {
-                uuidCache[username.lowercase()] = it
+            json.get("id")?.asString?.also { uuid ->
+                if (uuidCache.size >= MAX_UUID_CACHE_SIZE) {
+                    evictOldestUuids()
+                }
+                uuidCache[key] = CachedUuid(uuid, currentTime)
             }
         } catch (e: Exception) {
             logError(e, this@PlayerData)
@@ -319,15 +332,45 @@ object PlayerData {
      */
     private fun evictOldPlayers() {
         val now = System.currentTimeMillis()
-        val ownUuid = uuidCache[Vexo.mc.user?.name?.lowercase() ?: return]
+        val ownName = Vexo.mc.user?.name?.lowercase()
+        val ownUuid = ownName?.let { uuidCache[it]?.uuid }
+
+        val removedUuids = mutableSetOf<String>()
 
         playerCache.entries.removeIf { (uuid, cached) ->
             val expired = uuid != ownUuid && now - cached.lastAccessed >= CACHE_EVICTION_MS
             if (expired) {
-                uuidCache.entries.removeIf { it.value == uuid }
-                pendingPlayerRequests.remove(uuid)?.cancel()
+                removedUuids.add(uuid)
+                pendingPlayerRequests[uuid]?.cancel()
             }
             expired
+        }
+
+        uuidCache.entries.removeIf { (_, cachedUuid) ->
+            val expired = cachedUuid.uuid in removedUuids ||
+                    (cachedUuid.uuid != ownUuid && now - cachedUuid.lastAccessed >= CACHE_EVICTION_MS)
+            if (expired) {
+                pendingPlayerRequests.remove(cachedUuid.uuid)?.cancel()
+            }
+            expired
+        }
+    }
+
+    /**
+     * Removes the oldest 25% of UUIDs from the cache
+     */
+    private fun evictOldestUuids() {
+        val ownName = Vexo.mc.user?.name?.lowercase()
+
+        val sortedEntries = uuidCache.entries
+            .filter { it.key != ownName }
+            .sortedBy { it.value.lastAccessed }
+
+        val toRemove = (sortedEntries.size * 0.25).toInt().coerceAtLeast(1)
+
+        sortedEntries.take(toRemove).forEach { entry ->
+            uuidCache.remove(entry.key)
+            pendingPlayerRequests.remove(entry.value.uuid)?.cancel()
         }
     }
 }
