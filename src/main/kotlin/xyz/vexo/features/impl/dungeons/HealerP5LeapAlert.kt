@@ -45,9 +45,9 @@ object HealerP5LeapAlert : Module(
         if (notifiedAll || !inP5) return
 
         if (getAllPlayerCoords().values.all { it.y < 20.0 }) {
-            healerAlertHud.visible = true
+            healerAlertHud.showForXServerTicks(40)
             notifiedAll = true
-            runAfterServerTicks(40) { healerAlertHud.visible = false }
+
         }
     }
 

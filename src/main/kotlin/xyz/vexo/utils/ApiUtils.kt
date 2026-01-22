@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.*
 import java.net.URI
 import java.net.HttpURLConnection
+import xyz.vexo.Vexo
 
 /**
  * Utility for making HTTP requests to APIs using Coroutines
@@ -14,7 +15,7 @@ object ApiUtils {
 
     private const val DEFAULT_CONNECT_TIMEOUT = 5000
     private const val DEFAULT_READ_TIMEOUT = 5000
-    private val USER_AGENT by lazy { "Vexo/${xyz.vexo.Vexo.version}" }
+    private val USER_AGENT by lazy { "Vexo/${Vexo.version}" }
 
     /**
      * Fetches JSON from a URL asynchronously.

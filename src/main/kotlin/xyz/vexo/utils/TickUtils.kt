@@ -48,15 +48,14 @@ object TickScheduler {
     }
 
     fun scheduleClient(ticks: Int, action: () -> Unit) {
-        require(ticks > 0) { "Ticks must be > 0" }
-        clientTasks += ScheduledTask(ticks, action)
+        val safeTicks = ticks.coerceAtLeast(1)
+        clientTasks += ScheduledTask(safeTicks, action)
     }
 
     fun scheduleServer(ticks: Int, action: () -> Unit) {
-        require(ticks > 0) { "Ticks must be > 0" }
-        serverTasks += ScheduledTask(ticks, action)
+        val safeTicks = ticks.coerceAtLeast(1)
+        serverTasks += ScheduledTask(safeTicks, action)
     }
-
 
     private data class ScheduledTask(
         var remainingTicks: Int,
@@ -64,11 +63,10 @@ object TickScheduler {
     )
 }
 
-
 /**
  * Schedules an action to be executed after a specified number of client ticks.
  *
- * @param ticks The number of ticks to wait before executing the action. Must be > 0.
+ * @param ticks The number of ticks to wait before executing the action. Values <= 0 will be treated as 1.
  * @param action The action to be executed.
  */
 fun runAfterClientTicks(ticks: Int, action: () -> Unit) {
@@ -78,7 +76,7 @@ fun runAfterClientTicks(ticks: Int, action: () -> Unit) {
 /**
  * Schedules an action to be executed after a specified number of server ticks.
  *
- * @param ticks The number of ticks to wait before executing the action. Must be > 0.
+ * @param ticks The number of ticks to wait before executing the action. Values <= 0 will be treated as 1.
  * @param action The action to be executed.
  */
 fun runAfterServerTicks(ticks: Int, action: () -> Unit) {

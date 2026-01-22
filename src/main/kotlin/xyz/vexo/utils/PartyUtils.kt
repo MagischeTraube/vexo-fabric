@@ -17,20 +17,18 @@ object PartyUtils {
      */
     val partyMembers: MutableList<String> = mutableListOf()
 
-
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent){
-        val rawMessage = event.message.removeFormatting()
-        val cleanedMessage = rawMessage.replace(Regex("\\[[^]]*]"), "").replace("●", "")
+        val cleanedMessage = event.unformattedMessage.replace(Regex("\\[[^]]*]"), "").replace("●", "")
         val nameRegex = Regex("\\b[A-Za-z0-9_]{1,16}\\b")
         val relevant = prefixes.any { cleanedMessage.startsWith(it) } || cleanedMessage.endsWith("joined the party.")
         val names = nameRegex.findAll(cleanedMessage).map { it.value }
 
-        if (leftParty.any { it.containsMatchIn(rawMessage) }) {
+        if (leftParty.any { it.containsMatchIn(event.unformattedMessage) }) {
             inParty = false
             partyMembers.clear()
         }
-        if (createdParty.any { it.containsMatchIn(rawMessage) }) {
+        if (createdParty.any { it.containsMatchIn(event.unformattedMessage) }) {
             inParty = true
         }
 
@@ -48,7 +46,6 @@ object PartyUtils {
      *Returns an integer of the current party size
      */
     fun getPartySize():Int = partyMembers.size
-
 
     val leftParty = listOf(
         Regex("""You left the party\."""),
@@ -69,8 +66,6 @@ object PartyUtils {
         "You have joined ",
         "You'll be partying with:"
     )
-
-
 
     @EventHandler
     fun onJoin(event: ServerConnectEvent){

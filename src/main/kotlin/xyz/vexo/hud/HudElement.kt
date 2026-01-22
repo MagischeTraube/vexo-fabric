@@ -1,5 +1,8 @@
 package xyz.vexo.hud
 
+import xyz.vexo.utils.runAfterClientTicks
+import xyz.vexo.utils.runAfterServerTicks
+
 class HudElement(
     val name: String,
     var text: String,
@@ -22,5 +25,15 @@ class HudElement(
 
     internal fun setVisibilityCallback(callback: () -> Unit) {
         onVisibilityChanged = callback
+    }
+
+    fun showForXServerTicks(ticks: Int) {
+        visible = true
+        runAfterServerTicks(ticks){ visible = false }
+    }
+
+    fun showForXClientTicks(ticks: Int) {
+        visible = true
+        runAfterClientTicks(ticks){ visible = false }
     }
 }

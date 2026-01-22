@@ -14,8 +14,7 @@ import xyz.vexo.config.Setting
 class StringSetting(
     name: String,
     description: String = "",
-    default: String = "",
-    module: Module? = null
+    default: String = ""
 ) : Setting<String>(name, description, default) {
 
     override fun toJson() = JsonPrimitive(getCurrentValue())

@@ -36,8 +36,7 @@ object RagAxeNow : Module (
     fun onChat(event: ChatMessagePacketEvent) {
         if (RagAxeTriggers.any { it.containsMatchIn(event.unformattedMessage) }) {
             modMessage("Rag Axe Now!")
-            ragAxeNowTitle.visible = true
-            runAfterServerTicks(40){ ragAxeNowTitle.visible = false }
+            ragAxeNowTitle.showForXServerTicks(40)
         }
     }
 

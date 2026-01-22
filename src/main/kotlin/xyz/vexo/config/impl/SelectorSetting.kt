@@ -18,12 +18,6 @@ class SelectorSetting(
     default: String,
     val options: List<String>,
 ) : Setting<String>(name, description, default) {
-
-    init {
-        require(options.isNotEmpty()) { "Options list cannot be empty" }
-        require(default in options) { "Default value must be in options" }
-    }
-
     override fun updateValue(newValue: String) {
         if (newValue in options) {
             super.updateValue(newValue)
