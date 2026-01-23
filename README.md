@@ -22,6 +22,7 @@ Hypixel Skyblock 1.21.10 Mod focussing on Dungeons and Quality of Life.
 - Particle Hider
 - Party Finder
 - Positional Mesaages
+- DungeonRequeue
 </details>
 
 <details>
