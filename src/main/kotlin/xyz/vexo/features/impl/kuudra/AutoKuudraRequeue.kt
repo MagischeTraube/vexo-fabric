@@ -21,7 +21,7 @@ object AutoKuudraRequeue : Module(
         default = 5.0,
         min = 0.0,
         max = 10.0,
-        increment = 0.5
+        increment = 0.1
     )
 
     private val showTitle by BooleanSetting(
@@ -40,7 +40,7 @@ object AutoKuudraRequeue : Module(
         default = 1.5,
         min = 0.1,
         max = 3.0,
-        increment = 0.1
+        increment = 0.5
     ).dependsOn { showTitle }
 
     var downtime = false
@@ -56,10 +56,7 @@ object AutoKuudraRequeue : Module(
 
             if (downtime) {
                 sendCommand("pchat downtime request -> canceled auto-requeue after this run")
-                title.visible = true
-                runAfterServerTicks((titleTime * 20.0).toInt()) {
-                    title.visible = false
-                }
+                title.showForXServerTicks((titleTime*20).toInt())
             }
 
             runAfterServerTicks((sleepTime * 20.0).toInt()) {
