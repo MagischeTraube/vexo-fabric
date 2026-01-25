@@ -27,13 +27,56 @@ class HudElement(
         onVisibilityChanged = callback
     }
 
+    /**
+     * Shows the HudElement for a specified amount of ticks.
+     *
+     * @param ticks The amount of ticks to show the HudElement for.
+     */
     fun showForXServerTicks(ticks: Int) {
         visible = true
-        runAfterServerTicks(ticks){ visible = false }
+        runAfterServerTicks(ticks) { visible = false }
     }
 
+    /**
+     * Shows the HudElement for a specified amount of ticks with a timer.
+     * The timer will be updated every 2 ticks. (0.1 seconds)
+     *
+     * @param ticks The amount of ticks to show the HudElement for.
+     */
+    fun showForXServerTicksWithTimer(ticks: Int) {
+        val originalText = text
+        visible = true
+
+        var ticksLeft = ticks
+
+        fun updateTimer() {
+            if (ticksLeft <= 0) {
+                text = originalText
+                visible = false
+                return
+            }
+
+            val secondsLeft = ticksLeft / 20.0
+            text = "$originalText ${String.format("%.1f", secondsLeft)}s"
+
+            ticksLeft -= 2
+
+            runAfterServerTicks(2) {
+                updateTimer()
+            }
+        }
+
+        updateTimer()
+    }
+
+
+    /**
+     * Shows the HudElement for a specified amount of ticks.
+     *
+     * @param ticks The amount of ticks to show the HudElement for.
+     */
     fun showForXClientTicks(ticks: Int) {
         visible = true
-        runAfterClientTicks(ticks){ visible = false }
+        runAfterClientTicks(ticks) { visible = false }
     }
 }
