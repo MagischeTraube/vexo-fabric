@@ -3,8 +3,8 @@ package xyz.vexo.events
 import net.minecraft.network.protocol.common.ClientboundPingPacket
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket
-import net.minecraft.resources.ResourceLocation
-import net.minecraft.resources.ResourceLocation.fromNamespaceAndPath
+import net.minecraft.resources.Identifier
+import net.minecraft.resources.Identifier.fromNamespaceAndPath
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
@@ -28,7 +28,7 @@ import xyz.vexo.events.impl.ParticleReceiveEvent
 import xyz.vexo.utils.removeFormatting
 
 object EventDispatcher : IInitializable {
-    private val HUD_LAYER: ResourceLocation = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
+    private val HUD_LAYER: Identifier = fromNamespaceAndPath(Vexo.MOD_ID, "vexo_hud")
 
     var onServer = false
         private set
@@ -87,8 +87,8 @@ object EventDispatcher : IInitializable {
 
             is ClientboundSystemChatPacket -> {
                 ChatMessagePacketEvent(
-                    packet.content?.string ?: "",
-                    packet.content?.string?.removeFormatting() ?: ""
+                    packet.content.string,
+                    packet.content.string.removeFormatting()
                 ).postAndCatch()
             }
 

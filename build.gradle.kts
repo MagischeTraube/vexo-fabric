@@ -34,8 +34,8 @@ dependencies {
 	}
 
 	property("uc_version").let {
-		modImplementation("gg.essential:universalcraft-1.21.9-fabric:$it")
-		include("gg.essential:universalcraft-1.21.9-fabric:$it")
+		modImplementation("gg.essential:universalcraft-1.21.11-fabric:$it")
+		include("gg.essential:universalcraft-1.21.11-fabric:$it")
 	}
 
 	property("commodore_version").let {

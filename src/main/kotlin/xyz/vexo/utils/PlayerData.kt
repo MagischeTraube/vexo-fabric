@@ -110,7 +110,7 @@ object PlayerData {
         EventBus.subscribe(this)
 
         Vexo.scope.launch {
-            val name = Vexo.mc.user?.name ?: return@launch
+            val name = Vexo.mc.user.name
             fetchPlayerData(name)
         }
 
@@ -332,8 +332,8 @@ object PlayerData {
      */
     private fun evictOldPlayers() {
         val now = System.currentTimeMillis()
-        val ownName = Vexo.mc.user?.name?.lowercase()
-        val ownUuid = ownName?.let { uuidCache[it]?.uuid }
+        val ownName = Vexo.mc.user.name.lowercase()
+        val ownUuid = ownName.let { uuidCache[it]?.uuid }
 
         val removedUuids = mutableSetOf<String>()
 

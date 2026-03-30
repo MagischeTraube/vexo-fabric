@@ -1,6 +1,6 @@
 package xyz.vexo.clickgui.components.panels
 
-import net.minecraft.Util
+import net.minecraft.util.Util
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.*
 import gg.essential.elementa.constraints.*

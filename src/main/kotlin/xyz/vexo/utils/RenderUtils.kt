@@ -43,6 +43,7 @@ shadow: Boolean = true
             color,
             0,
             shadow,
+            true,
             context.scissorStack.peek()
         )
     )
