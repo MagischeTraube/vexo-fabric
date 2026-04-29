@@ -15,6 +15,7 @@ object PartyUtils {
     /**
      * Returns a list of strings containing all party Members
      */
+    // TODO: List → MutableSet; contains() ist O(n), bei Set O(1)
     val partyMembers: MutableList<String> = mutableListOf()
 
     @EventHandler

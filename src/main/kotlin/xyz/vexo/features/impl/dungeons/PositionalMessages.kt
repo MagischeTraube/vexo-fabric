@@ -97,7 +97,7 @@ object PositionalMessages : Module(
 
     @EventHandler
     fun onServerTick(event: ServerTickEvent) {
-        val floor = DungeonUtils.getDungeonFloor()
+        val floor = DungeonUtils.floor
         if (floor != "M7" && floor != "F7") return
 
         val playerPos = getOwnPlayerCoords() ?: return

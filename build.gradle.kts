@@ -53,6 +53,12 @@ tasks.processResources {
 	}
 }
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+	compilerOptions {
+		freeCompilerArgs.add("-Xlambdas=class")
+	}
+}
+
 tasks.withType<JavaCompile>().configureEach {
 	options.release.set(21)
 }

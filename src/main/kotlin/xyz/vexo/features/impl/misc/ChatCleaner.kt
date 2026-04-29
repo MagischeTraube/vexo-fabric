@@ -41,37 +41,21 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val checks
+        get() = listOf(
+            randomSpam to randomSpamRegex,
+            dungeonSpam to randomDungeonSpawnRegex,
+            autopetSpam to autoPetRegex,
+            rareDropSpam to rareDropRegex,
+            shardsSpam to shardRegex,
+            ringOfLove to ringOfLoveRegex
+        )
+
     @EventHandler
     fun onChat(event: ChatMessageEvent) {
-
-        if (randomSpam && randomSpamRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
+        val message = event.unformattedMessage
+        if (checks.any { (enabled, regexList) -> enabled && regexList.any { it.containsMatchIn(message) } }) {
             event.cancel()
-            return
-        }
-
-        if (dungeonSpam && randomDungeonSpawnRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
-            event.cancel()
-            return
-        }
-
-        if (autopetSpam && autoPetRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
-            event.cancel()
-            return
-        }
-
-        if (rareDropSpam && rareDropRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
-            event.cancel()
-            return
-        }
-
-        if (shardsSpam && shardRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
-            event.cancel()
-            return
-        }
-
-        if (ringOfLove && ringOfLoveRegex.any { it.containsMatchIn(event.unformattedMessage) }) {
-            event.cancel()
-            return
         }
     }
 

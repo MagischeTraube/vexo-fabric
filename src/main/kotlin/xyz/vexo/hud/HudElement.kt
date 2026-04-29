@@ -11,21 +11,7 @@ class HudElement(
     var scale: Float = 1f,
     initialVisible: Boolean = false
 ) {
-    private var _visible: Boolean = initialVisible
-    private var onVisibilityChanged: (() -> Unit)? = null
-
-    var visible: Boolean
-        get() = _visible
-        set(value) {
-            if (_visible != value) {
-                _visible = value
-                onVisibilityChanged?.invoke()
-            }
-        }
-
-    internal fun setVisibilityCallback(callback: () -> Unit) {
-        onVisibilityChanged = callback
-    }
+    var visible: Boolean = initialVisible
 
     /**
      * Shows the HudElement for a specified amount of ticks.

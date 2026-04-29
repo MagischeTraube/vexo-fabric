@@ -1,38 +1,52 @@
 package xyz.vexo.utils
 
-import xyz.vexo.events.EventHandler
-import xyz.vexo.events.impl.ChatMessagePacketEvent
-
 object DungeonUtils {
 
     var inDungeon = false
     var floor: String = ""
 
-    @EventHandler
-    fun onChat(event: ChatMessagePacketEvent) {
-        val enterDungeonMatch = Regex(""".* entered (MM )?The Catacombs, Floor ([IVX]+)!""")
-            .find(event.unformattedMessage)
-        if (enterDungeonMatch != null) {
-            inDungeon = true
+    data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
 
-            val mmPrefix = enterDungeonMatch.groupValues[1]
-            val roman = enterDungeonMatch.groupValues[2]
+    // Format: "[432] [MVP++] PlayerName ✓ (Mage L)" oder "(DEAD)"
+    private val matePattern = Regex("""\[\d+] (?:\[[^\]]+] )?(\S+)[^(]*\((?:(\S+) \S+|(DEAD))\)""")
 
-            val num = when (roman) {
-                "I" -> "1"
-                "II" -> "2"
-                "III" -> "3"
-                "IV" -> "4"
-                "V" -> "5"
-                "VI" -> "6"
-                "VII" -> "7"
-                else -> ""
-            }
-
-            floor = if (mmPrefix.isNotEmpty()) "M$num" else "F$num"
+    fun getMates(): List<DungeonMate> =
+        TablistUtils.getEntries().mapNotNull { line ->
+            val m = matePattern.find(line) ?: return@mapNotNull null
+            val name = m.groupValues[1]
+            val dead = m.groupValues[3] == "DEAD"
+            val dungeonClass = if (dead) "DEAD" else m.groupValues[2]
+            DungeonMate(name, dungeonClass, dead)
         }
+
+    // Format: "Blessing of Power 5" in der Tablist
+    private val blessingPattern = Regex("""Blessing of (\w+) (\d+)""", RegexOption.IGNORE_CASE)
+
+    fun getBlessings(): Map<String, Int> =
+        TablistUtils.getEntries()
+            .mapNotNull { blessingPattern.find(it) }
+            .associate { it.groupValues[1] to it.groupValues[2].toInt() }
+
+    // Format: "Puzzles: (3)" — nur Gesamtzahl
+    fun getPuzzleCount(): Int {
+        val line = TablistUtils.find(Regex("""Puzzles: \((\d+)\)""")) ?: return 0
+        return Regex("""Puzzles: \((\d+)\)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0
     }
 
+    // Format: "Time Elapsed: 4m 32s" oder "Time Elapsed: 32s"
+    private val timePattern = Regex("""Time Elapsed: (?:(\d+)m )?(\d+)s""")
 
-    fun getDungeonFloor(): String { return floor }
+    fun getElapsedTime(): String? {
+        val line = TablistUtils.find(timePattern) ?: return null
+        val m = timePattern.find(line) ?: return null
+        val mins = m.groupValues[1]
+        val secs = m.groupValues[2]
+        return if (mins.isNotEmpty()) "${mins}m ${secs}s" else "${secs}s"
+    }
+
+    // Format: "Deaths: 2"
+    fun getDeaths(): Int {
+        val line = TablistUtils.find(Regex("""Deaths: \d+""")) ?: return 0
+        return Regex("""Deaths: (\d+)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0
+    }
 }

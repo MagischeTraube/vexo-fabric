@@ -36,6 +36,7 @@ class ModulePanel(
         } childOf this
     }
 
+    // TODO: showCategory und searchAllModules haben identischen ScrollComponent+Filter+forEachIndexed Block — in private displayModules() extrahieren
     fun showCategory(category: Category, searchText: String) {
         clearChildren()
         setupBackground()

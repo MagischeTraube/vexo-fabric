@@ -34,18 +34,20 @@ object PadTimer : Module(
             }
     }
 
+    private val alerts = mapOf(
+        60 to "Pad in §a2.5s!",
+        50 to "Pad in §a2.0s!",
+        40 to "Pad in §a1.5s!",
+        30 to "Pad in §e1.0s!",
+        20 to "Pad in §e0.5s!",
+        10 to "Pad §cNOW!"
+    )
+
     @EventHandler
     fun onServerTick(event: ServerTickEvent) {
         if (serverTicks != 0)
-            serverTicks --
+            serverTicks--
 
-        when(serverTicks){
-            60 -> modMessage("Pad in §a2.5s!")
-            50 -> modMessage("Pad in §a2.0s!")
-            40 -> modMessage("Pad in §a1.5s!")
-            30 -> modMessage("Pad in §e1.0s!")
-            20 -> modMessage("Pad in §e0.5s!")
-            10 -> modMessage("Pad §cNOW!")
-        }
+        alerts[serverTicks]?.let { modMessage(it) }
     }
 }

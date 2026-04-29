@@ -20,5 +20,6 @@ object ModuleManager {
 
     fun getAllModules(): List<Module> = modules
 
+    // TODO: filtert bei jedem Aufruf die komplette Liste — enabled modules cachen und bei toggle() invalidieren
     fun getEnabledModules(): List<Module> = modules.filter { it.enabled }
 }

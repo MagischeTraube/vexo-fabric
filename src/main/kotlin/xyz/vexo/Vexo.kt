@@ -63,7 +63,7 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			DungeonUtils, PartyUtils, TyfrTrigger
+			DungeonUtils, PartyUtils, TyfrTrigger, DungeonDevTest
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(

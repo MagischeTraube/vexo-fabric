@@ -24,6 +24,7 @@ object EventBus {
         val eventTypes = mutableListOf<Class<*>>()
         val lookup = MethodHandles.lookup()
 
+        // TODO: for-Schleife mit mehreren continues könnte als filter/mapNotNull-Chain lesbarer sein
         for (method in obj.javaClass.declaredMethods) {
             if (!method.isAnnotationPresent(EventHandler::class.java)) continue
             if (method.parameterCount != 1) continue

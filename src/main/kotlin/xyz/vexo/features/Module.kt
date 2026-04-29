@@ -41,6 +41,7 @@ abstract class Module(
 
         val fields = this::class.java.declaredFields
 
+        // TODO: this::class.members wird für jedes Field neu gefiltert — einmal vorab als Map aufbauen
         fields.forEach { field ->
             field.isAccessible = true
             val value = runCatching { field.get(this) }.getOrNull()

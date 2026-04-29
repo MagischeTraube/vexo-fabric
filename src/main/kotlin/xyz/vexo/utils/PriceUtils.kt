@@ -42,6 +42,7 @@ object PriceUtils : IInitializable {
             while (isActive) {
                 delay(FETCH_INTERVAL_MS)
 
+                // TODO: Bug — forceFetch=true überspringt den Fetch statt ihn auszulösen (continue vor fetchPrices)
                 if (forceFetch) {
                     forceFetch = false
                     continue

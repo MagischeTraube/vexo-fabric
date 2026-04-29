@@ -22,9 +22,6 @@ class HudSetting(
 
     init {
         HudManager.registerHud(this)
-        getCurrentValue().setVisibilityCallback {
-            HudManager.updateHudVisibility(this)
-        }
     }
 
     fun setPos(x: Int, y: Int) {

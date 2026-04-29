@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.HudRenderEvent
+import xyz.vexo.features.Module
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.Vexo.mc
 import xyz.vexo.events.EventBus
@@ -16,7 +17,13 @@ import xyz.vexo.utils.renderString
  */
 object HudManager {
     private val registeredHuds = mutableListOf<HudSetting>()
-    private val visibleHuds = mutableListOf<HudSetting>()
+    private val moduleByHud: Map<HudSetting, Module> by lazy {
+        buildMap {
+            ModuleManager.getAllModules().forEach { module ->
+                module.settings.filterIsInstance<HudSetting>().forEach { put(it, module) }
+            }
+        }
+    }
 
     init {
         EventBus.subscribe(this)
@@ -29,28 +36,6 @@ object HudManager {
     fun registerHud(hudSetting: HudSetting) {
         if (hudSetting !in registeredHuds) {
             registeredHuds.add(hudSetting)
-        }
-    }
-
-    /**
-     * Updates the visibility of a specific HUD setting.
-     * Called when a module's enabled state or dependency conditions change.
-     *
-     * @param hudSetting The HUD setting to update
-     */
-    fun updateHudVisibility(hudSetting: HudSetting) {
-        val module = ModuleManager.getAllModules().find {
-            it.settings.contains(hudSetting)
-        }
-
-        val shouldBeVisible = module?.enabled == true && hudSetting.shouldRender()
-
-        if (shouldBeVisible) {
-            if (hudSetting !in visibleHuds) {
-                visibleHuds.add(hudSetting)
-            }
-        } else {
-            visibleHuds.remove(hudSetting)
         }
     }
 
@@ -70,10 +55,13 @@ object HudManager {
      * @param context The drawing context
      */
     private fun renderHuds(context: GuiGraphics) {
-        visibleHuds.forEach { hudSetting ->
-            val hudElement = hudSetting.getCurrentValue()
-            if (hudElement.text.isNotEmpty()) {
-                renderHud(context, hudElement)
+        registeredHuds.forEach { hudSetting ->
+            val module = moduleByHud[hudSetting]
+            if (module?.enabled == true && hudSetting.shouldRender()) {
+                val hudElement = hudSetting.getCurrentValue()
+                if (hudElement.text.isNotEmpty()) {
+                    renderHud(context, hudElement)
+                }
             }
         }
     }
@@ -94,10 +82,7 @@ object HudManager {
      */
     fun getActiveHuds(): List<HudSetting> {
         return registeredHuds.filter { hudSetting ->
-            val module = ModuleManager.getAllModules().find { module ->
-                module.settings.contains(hudSetting)
-            }
-
+            val module = moduleByHud[hudSetting]
             module?.enabled == true && hudSetting.shouldShowInGui()
         }
     }
