@@ -1,9 +1,32 @@
 package xyz.vexo.utils
 
+import xyz.vexo.events.EventHandler
+import xyz.vexo.events.impl.ServerTickEvent
+
 object DungeonUtils {
 
     var inDungeon = false
+        private set
     var floor: String = ""
+        private set
+
+    private var tickCounter = 0
+
+    // "Time Elapsed:" erscheint nur in Catacombs-Dungeons in der Tablist
+    private val dungeonIndicator = Regex("""Time Elapsed:""")
+
+    // Format: "Floor I" / "Floor II" ... oder "Master Mode Floor I"
+    private val floorPattern = Regex("""(?:Master Mode )?Floor ([IVX]+)""")
+
+    @EventHandler
+    fun onServerTick(event: ServerTickEvent) {
+        if (++tickCounter % 20 != 0) return
+        val entries = TablistUtils.getEntries()
+        inDungeon = entries.any { dungeonIndicator.containsMatchIn(it) }
+        floor = if (inDungeon) {
+            entries.firstNotNullOfOrNull { floorPattern.find(it)?.value } ?: ""
+        } else ""
+    }
 
     data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
 

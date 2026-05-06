@@ -29,6 +29,9 @@ object DungeonDevTest {
             if (mates.isEmpty()) modMessage("Mates: none")
             else mates.forEach { modMessage("Mate: ${it.name} (${it.dungeonClass})${if (it.isDead) " DEAD" else ""}") }
         }
+        DevMode.ifFlag("printInDungeon") {
+            modMessage("inDungeon: ${DungeonUtils.inDungeon}, floor: ${DungeonUtils.floor.ifEmpty { "?" }}")
+        }
         DevMode.ifFlag("printTablist") {
             TablistUtils.getEntries().forEachIndexed { i, line ->
                 modMessage("[$i] $line")
