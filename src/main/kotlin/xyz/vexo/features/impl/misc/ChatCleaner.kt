@@ -77,6 +77,7 @@ object ChatCleaner : Module(
 
 
     private val randomSpamRegex = listOf(
+        Regex("""This block is already occupied!"""),
         Regex("""Your Pickaxe ability is on cooldown for .+s\."""),
         Regex("""AUTO-PICKUP! Drop sent to your inventory! \[I GET IT]"""),
         Regex("""Warping you to your SkyBlock island\.\.\."""),
@@ -214,5 +215,9 @@ object ChatCleaner : Module(
     val ringOfLoveRegex = listOf(
         Regex("""^Your Legendary Ring of Love requires higher quest completion!"""),
         Regex("""^Its stats and effects don't apply!""")
+    )
+
+    val farmingFeast = listOf(
+        Regex ("""[NPC] Feast Chef Ted: Thanks for the donation! I've added a Kernel to your purse.""")
     )
 }
