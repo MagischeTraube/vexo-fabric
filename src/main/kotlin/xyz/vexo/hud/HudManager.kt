@@ -16,6 +16,7 @@ import xyz.vexo.utils.renderString
  */
 object HudManager {
     private val registeredHuds = mutableListOf<HudSetting>()
+    private val visibleHuds = mutableListOf<HudSetting>()
 
     init {
         EventBus.subscribe(this)
@@ -32,9 +33,26 @@ object HudManager {
     }
 
     /**
-     * No-op kept for API compatibility — visibility is now checked dynamically on each render.
+     * Updates the visibility of a specific HUD setting.
+     * Called when a module's enabled state or dependency conditions change.
+     *
+     * @param hudSetting The HUD setting to update
      */
-    fun updateHudVisibility(hudSetting: HudSetting) {}
+    fun updateHudVisibility(hudSetting: HudSetting) {
+        val module = ModuleManager.getAllModules().find {
+            it.settings.contains(hudSetting)
+        }
+
+        val shouldBeVisible = module?.enabled == true && hudSetting.shouldRender()
+
+        if (shouldBeVisible) {
+            if (hudSetting !in visibleHuds) {
+                visibleHuds.add(hudSetting)
+            }
+        } else {
+            visibleHuds.remove(hudSetting)
+        }
+    }
 
     /**
      * Event handler that renders all active HUDs.
@@ -47,18 +65,15 @@ object HudManager {
     }
 
     /**
-     * Renders all visible HUDs, checking module state and visibility dynamically.
+     * Renders all visible HUDs.
      *
      * @param context The drawing context
      */
     private fun renderHuds(context: GuiGraphics) {
-        registeredHuds.forEach { hudSetting ->
-            val module = ModuleManager.getAllModules().find { it.settings.contains(hudSetting) }
-            if (module?.enabled == true && hudSetting.shouldRender()) {
-                val hudElement = hudSetting.getCurrentValue()
-                if (hudElement.text.isNotEmpty()) {
-                    renderHud(context, hudElement)
-                }
+        visibleHuds.forEach { hudSetting ->
+            val hudElement = hudSetting.getCurrentValue()
+            if (hudElement.text.isNotEmpty()) {
+                renderHud(context, hudElement)
             }
         }
     }
