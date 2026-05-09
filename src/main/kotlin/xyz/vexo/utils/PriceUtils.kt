@@ -49,6 +49,7 @@ object PriceUtils : IInitializable {
 
                 fetchPrices()
                 lastFetchTime = System.currentTimeMillis()
+                forceFetch = false
             }
         }
     }
@@ -58,17 +59,12 @@ object PriceUtils : IInitializable {
      */
     fun forceFetch() {
         val currentTime = System.currentTimeMillis()
-
         if (currentTime - lastFetchTime < FORCE_FETCH_INTERVAL_MS) return
-
-        lastFetchTime = currentTime
-
         if (currentFetchJob?.isActive == true) return
 
         currentFetchJob = Vexo.scope.launch {
             try {
                 fetchPrices()
-                lastFetchTime = System.currentTimeMillis()
             } catch (e: Exception) {
                 logError(e, this@PriceUtils)
             }

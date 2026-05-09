@@ -19,9 +19,11 @@ object PartyUtils {
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent){
-        val cleanedMessage = event.unformattedMessage.replace(Regex("\\[[^]]*]"), "").replace("●", "")
+        val cleanedMessage = event.unformattedMessage.replace(Regex("\\[[^]]*]"), "")
+            .replace("●", "")
         val nameRegex = Regex("\\b[A-Za-z0-9_]{1,16}\\b")
-        val relevant = prefixes.any { cleanedMessage.startsWith(it) } || cleanedMessage.endsWith("joined the party.")
+        val relevant = prefixes.any { cleanedMessage.startsWith(it) }
+                || cleanedMessage.endsWith("joined the party.")
         val names = nameRegex.findAll(cleanedMessage).map { it.value }
 
         if (leftParty.any { it.containsMatchIn(event.unformattedMessage) }) {

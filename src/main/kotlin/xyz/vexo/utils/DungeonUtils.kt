@@ -10,7 +10,8 @@ object DungeonUtils {
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        val enterDungeonMatch = Regex(""".* entered (MM )?The Catacombs, Floor ([IVX]+)!""").find(event.unformattedMessage)
+        val enterDungeonMatch = Regex(""".* entered (MM )?The Catacombs, Floor ([IVX]+)!""")
+            .find(event.unformattedMessage)
         if (enterDungeonMatch != null) {
             inDungeon = true
 
