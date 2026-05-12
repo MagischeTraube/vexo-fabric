@@ -21,31 +21,28 @@ object EventBus {
     fun subscribe(obj: Any) {
         if (instanceIndex.containsKey(obj)) return
 
-        val eventTypes = mutableListOf<Class<*>>()
         val lookup = MethodHandles.lookup()
 
-        // TODO: for-Schleife mit mehreren continues könnte als filter/mapNotNull-Chain lesbarer sein
-        for (method in obj.javaClass.declaredMethods) {
-            if (!method.isAnnotationPresent(EventHandler::class.java)) continue
-            if (method.parameterCount != 1) continue
+        val eventTypes = obj.javaClass.declaredMethods
+            .asSequence()
+            .filter { it.isAnnotationPresent(EventHandler::class.java) }
+            .filter { it.parameterCount == 1 }
+            .mapNotNull { method ->
+                val eventType = method.parameterTypes[0]
+                if (!Event::class.java.isAssignableFrom(eventType)) return@mapNotNull null
 
-            val eventType = method.parameterTypes[0]
-            if (!Event::class.java.isAssignableFrom(eventType)) continue
+                method.isAccessible = true
 
-            method.isAccessible = true
+                val handle = lookup.unreflect(method).bindTo(obj)
+                val subscriber = EventSubscriber(obj, handle)
 
-            val handle = lookup
-                .unreflect(method)
-                .bindTo(obj)
+                subscribersByEvent
+                    .computeIfAbsent(eventType) { CopyOnWriteArrayList() }
+                    .add(subscriber)
 
-            val subscriber = EventSubscriber(obj, handle)
-
-            subscribersByEvent
-                .computeIfAbsent(eventType) { CopyOnWriteArrayList() }
-                .add(subscriber)
-
-            eventTypes.add(eventType)
-        }
+                eventType
+            }
+            .toMutableList()
 
         if (eventTypes.isNotEmpty()) {
             instanceIndex[obj] = eventTypes
