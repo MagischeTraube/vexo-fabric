@@ -41,6 +41,11 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val farmingFeast by BooleanSetting(
+        name = "Ring of Love messages",
+        default = false
+    )
+
     private val checks
         get() = listOf(
             randomSpam to randomSpamRegex,
@@ -48,7 +53,8 @@ object ChatCleaner : Module(
             autopetSpam to autoPetRegex,
             rareDropSpam to rareDropRegex,
             shardsSpam to shardRegex,
-            ringOfLove to ringOfLoveRegex
+            ringOfLove to ringOfLoveRegex,
+            farmingFeast to farmingFeastRegex
         )
 
     @EventHandler
@@ -201,7 +207,7 @@ object ChatCleaner : Module(
         Regex("""^Its stats and effects don't apply!""")
     )
 
-    val farmingFeast = listOf(
+    val farmingFeastRegex = listOf(
         Regex ("""[NPC] Feast Chef Ted: Thanks for the donation! I've added a Kernel to your purse.""")
     )
 }

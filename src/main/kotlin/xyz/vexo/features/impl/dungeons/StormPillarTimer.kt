@@ -9,7 +9,7 @@ import xyz.vexo.features.Module
 
 object StormPillarTimer : Module(
     name = "Storm Pillar Timer",
-    description = "Zeigt einen Countdown nach Storms Pillar-Hit-Nachrichten",
+    description = "Shows a title when got crushed",
     toggled = false
 ) {
     private val labelSetting = StringSetting(
@@ -26,7 +26,7 @@ object StormPillarTimer : Module(
 
     init {
         labelSetting.onChange = {
-            hud.text = "$it%.2fs".format(ticks / 20.0)
+            hud.text = it
         }
     }
 

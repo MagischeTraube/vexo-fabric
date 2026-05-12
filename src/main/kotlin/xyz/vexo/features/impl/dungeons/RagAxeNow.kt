@@ -11,7 +11,7 @@ import xyz.vexo.utils.runAfterServerTicks
 
 object RagAxeNow : Module (
     name = "Rag Axe Alert",
-    description = "Triggers when RagAxe is mentioned in chat.",
+    description = "Displays a title when to Rag Axe",
     toggled = false
 ) {
     private val ragAxeNowTextSetting = StringSetting(
