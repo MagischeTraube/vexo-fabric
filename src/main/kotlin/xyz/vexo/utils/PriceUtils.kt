@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
 import xyz.vexo.Vexo
 import xyz.vexo.events.EventBus
 import xyz.vexo.events.impl.PriceDataUpdateEvent
@@ -16,11 +17,11 @@ object PriceUtils : IInitializable {
 
     private var lastFetchTime: Long = 0
     private const val FETCH_INTERVAL_MS = 15 * 60 * 1000L
-    private var forceFetch = false
     private const val FORCE_FETCH_INTERVAL_MS = 5 * 60 * 1000L
 
     private val cachedPriceData = ConcurrentHashMap<String, PriceData>()
-    private var currentFetchJob: Job? = null
+
+    private val fetchMutex = Mutex()
 
     data class PriceData(
         val sellLocation: String,
@@ -41,16 +42,7 @@ object PriceUtils : IInitializable {
         Vexo.scope.launch {
             while (isActive) {
                 delay(FETCH_INTERVAL_MS)
-
-                // TODO: Bug — forceFetch=true überspringt den Fetch statt ihn auszulösen (continue vor fetchPrices)
-                if (forceFetch) {
-                    forceFetch = false
-                    continue
-                }
-
-                fetchPrices()
-                lastFetchTime = System.currentTimeMillis()
-                forceFetch = false
+                safeFetchPrices()
             }
         }
     }
@@ -60,60 +52,62 @@ object PriceUtils : IInitializable {
      */
     fun forceFetch() {
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastFetchTime < FORCE_FETCH_INTERVAL_MS) return
-        if (currentFetchJob?.isActive == true) return
 
-        currentFetchJob = Vexo.scope.launch {
-            try {
-                fetchPrices()
-            } catch (e: Exception) {
-                logError(e, this@PriceUtils)
-            }
+        if (currentTime - lastFetchTime < FORCE_FETCH_INTERVAL_MS) return
+
+        Vexo.scope.launch {
+            safeFetchPrices()
+        }
+    }
+
+    /**
+     * Safely fetches prices with mutex protection.
+     */
+    private suspend fun safeFetchPrices() {
+        if (!fetchMutex.tryLock()) return
+
+        try {
+            fetchPrices()
+            lastFetchTime = System.currentTimeMillis()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logError(e, this@PriceUtils)
+        } finally {
+            fetchMutex.unlock()
         }
     }
 
     /**
      * Fetches the prices from the API.
      */
-    private fun fetchPrices() {
-        if (currentFetchJob?.isActive == true) return
+    private suspend fun fetchPrices() {
+        val rootJson = ApiUtils.fetchJsonWithRetry(API_URL, maxRetries = 3)
+            ?: return
 
-        currentFetchJob = Vexo.scope.launch {
-            try {
-                val rootJson = ApiUtils.fetchJsonWithRetry(API_URL, maxRetries = 3)
-                    ?: return@launch
+        if (!rootJson.get("success").asBoolean) return
 
-                if (!rootJson.get("success").asBoolean) {
-                    return@launch
-                }
+        val pricesJson = rootJson.getAsJsonObject("prices") ?: return
+        val newPriceData = ConcurrentHashMap<String, PriceData>()
 
-                val pricesJson = rootJson.getAsJsonObject("prices")
-                    ?: return@launch
-                val newPriceData = ConcurrentHashMap<String, PriceData>()
+        for ((itemId, dataElem) in pricesJson.entrySet()) {
+            val dataObj = dataElem.asJsonObject
+            val sellLocation = dataObj.get("sellLocation")?.asString ?: continue
 
-                for ((itemId, dataElem) in pricesJson.entrySet()) {
-                    val dataObj = dataElem.asJsonObject
-                    val sellLocation = dataObj.get("sellLocation")?.asString ?: continue
-
-                    newPriceData[itemId] = PriceData(
-                        sellLocation = sellLocation,
-                        sellOfferPrice = dataObj.get("sellOfferPrice")?.asInt,
-                        instaSellPrice = dataObj.get("instaSellPrice")?.asInt,
-                        lowestBin = dataObj.get("lowestBin")?.asInt
-                    )
-                }
-
-                cachedPriceData.clear()
-                cachedPriceData.putAll(newPriceData)
-                launch { saveCachedPriceData() }
-
-                PriceDataUpdateEvent.postAndCatch()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                logError(e, this@PriceUtils)
-            }
+            newPriceData[itemId] = PriceData(
+                sellLocation = sellLocation,
+                sellOfferPrice = dataObj.get("sellOfferPrice")?.asInt,
+                instaSellPrice = dataObj.get("instaSellPrice")?.asInt,
+                lowestBin = dataObj.get("lowestBin")?.asInt
+            )
         }
+
+        cachedPriceData.clear()
+        cachedPriceData.putAll(newPriceData)
+
+        saveCachedPriceData()
+
+        PriceDataUpdateEvent.postAndCatch()
     }
 
     /**

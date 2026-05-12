@@ -1,6 +1,5 @@
 package xyz.vexo.utils
 
-import com.mojang.blaze3d.systems.RenderSystem
 import com.mojang.blaze3d.vertex.PoseStack
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext
 import net.minecraft.client.gui.render.state.GuiTextRenderState
@@ -11,6 +10,15 @@ import org.joml.Matrix3x2f
 import net.minecraft.client.gui.GuiGraphics
 import xyz.vexo.Vexo.mc
 
+/**
+ * Renders a string with transformation support
+ * @param context The GUI graphics context
+ * @param text The text to render
+ * @param x The x position
+ * @param y The y position
+ * @param scale The scale factor
+ * @param color The default text color
+ */
 fun renderString(
     context: GuiGraphics,
     text: String,
@@ -47,6 +55,13 @@ fun renderString(
     context.pose().popMatrix()
 }
 
+/**
+ * Draws an outlined 3D box using the world render context
+ *
+ * @param box The bounding box to draw
+ * @param rgb The RGB color
+ * @param alpha The alpha value (0-255) (default: 255)
+ */
 fun WorldRenderContext.drawBoxOutline(box: AABB, rgb: Int, alpha: Int = 255) {
     val consumers = consumers()
     val cam = mc.gameRenderer.mainCamera.position()
