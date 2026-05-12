@@ -25,7 +25,6 @@ object ApiUtils {
      * @param readTimeout The read timeout in milliseconds.
      * @return The JSON object.
      */
-    // TODO: Connection-Setup (requestMethod, Headers, Timeouts) ist in fetchJson und postJson dupliziert — in setupConnection() extrahieren
     suspend fun fetchJson(
         url: String,
         connectTimeout: Int = DEFAULT_CONNECT_TIMEOUT,

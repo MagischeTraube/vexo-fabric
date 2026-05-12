@@ -91,13 +91,13 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
     private fun onCategorySelected(category: Category) {
         selectedCategory = category
         categoryPanel.selectCategory(category)
-        modulePanel.showCategory(category, "")
+        modulePanel.showCategoryModules(category, "")
         settingsPanel.showSettingsHint()
     }
 
     private fun onSearchTextChanged(searchText: String) {
         if (searchText.isEmpty()) {
-            selectedCategory?.let { modulePanel.showCategory(it, "") }
+            selectedCategory?.let { modulePanel.showCategoryModules(it, "") }
         } else {
             modulePanel.searchAllModules(searchText)
         }

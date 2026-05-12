@@ -360,7 +360,7 @@ object PlayerData {
      * Removes the oldest 25% of UUIDs from the cache
      */
     private fun evictOldestUuids() {
-        val ownName = Vexo.mc.user?.name?.lowercase()
+        val ownName = Vexo.mc.user.name.lowercase()
 
         val sortedEntries = uuidCache.entries
             .filter { it.key != ownName }

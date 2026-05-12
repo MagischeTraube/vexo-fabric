@@ -36,8 +36,33 @@ class ModulePanel(
         } childOf this
     }
 
-    // TODO: showCategory und searchAllModules haben identischen ScrollComponent+Filter+forEachIndexed Block — in private displayModules() extrahieren
-    fun showCategory(category: Category, searchText: String) {
+    fun showCategoryModules(category: Category, searchText: String) {
+        val modules = ModuleManager.getModulesByCategory(category)
+            .filterMatches(searchText)
+
+        val emptyMessage = if (searchText.isEmpty()) {
+            "No modules in this category"
+        } else {
+            "No modules found for \"$searchText\""
+        }
+
+        displayModules(modules, emptyMessage)
+    }
+
+    fun searchAllModules(searchText: String) {
+        val modules = ModuleManager.getAllModules()
+            .filterMatches(searchText)
+
+        displayModules(
+            modules,
+            "No modules found for \"$searchText\""
+        )
+    }
+
+    private fun displayModules(
+        modules: List<Module>,
+        emptyMessage: String
+    ) {
         clearChildren()
         setupBackground()
 
@@ -48,59 +73,24 @@ class ModulePanel(
             height = 100.percent()
         } childOf this
 
-        val modules = ModuleManager.getModulesByCategory(category)
-
-        val filteredModules = if (searchText.isEmpty()) {
-            modules
-        } else {
-            modules.filter {
-                it.name.contains(searchText, ignoreCase = true) ||
-                        it.description.contains(searchText, ignoreCase = true)
-            }
-        }
-
-        if (filteredModules.isEmpty()) {
-            showEmptyMessage(if (searchText.isEmpty()) {
-                "No modules in this category"
-            } else {
-                "No modules found for \"$searchText\""
-            })
+        if (modules.isEmpty()) {
+            showEmptyMessage(emptyMessage)
             return
         }
 
-        filteredModules.forEachIndexed { index, module ->
+        modules.forEachIndexed { index, module ->
             createModuleButton(module).constrain {
                 y = if (index == 0) 0.pixels() else SiblingConstraint()
             } childOf moduleScrollComponent!!
         }
     }
 
-    fun searchAllModules(searchText: String) {
-        clearChildren()
-        setupBackground()
+    private fun List<Module>.filterMatches(searchText: String): List<Module> {
+        if (searchText.isEmpty()) return this
 
-        moduleScrollComponent = ScrollComponent("", innerPadding = 0f).constrain {
-            x = 0.pixels()
-            y = 0.pixels()
-            width = 100.percent()
-            height = 100.percent()
-        } childOf this
-
-        val allModules = ModuleManager.getAllModules()
-            .filter {
-                it.name.contains(searchText, ignoreCase = true) ||
-                        it.description.contains(searchText, ignoreCase = true)
-            }
-
-        if (allModules.isEmpty()) {
-            showEmptyMessage("No modules found for \"$searchText\"")
-            return
-        }
-
-        allModules.forEachIndexed { index, module ->
-            createModuleButton(module).constrain {
-                y = if (index == 0) 0.pixels() else SiblingConstraint()
-            } childOf moduleScrollComponent!!
+        return filter {
+            it.name.contains(searchText, ignoreCase = true) ||
+                    it.description.contains(searchText, ignoreCase = true)
         }
     }
 
