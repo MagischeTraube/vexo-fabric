@@ -41,19 +41,22 @@ abstract class Module(
 
         val fields = this::class.java.declaredFields
 
-        // TODO: this::class.members wird für jedes Field neu gefiltert — einmal vorab als Map aufbauen
+        val memberMap = this::class.members
+            .filterIsInstance<KProperty1<Module, *>>()
+            .associateBy { it.name }
+
         fields.forEach { field ->
             field.isAccessible = true
             val value = runCatching { field.get(this) }.getOrNull()
             if (value is Setting<*>) settings += value
             else {
-                val prop = runCatching {
-                    this::class.members
-                        .filterIsInstance<KProperty1<Module, *>>()
-                        .firstOrNull { it.name == field.name.removeSuffix("\$delegate") }
-                }.getOrNull()
+                val propName = field.name.removeSuffix("\$delegate")
+
+                val prop = memberMap[propName]
                 val delegate = prop?.getDelegate(this)
-                if (delegate is Setting<*> && delegate !in settings) settings += delegate
+                if (delegate is Setting<*> && delegate !in settings) {
+                    settings += delegate
+                }
             }
         }
     }

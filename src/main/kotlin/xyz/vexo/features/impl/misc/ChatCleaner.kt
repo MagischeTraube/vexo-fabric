@@ -42,7 +42,7 @@ object ChatCleaner : Module(
     )
 
     private val farmingFeast by BooleanSetting(
-        name = "Ring of Love messages",
+        name = "Ted Kernel message",
         default = false
     )
 
