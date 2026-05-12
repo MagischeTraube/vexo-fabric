@@ -65,7 +65,7 @@ object EventDispatcher : IInitializable {
         }
 
         WorldRenderEvents.END_MAIN.register { context ->
-            WorldRenderEvent.postAndCatch()
+            WorldRenderEvent(context).postAndCatch()
         }
 
         ClientReceiveMessageEvents.ALLOW_GAME.register { text, overlay ->

@@ -1,8 +1,6 @@
 package xyz.vexo.events.impl
 
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext
 import xyz.vexo.events.Event
 
-/**
- * Event fired when the world is being rendered.
- */
-object WorldRenderEvent : Event()
+class WorldRenderEvent(val context: WorldRenderContext) : Event()
