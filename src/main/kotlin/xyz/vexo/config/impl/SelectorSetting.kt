@@ -17,7 +17,7 @@ class SelectorSetting(
     description: String = "",
     default: String,
     val options: List<String>,
-) : Setting<String>(name, description, default) {
+) : Setting<String>(name, description, value = default) {
     override fun updateValue(newValue: String) {
         if (newValue in options) {
             super.updateValue(newValue)

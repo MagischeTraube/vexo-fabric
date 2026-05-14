@@ -68,7 +68,8 @@ object Vexo : ClientModInitializer {
 
 		arrayOf(
 			// dungeons
-			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow, ParticleHider, DungeonRequeue, StormPillarTimer,
+			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow, ParticleHider,
+			DungeonRequeue, StormPillarTimer, NecronBlockHighlight,
 
 			// kuudra
 			AutoKuudraRequeue,

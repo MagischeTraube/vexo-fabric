@@ -23,10 +23,9 @@ class SliderSetting(
     val min: Double,
     val max: Double,
     val increment: Double = 0.1,
-) : Setting<Double>(name, description, default) {
+) : Setting<Double>(name, description, value = default) {
 
     override fun updateValue(newValue: Double) {
-        // Runde den Wert auf die Präzision des Increments
         val roundedValue = roundToIncrement(newValue.coerceIn(min, max))
         super.updateValue(roundedValue)
     }
@@ -40,25 +39,29 @@ class SliderSetting(
     }
 
     /**
-     * Rundet einen Wert auf die Präzision des Increments
+     * Rounds the given value to the nearest increment.
+     *
+     * @param value The value to round.
+     * @return The rounded value.
      */
     private fun roundToIncrement(value: Double): Double {
-        // Berechne die Anzahl der Dezimalstellen basierend auf dem Increment
         val decimalPlaces = getDecimalPlaces(increment)
         val multiplier = 10.0.pow(decimalPlaces)
 
-        // Runde auf die entsprechende Anzahl Dezimalstellen
         return round(value * multiplier) / multiplier
     }
 
     /**
-     * Bestimmt die Anzahl der Dezimalstellen des Increments
+     * Returns the number of decimal places for the given increment.
+     *
+     * @param increment The increment value.
+     * @return The number of decimal places.
      */
     private fun getDecimalPlaces(increment: Double): Int {
         if (increment >= 1.0) return 0
         if (increment >= 0.1) return 1
         if (increment >= 0.01) return 2
         if (increment >= 0.001) return 3
-        return 4 // Maximale Präzision für sehr kleine Increments
+        return 4
     }
 }

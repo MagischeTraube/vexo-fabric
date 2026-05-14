@@ -15,7 +15,7 @@ class BooleanSetting(
     name: String,
     description: String = "",
     default: Boolean = false,
-) : Setting<Boolean>(name, description, default) {
+) : Setting<Boolean>(name, description, value = default) {
 
     override fun toJson() = JsonPrimitive(getCurrentValue())
 

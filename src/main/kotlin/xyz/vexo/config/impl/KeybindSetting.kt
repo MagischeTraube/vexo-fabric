@@ -4,11 +4,17 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonPrimitive
 import xyz.vexo.config.Setting
 
+/**
+ * A keybind setting that can be configured in a module.
+ *
+ * @param name The name of the setting.
+ * @param default The default value of the setting. Defaults to -1 (no keybind).
+ */
 class KeybindSetting(
     name: String,
     description: String = "",
     default: Int = -1
-) : Setting<Int>(name, description, default) {
+) : Setting<Int>(name, description, value = default) {
 
     var listening: Boolean = false
 

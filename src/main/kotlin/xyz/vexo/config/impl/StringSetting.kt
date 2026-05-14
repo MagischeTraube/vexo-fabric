@@ -15,7 +15,7 @@ class StringSetting(
     name: String,
     description: String = "",
     default: String = ""
-) : Setting<String>(name, description, default) {
+) : Setting<String>(name, description, value = default) {
 
     override fun toJson() = JsonPrimitive(getCurrentValue())
 

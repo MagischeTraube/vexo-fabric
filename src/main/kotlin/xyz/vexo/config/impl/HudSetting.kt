@@ -18,7 +18,7 @@ class HudSetting(
     description: String = "",
     defaultText: String = name,
     defaultVisibility: Boolean = false,
-) : Setting<HudElement>(name, description, HudElement(name, defaultText, initialVisible = defaultVisibility)) {
+) : Setting<HudElement>(name, description, value = HudElement(name, defaultText, initialVisible = defaultVisibility)) {
 
     init {
         HudManager.registerHud(this)

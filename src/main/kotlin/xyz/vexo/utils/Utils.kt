@@ -43,6 +43,8 @@ fun logDebug(message: String) {
 
 /**
  * Removes Minecraft color and formatting codes from a string.
+ *
+ * @return The string with all formatting codes removed.
  */
 fun String.removeFormatting(): String {
     return this.replace(Regex("§x(§[0-9a-fA-F]){6}|§[0-9a-fk-orA-FK-OR]"), "")

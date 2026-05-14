@@ -18,7 +18,7 @@ class ColorSetting(
     description: String = "",
     default: Color = Color.WHITE,
     val allowAlpha: Boolean = true,
-) : Setting<Color>(name, description, default) {
+) : Setting<Color>(name, description, value = default) {
 
     override fun toJson(): JsonObject {
         return JsonObject().apply {

@@ -20,14 +20,14 @@ object PadTimer : Module(
     )
     private var serverTicks = 0
 
-    private val PadTimer = listOf(
+    private val padTimer = listOf(
         Regex("\\[BOSS] Storm: ENERGY HEED MY CALL!"),
         Regex("\\[BOSS] Storm: THUNDER LET ME BE YOUR CATALYST!")
     )
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        if (PadTimer.any { it.containsMatchIn(event.message) })
+        if (padTimer.any { it.containsMatchIn(event.message) })
             when (crushOrder) {
                 "Green-Yellow" -> serverTicks = 181
                 "Purple-Yellow" -> serverTicks = 106
