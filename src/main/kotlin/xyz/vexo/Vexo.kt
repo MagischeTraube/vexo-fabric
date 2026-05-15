@@ -55,7 +55,7 @@ object Vexo : ClientModInitializer {
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			arrayOf(
-				VexoCommand, TyfrCommand,
+				VexoCommand, TyfrCommand, reInviteCommand,
 
 				entranceCommand, f1Command, f2Command, f3Command, f4Command, f5Command, f6Command, f7Command, m1Command, m2Command,
 				m3Command, m4Command, m5Command, m6Command, m7Command, t1Command, t2Command, t3Command, t4Command, t5Command

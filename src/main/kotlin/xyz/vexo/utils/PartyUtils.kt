@@ -17,6 +17,9 @@ object PartyUtils {
      */
     val partyMembers: MutableSet<String> = mutableSetOf()
 
+    var partyLeader: String? = null
+        private set
+
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent){
         val cleanedMessage = event.unformattedMessage.replace(Regex("\\[[^]]*]"), "")
@@ -29,6 +32,7 @@ object PartyUtils {
         if (leftParty.any { it.containsMatchIn(event.unformattedMessage) }) {
             inParty = false
             partyMembers.clear()
+            partyLeader = null
         }
         if (createdParty.any { it.containsMatchIn(event.unformattedMessage) }) {
             inParty = true
@@ -38,8 +42,11 @@ object PartyUtils {
             nameRegex.find(cleanedMessage)?.value?.let { partyMembers.remove(it) }
         }
 
-        if (relevant) {
+        if (cleanedMessage.startsWith("Party Leader:")) {
+            partyLeader = nameRegex.findAll(cleanedMessage.removePrefix("Party Leader:")).firstOrNull()?.value
+        }
 
+        if (relevant) {
             names.forEach { if (!partyMembers.contains(it)) partyMembers.add(it) }
         }
     }
