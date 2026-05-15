@@ -66,13 +66,21 @@ fun renderString(
  * @return An AABB that encompasses the block area
  */
 fun blockBox(fromBlock: BlockPos, toBlock: BlockPos): AABB {
+    val minX = minOf(fromBlock.x, toBlock.x).toDouble()
+    val minY = minOf(fromBlock.y, toBlock.y).toDouble()
+    val minZ = minOf(fromBlock.z, toBlock.z).toDouble()
+
+    val maxX = maxOf(fromBlock.x, toBlock.x) + 1.0
+    val maxY = maxOf(fromBlock.y, toBlock.y) + 1.0
+    val maxZ = maxOf(fromBlock.z, toBlock.z) + 1.0
+
     return AABB(
-        fromBlock.x.toDouble(),
-        fromBlock.y.toDouble(),
-        fromBlock.z.toDouble(),
-        toBlock.x + 1.0,
-        toBlock.y + 1.0,
-        toBlock.z + 1.0
+        minX,
+        minY,
+        minZ,
+        maxX,
+        maxY,
+        maxZ
     )
 }
 
