@@ -37,5 +37,10 @@ object DungeonDevTest {
                 modMessage("[$i] $line")
             }
         }
+        DevMode.ifFlag("printScoreboard") {
+            ScoreboardUtils.getEntries().forEachIndexed { i, line ->
+                modMessage("[$i] $line")
+            }
+        }
     }
 }

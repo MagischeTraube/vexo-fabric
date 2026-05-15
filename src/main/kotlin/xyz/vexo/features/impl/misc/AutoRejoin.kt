@@ -21,19 +21,22 @@ object AutoRejoin : Module(
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         if (rejoining && event.unformattedMessage == "Welcome to Hypixel SkyBlock!") {
-            rejoining = false
+            runAfterServerTicks(100){
+                rejoining = false
+            }
             return
         }
 
         if (kickedMessage.any { it.containsMatchIn(event.unformattedMessage) } && !rejoining){
             rejoining = true
 
-            modMessage("Kicked from SkyBlock, rejoining automatically in 65 Seconds!")
-            runAfterServerTicks(700) {
+            modMessage("Kicked from SkyBlock, rejoining automatically in 60 Seconds!")
+            runAfterServerTicks(600) {
                 modMessage("Rejoining in 30 Seconds!")
             }
             runAfterServerTicks(1300) {
                 modMessage("Rejoining Now!")
+                rejoining = false
                 sendCommand("play skyblock")
             }
         }
