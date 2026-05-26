@@ -8,4 +8,6 @@ import xyz.vexo.events.Event
  *
  * @param key The key that was pressed
  */
-class InputEvent(val key: Key) : Event()
+class InputEvent(
+    val key: Key
+) : Event()

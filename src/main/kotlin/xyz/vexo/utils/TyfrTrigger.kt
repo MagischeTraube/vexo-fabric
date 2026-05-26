@@ -1,23 +1,18 @@
 package xyz.vexo.utils
 
 import xyz.vexo.events.EventHandler
-import xyz.vexo.events.impl.ChatMessagePacketEvent
+import xyz.vexo.events.impl.RunEndEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 
 object TyfrTrigger {
     var tyfrToggle = false
-    val tyfrMessages = listOf(
-        Regex("Score:"),
-        Regex("Tokens Earned:")
-    )
 
     @EventHandler
-    fun onChat(event: ChatMessagePacketEvent) {
-        if (tyfrToggle && tyfrMessages.any {it.containsMatchIn(event.message.removeFormatting())}) {
-            sendCommand("p leave")
-            runAfterServerTicks(5) {
-                sendCommand("ac tyfr o/")
-            }
+    fun onRunEnd(event: RunEndEvent) {
+        if (!tyfrToggle) return
+        sendCommand("p leave")
+        runAfterServerTicks(4) {
+            sendCommand("ac tyfr o/")
         }
     }
 

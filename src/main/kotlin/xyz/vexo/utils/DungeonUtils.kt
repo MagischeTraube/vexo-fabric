@@ -12,10 +12,9 @@ object DungeonUtils {
 
     private var tickCounter = 0
 
-    // "Time Elapsed:" erscheint nur in Catacombs-Dungeons in der Tablist
+
     private val dungeonIndicator = Regex("""Time Elapsed:""")
 
-    // Format: "Floor I" / "Floor II" ... oder "Master Mode Floor I"
     private val floorPattern = Regex("""(?:Master Mode )?Floor ([IVX]+)""")
 
     @EventHandler
@@ -30,7 +29,7 @@ object DungeonUtils {
 
     data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
 
-    // Format: "[432] [MVP++] PlayerName ✓ (Mage L)" oder "(DEAD)"
+
     private val matePattern = Regex("""\[\d+] (?:\[[^\]]+] )?(\S+)[^(]*\((?:(\S+) \S+|(DEAD))\)""")
 
     fun getMates(): List<DungeonMate> =
@@ -42,7 +41,7 @@ object DungeonUtils {
             DungeonMate(name, dungeonClass, dead)
         }
 
-    // Format: "Blessing of Power 5" in der Tablist
+
     private val blessingPattern = Regex("""Blessing of (\w+) (\d+)""", RegexOption.IGNORE_CASE)
 
     fun getBlessings(): Map<String, Int> =
@@ -50,13 +49,13 @@ object DungeonUtils {
             .mapNotNull { blessingPattern.find(it) }
             .associate { it.groupValues[1] to it.groupValues[2].toInt() }
 
-    // Format: "Puzzles: (3)" — nur Gesamtzahl
+
     fun getPuzzleCount(): Int {
         val line = TablistUtils.find(Regex("""Puzzles: \((\d+)\)""")) ?: return 0
         return Regex("""Puzzles: \((\d+)\)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0
     }
 
-    // Format: "Time Elapsed: 4m 32s" oder "Time Elapsed: 32s"
+
     private val timePattern = Regex("""Time Elapsed: (?:(\d+)m )?(\d+)s""")
 
     fun getElapsedTime(): String? {
@@ -67,7 +66,7 @@ object DungeonUtils {
         return if (mins.isNotEmpty()) "${mins}m ${secs}s" else "${secs}s"
     }
 
-    // Format: "Deaths: 2"
+
     fun getDeaths(): Int {
         val line = TablistUtils.find(Regex("""Deaths: \d+""")) ?: return 0
         return Regex("""Deaths: (\d+)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0

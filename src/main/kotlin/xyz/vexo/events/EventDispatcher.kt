@@ -25,6 +25,7 @@ import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
 import xyz.vexo.events.impl.ServerLeaveEvent
 import xyz.vexo.events.impl.ParticleReceiveEvent
+import xyz.vexo.events.impl.RunEndEvent
 import xyz.vexo.utils.removeFormatting
 
 object EventDispatcher : IInitializable {
@@ -100,6 +101,13 @@ object EventDispatcher : IInitializable {
                     event.cancel()
                 }
             }
+        }
+    }
+
+    @EventHandler
+    fun onChat(event: ChatMessagePacketEvent) {
+        if (event.unformattedMessage.contains("Score:") || event.unformattedMessage.contains("Tokens Earned:")) {
+            RunEndEvent.postAndCatch()
         }
     }
 }
