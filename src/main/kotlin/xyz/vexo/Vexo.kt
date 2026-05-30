@@ -53,6 +53,8 @@ object Vexo : ClientModInitializer {
 			EventDispatcher, PriceUtils
 		).forEach { it.init() }
 
+		LavaAsWater.registerFluidHandler()
+
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			arrayOf(
 				VexoCommand,
@@ -79,7 +81,7 @@ object Vexo : ClientModInitializer {
 			AutoKuudraRequeue,
 
 			// misc
-			AutoRejoin, ChatCleaner, SlayerHelper
+			AutoRejoin, ChatCleaner, SlayerHelper, LavaAsWater
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()
