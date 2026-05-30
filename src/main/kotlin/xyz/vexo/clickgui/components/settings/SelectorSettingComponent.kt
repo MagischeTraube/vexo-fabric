@@ -15,7 +15,8 @@ import xyz.vexo.clickgui.components.ClickGuiColor
  * @param setting The selector setting to be displayed
  */
 class SelectorSettingComponent(
-    private val setting: SelectorSetting
+    private val setting: SelectorSetting,
+    private val onUpdate: (() -> Unit)? = null
 ) : UIContainer() {
 
     private var dropdownOpen = false
@@ -105,6 +106,7 @@ class SelectorSettingComponent(
             optionContainer.onMouseClick {
                 setting.updateValue(option)
                 selectorText.setText(option)
+                onUpdate?.invoke()
                 closeDropdown()
             }
         }
