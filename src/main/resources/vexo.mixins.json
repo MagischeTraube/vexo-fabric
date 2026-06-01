@@ -6,7 +6,8 @@
 		"AbstractContainerScreenMixin",
 		"ChatScreenMixin",
 		"ConnectionMixin",
-		"KeyMappingMixin",
+		"KeyboardHandlerMixin",
+		"MainMixin",
 		"ParticleEngineMixin",
 		"SoundManagerMixin"
 	],
