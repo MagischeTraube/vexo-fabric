@@ -25,12 +25,15 @@ object LavaAsWater : Module(
 
     val customColor = ColorSetting(
         "Color",
-        "Custom tint and transparency applied to the lava",
-        default = Color(0, 120, 255, 200),
-        allowAlpha = true
+        "Custom tint applied to the lava",
+        default = Color(0, 120, 255, 255),
+        allowAlpha = false
     ).dependsOn { colorMode.getCurrentValue() == "Color" }
 
-    /** Registers the lava render handler. Called once during client init. */
+    /**
+     * Registers the lava render handler.
+     * Called once during client init.
+     */
     fun registerFluidHandler() {
         val originalLavaHandler = FluidRenderHandlerRegistry.INSTANCE.get(Fluids.LAVA)
         val handler = object : FluidRenderHandler {
