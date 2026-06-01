@@ -81,7 +81,7 @@ object Vexo : ClientModInitializer {
 			AutoKuudraRequeue,
 
 			// misc
-			AutoRejoin, ChatCleaner, SlayerHelper, LavaAsWater
+			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, LavaAsWater
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()
