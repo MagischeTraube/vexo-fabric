@@ -1,6 +1,7 @@
 package xyz.vexo.utils
 
 import com.google.gson.reflect.TypeToken
+import com.google.gson.annotations.SerializedName
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.*
@@ -24,11 +25,19 @@ object PriceUtils : IInitializable {
     private val fetchMutex = Mutex()
 
     data class PriceData(
-        val sellLocation: String,
+        val sellLocation: SellLocation,
         val sellOfferPrice: Int? = null,
         val instaSellPrice: Int? = null,
         val lowestBin: Int? = null
     )
+
+    enum class SellLocation {
+        @SerializedName("auction_house")
+        AUCTION_HOUSE,
+
+        @SerializedName("bazaar")
+        BAZAAR
+    }
 
     private data class PriceBackup(
         val lastFetchTime: Long,
@@ -92,7 +101,11 @@ object PriceUtils : IInitializable {
 
         for ((itemId, dataElem) in pricesJson.entrySet()) {
             val dataObj = dataElem.asJsonObject
-            val sellLocation = dataObj.get("sellLocation")?.asString ?: continue
+            val sellLocation = when (dataObj.get("sellLocation")?.asString) {
+                "auction_house" -> SellLocation.AUCTION_HOUSE
+                "bazaar" -> SellLocation.BAZAAR
+                else -> continue
+            }
 
             newPriceData[itemId] = PriceData(
                 sellLocation = sellLocation,
@@ -122,12 +135,16 @@ object PriceUtils : IInitializable {
         val itemData = cachedPriceData[skyblockID] ?: return 0
 
         val rawPrice = when (itemData.sellLocation) {
-            "auction_house" -> itemData.lowestBin
-            "bazaar" -> if (sellOffer) itemData.sellOfferPrice else itemData.instaSellPrice
-            else -> null
-        } ?: return 0
+            SellLocation.AUCTION_HOUSE -> itemData.lowestBin
+            SellLocation.BAZAAR ->
+                if (sellOffer) itemData.sellOfferPrice
+                else itemData.instaSellPrice
+        }?: return 0
 
-        return if (itemData.sellLocation == "auction_house" && includeTaxes) {
+        return if (
+            itemData.sellLocation == SellLocation.AUCTION_HOUSE &&
+            includeTaxes
+        ) {
             calculateBinAfterTaxes(rawPrice.toDouble()).toInt()
         } else {
             rawPrice
