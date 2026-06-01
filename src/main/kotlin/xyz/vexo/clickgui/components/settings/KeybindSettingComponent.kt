@@ -96,28 +96,38 @@ class KeybindSettingComponent(
         }
     }
 
+    private val specialKeys = mapOf(
+        GLFW.GLFW_KEY_SPACE to "SPACE",
+        GLFW.GLFW_KEY_ESCAPE to "ESC",
+        GLFW.GLFW_KEY_ENTER to "ENTER",
+        GLFW.GLFW_KEY_TAB to "TAB",
+        GLFW.GLFW_KEY_BACKSPACE to "BACK",
+        GLFW.GLFW_KEY_DELETE to "DEL",
+
+        GLFW.GLFW_KEY_LEFT_SHIFT to "LSHIFT",
+        GLFW.GLFW_KEY_RIGHT_SHIFT to "RSHIFT",
+        GLFW.GLFW_KEY_LEFT_CONTROL to "LCTRL",
+        GLFW.GLFW_KEY_RIGHT_CONTROL to "RCTRL",
+        GLFW.GLFW_KEY_LEFT_ALT to "LALT",
+        GLFW.GLFW_KEY_RIGHT_ALT to "RALT",
+
+        GLFW.GLFW_KEY_UP to "UP",
+        GLFW.GLFW_KEY_DOWN to "DOWN",
+        GLFW.GLFW_KEY_LEFT to "LEFT",
+        GLFW.GLFW_KEY_RIGHT to "RIGHT"
+    )
 
     private fun getKeyName(keyCode: Int): String {
-        return when {
-            keyCode == -1 -> "None"
-            else -> {
-                val keyName = GLFW.glfwGetKeyName(keyCode, 0)
-                keyName?.uppercase() ?: when (keyCode) {
-                    GLFW.GLFW_KEY_SPACE -> "SPACE"
-                    GLFW.GLFW_KEY_ESCAPE -> "ESC"
-                    GLFW.GLFW_KEY_ENTER -> "ENTER"
-                    GLFW.GLFW_KEY_TAB -> "TAB"
-                    GLFW.GLFW_KEY_BACKSPACE -> "BACK"
-                    GLFW.GLFW_KEY_DELETE -> "DEL"
-                    GLFW.GLFW_KEY_LEFT_SHIFT -> "LSHIFT"
-                    GLFW.GLFW_KEY_RIGHT_SHIFT -> "RSHIFT"
-                    GLFW.GLFW_KEY_LEFT_CONTROL -> "LCTRL"
-                    GLFW.GLFW_KEY_RIGHT_CONTROL -> "RCTRL"
-                    GLFW.GLFW_KEY_LEFT_ALT -> "LALT"
-                    GLFW.GLFW_KEY_RIGHT_ALT -> "RALT"
-                    else -> "Key $keyCode"
-                }
-            }
+        if (keyCode == -1) return "None"
+
+        if (keyCode in GLFW.GLFW_KEY_F1..GLFW.GLFW_KEY_F24) {
+            return "F${keyCode - GLFW.GLFW_KEY_F1 + 1}"
         }
+
+        GLFW.glfwGetKeyName(keyCode, 0)?.let {
+            return it.uppercase()
+        }
+
+        return specialKeys[keyCode] ?: "Key $keyCode"
     }
 }
