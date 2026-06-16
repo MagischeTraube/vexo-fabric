@@ -89,6 +89,7 @@ object ScreenshotInputHandler {
             ScreenshotHud.drawnRectangles.clear()
         }
 
+        ScreenshotHud.selectionStartPoint = Pair(mouseX, mouseY)
         ScreenshotHud.selection = SelectionBounds(left = mouseX, right = mouseX, top = mouseY, bottom = mouseY)
     }
 
@@ -141,11 +142,14 @@ object ScreenshotInputHandler {
         }
 
         if (!ScreenshotHud.selectionIsConfirmed) {
+            val startX = ScreenshotHud.selectionStartPoint?.first ?: ScreenshotHud.selection.left
+            val startY = ScreenshotHud.selectionStartPoint?.second ?: ScreenshotHud.selection.top
+
             val origin = SelectionBounds(
-                left = min(ScreenshotHud.selection.left, mouseX).coerceIn(0.0, screenWidth),
-                right = max(ScreenshotHud.selection.left, mouseX).coerceIn(0.0, screenWidth),
-                top = min(ScreenshotHud.selection.top, mouseY).coerceIn(0.0, screenHeight),
-                bottom = max(ScreenshotHud.selection.top, mouseY).coerceIn(0.0, screenHeight)
+                left = min(startX, mouseX).coerceIn(0.0, screenWidth),
+                right = max(startX, mouseX).coerceIn(0.0, screenWidth),
+                top = min(startY, mouseY).coerceIn(0.0, screenHeight),
+                bottom = max(startY, mouseY).coerceIn(0.0, screenHeight)
             )
             ScreenshotHud.selection = origin
         }
@@ -180,6 +184,7 @@ object ScreenshotInputHandler {
                 ScreenshotHud.selectionIsConfirmed = true
             }
         }
+        ScreenshotHud.selectionStartPoint = null
         ScreenshotHud.activeDrag = null
     }
 

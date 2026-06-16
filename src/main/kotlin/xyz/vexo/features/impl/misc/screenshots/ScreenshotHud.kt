@@ -53,6 +53,7 @@ data class RectDrawAction(
 object ScreenshotHud {
 
     internal var selection = SelectionBounds()
+    internal var selectionStartPoint: Pair<Double, Double>? = null
     internal var activeDrag: HandleDragState? = null
     internal var selectionIsConfirmed = false
 
@@ -175,7 +176,6 @@ object ScreenshotHud {
                 finalImage.close()
                 if (cropToSelection) imageCopy.close()
 
-                // Delegiert an die neue Notification-Klasse
                 ScreenshotChatNotifications.sendSavedMessage(outputFile)
 
             } catch (e: Exception) {
@@ -202,6 +202,7 @@ object ScreenshotHud {
     @JvmStatic
     fun reset() {
         selection = SelectionBounds()
+        selectionStartPoint = null
         selectionIsConfirmed = false
         activeDrag = null
         drawnRectangles.clear()
@@ -215,6 +216,7 @@ object ScreenshotHud {
         texture = null
         image?.close()
         image = null
+        selectionStartPoint = null
         selectionIsConfirmed = false
         activeDrag = null
         drawnRectangles.clear()
