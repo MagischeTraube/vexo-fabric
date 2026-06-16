@@ -1,6 +1,9 @@
 package xyz.vexo.config
 
 import com.google.gson.JsonObject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import xyz.vexo.features.Module
 import xyz.vexo.features.ModuleManager
 import xyz.vexo.utils.logError
@@ -14,6 +17,24 @@ import xyz.vexo.Vexo
 object ConfigManager {
     private val gson get() = Vexo.gson
     private var configFile = File(Vexo.configDir, "config.json")
+
+    /** True while [load] is applying values, so change callbacks don't trigger redundant saves. */
+    @Volatile
+    private var loading = false
+    private var pendingSave: Job? = null
+
+    /**
+     * Called whenever a setting value or module toggle changes. Schedules a debounced save so
+     * changes persist immediately instead of relying solely on the config GUI being closed.
+     */
+    fun onChanged() {
+        if (loading) return
+        pendingSave?.cancel()
+        pendingSave = Vexo.scope.launch {
+            delay(3500)
+            save()
+        }
+    }
 
     /**
      * Saves all modules and their settings to JSON
@@ -30,7 +51,10 @@ object ConfigManager {
 
                 val settingsJson = JsonObject()
                 getSettingsFromModule(module).forEach { setting ->
-                    settingsJson.add(setting.name, setting.toJson())
+                    // Isolate each setting so a single bad toJson() can't abort the whole save
+                    // (which would otherwise leave the file un-updated).
+                    runCatching { settingsJson.add(setting.name, setting.toJson()) }
+                        .onFailure { logError(Exception("Failed to serialize setting '${module.name}/${setting.name}'", it), this) }
                 }
                 moduleJson.add("settings", settingsJson)
 
@@ -55,28 +79,37 @@ object ConfigManager {
                 return
             }
 
+            loading = true
             val root = gson.fromJson(configFile.readText(), JsonObject::class.java)
             val modulesJson = root.getAsJsonObject("modules") ?: return
 
             ModuleManager.getAllModules().forEach { module ->
-                val moduleJson = modulesJson.getAsJsonObject(module.name) ?: return@forEach
+                // Isolate each module so one module's malformed entry can't abort loading of the
+                // rest (modules registered later — e.g. Wardrobe — would otherwise silently keep
+                // their defaults and get overwritten on the next save).
+                runCatching {
+                    val moduleJson = modulesJson.getAsJsonObject(module.name) ?: return@runCatching
 
-                val enabled = moduleJson.get("enabled")?.asBoolean ?: false
-                if (enabled != module.enabled) {
-                    module.toggle()
-                }
-
-                val settingsJson = moduleJson.getAsJsonObject("settings") ?: return@forEach
-                getSettingsFromModule(module).forEach { setting ->
-                    settingsJson.get(setting.name)?.let { json ->
-                        setting.fromJson(json)
+                    val enabled = moduleJson.get("enabled")?.asBoolean ?: false
+                    if (enabled != module.enabled) {
+                        module.toggle()
                     }
-                }
+
+                    val settingsJson = moduleJson.getAsJsonObject("settings") ?: return@runCatching
+                    getSettingsFromModule(module).forEach { setting ->
+                        // Isolate each setting too, for the same reason within a module.
+                        runCatching {
+                            settingsJson.get(setting.name)?.let { json -> setting.fromJson(json) }
+                        }.onFailure { logError(Exception("Failed to load setting '${module.name}/${setting.name}'", it), this) }
+                    }
+                }.onFailure { logError(Exception("Failed to load module '${module.name}'", it), this) }
             }
 
             logInfo("Config loaded successfully")
         } catch (e: Exception) {
             logError(e, this)
+        } finally {
+            loading = false
         }
     }
 

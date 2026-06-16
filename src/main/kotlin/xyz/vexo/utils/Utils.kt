@@ -42,10 +42,14 @@ fun logDebug(message: String) {
 }
 
 /**
+ * Precompiled pattern for [removeFormatting]. Compiling once avoids rebuilding the regex on
+ * every call — this runs on every chat packet, tablist entry and scoreboard entry.
+ */
+private val FORMATTING_REGEX = Regex("§x(§[0-9a-fA-F]){6}|§[0-9a-fk-orA-FK-OR]")
+
+/**
  * Removes Minecraft color and formatting codes from a string.
  *
  * @return The string with all formatting codes removed.
  */
-fun String.removeFormatting(): String {
-    return this.replace(Regex("§x(§[0-9a-fA-F]){6}|§[0-9a-fk-orA-FK-OR]"), "")
-}
+fun String.removeFormatting(): String = this.replace(FORMATTING_REGEX, "")

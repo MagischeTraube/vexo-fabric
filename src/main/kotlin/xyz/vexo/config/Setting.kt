@@ -49,6 +49,7 @@ abstract class Setting<T>(
     open fun updateValue(newValue: T) {
         value = newValue
         onChange?.invoke(newValue)
+        ConfigManager.onChanged()
     }
 
     /**

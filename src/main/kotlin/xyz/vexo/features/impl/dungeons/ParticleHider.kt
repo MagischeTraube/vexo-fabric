@@ -23,7 +23,7 @@ object ParticleHider : Module (
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         if (event.unformattedMessage == "[BOSS] Necron: Let's make some space!") inP5 = true
-        if (event.unformattedMessage matches Regex("\\[BOSS] Necron: You went further than any human before, congratulations\\.")) inP4 = true
+        if (event.unformattedMessage == "[BOSS] Necron: You went further than any human before, congratulations.") inP4 = true
     }
 
     @EventHandler

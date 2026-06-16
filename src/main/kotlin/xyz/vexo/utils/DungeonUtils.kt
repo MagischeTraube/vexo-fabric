@@ -50,9 +50,11 @@ object DungeonUtils {
             .associate { it.groupValues[1] to it.groupValues[2].toInt() }
 
 
+    private val puzzlePattern = Regex("""Puzzles: \((\d+)\)""")
+
     fun getPuzzleCount(): Int {
-        val line = TablistUtils.find(Regex("""Puzzles: \((\d+)\)""")) ?: return 0
-        return Regex("""Puzzles: \((\d+)\)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0
+        val line = TablistUtils.find(puzzlePattern) ?: return 0
+        return puzzlePattern.find(line)?.groupValues?.get(1)?.toInt() ?: 0
     }
 
 
@@ -67,8 +69,10 @@ object DungeonUtils {
     }
 
 
+    private val deathsPattern = Regex("""Deaths: (\d+)""")
+
     fun getDeaths(): Int {
-        val line = TablistUtils.find(Regex("""Deaths: \d+""")) ?: return 0
-        return Regex("""Deaths: (\d+)""").find(line)?.groupValues?.get(1)?.toInt() ?: 0
+        val line = TablistUtils.find(deathsPattern) ?: return 0
+        return deathsPattern.find(line)?.groupValues?.get(1)?.toInt() ?: 0
     }
 }

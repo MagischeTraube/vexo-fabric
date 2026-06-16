@@ -2,6 +2,7 @@ package xyz.vexo.features
 
 import kotlin.reflect.KProperty1
 import xyz.vexo.events.EventBus
+import xyz.vexo.config.ConfigManager
 import xyz.vexo.config.Setting
 
 /**
@@ -34,6 +35,7 @@ abstract class Module(
     fun toggle() {
         enabled = !enabled
         if (enabled) onEnable() else onDisable()
+        ConfigManager.onChanged()
     }
 
     fun initSettings() {

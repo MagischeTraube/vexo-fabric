@@ -78,7 +78,7 @@ object Vexo : ClientModInitializer {
 			DungeonRequeue, StormPillarTimer, NecronBlockHighlight,
 
 			// kuudra
-			AutoKuudraRequeue,
+			AutoKuudraRequeue, SoloDetector, ChestTracker,
 
 			// misc
 			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, LavaAsWater

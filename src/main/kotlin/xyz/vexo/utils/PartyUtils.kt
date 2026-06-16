@@ -20,14 +20,15 @@ object PartyUtils {
     var partyLeader: String? = null
         private set
 
+    private val bracketRegex = Regex("\\[[^]]*]")
+    private val nameRegex = Regex("\\b[A-Za-z0-9_]{1,16}\\b")
+
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent){
-        val cleanedMessage = event.unformattedMessage.replace(Regex("\\[[^]]*]"), "")
+        val cleanedMessage = event.unformattedMessage.replace(bracketRegex, "")
             .replace("●", "")
-        val nameRegex = Regex("\\b[A-Za-z0-9_]{1,16}\\b")
         val relevant = prefixes.any { cleanedMessage.startsWith(it) }
                 || cleanedMessage.endsWith("joined the party.")
-        val names = nameRegex.findAll(cleanedMessage).map { it.value }
 
         if (leftParty.any { it.containsMatchIn(event.unformattedMessage) }) {
             inParty = false
@@ -47,7 +48,7 @@ object PartyUtils {
         }
 
         if (relevant) {
-            names.forEach { if (!partyMembers.contains(it)) partyMembers.add(it) }
+            nameRegex.findAll(cleanedMessage).forEach { partyMembers.add(it.value) }
         }
     }
 
