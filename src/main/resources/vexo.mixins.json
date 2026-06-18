@@ -3,7 +3,6 @@
 	"package": "xyz.vexo.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"AbstractContainerScreenMixin",
 		"ChatScreenMixin",
 		"ConnectionMixin",
 		"KeyboardHandlerMixin",

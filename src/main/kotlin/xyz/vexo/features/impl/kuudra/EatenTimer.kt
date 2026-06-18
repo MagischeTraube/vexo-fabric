@@ -57,7 +57,7 @@ object EatenTimer : Module(
         pose.pushMatrix()
         pose.translate(hud.x.toFloat(), hud.y.toFloat())
         pose.scale(scale, scale)
-        event.context.drawCenteredString(mc.font, label, 0, 0, color)
+        event.context.text(mc.font, label, 0, 0, color)
         pose.popMatrix()
     }
 

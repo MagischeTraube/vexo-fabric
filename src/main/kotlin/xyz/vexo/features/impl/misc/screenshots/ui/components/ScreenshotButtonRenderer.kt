@@ -1,6 +1,6 @@
 package xyz.vexo.features.impl.misc.screenshots.ui.components
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.Vexo
 import xyz.vexo.features.impl.misc.screenshots.config.ScreenshotColors
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotMode
@@ -18,7 +18,7 @@ object ScreenshotButtonRenderer {
      * @param currentMode The current screenshot mode.
      */
     fun render(
-        graphics: GuiGraphics,
+        graphics: GuiGraphicsExtractor,
         mouseX: Double,
         mouseY: Double,
         selection: SelectionBounds,
@@ -55,7 +55,7 @@ object ScreenshotButtonRenderer {
             if (isSaveHovered) ScreenshotColors.saveSelectionHover else ScreenshotColors.saveSelectionNormal
         )
         val saveLabel = "Save"
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font,
             saveLabel,
             saveButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(saveLabel)) / 2,
@@ -71,7 +71,7 @@ object ScreenshotButtonRenderer {
             if (isSaveFullHovered) ScreenshotColors.saveFullHover else ScreenshotColors.saveFullNormal
         )
         val saveFullLabel = "Save Full"
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font,
             saveFullLabel,
             saveFullButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(saveFullLabel)) / 2,
@@ -87,7 +87,7 @@ object ScreenshotButtonRenderer {
             if (isModeHovered) ScreenshotColors.modeButtonHover else ScreenshotColors.modeButtonNormal
         )
         val modeLabel = if (currentMode == ScreenshotMode.SELECT) "Draw" else "Select"
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font,
             modeLabel,
             modeButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(modeLabel)) / 2,
@@ -103,7 +103,7 @@ object ScreenshotButtonRenderer {
             if (isUndoHovered) ScreenshotColors.undoButtonHover else ScreenshotColors.undoButtonNormal
         )
         val undoLabel = "Undo"
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font,
             undoLabel,
             undoButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(undoLabel)) / 2,
@@ -119,7 +119,7 @@ object ScreenshotButtonRenderer {
             if (isMoveHovered) ScreenshotColors.moveButtonHover else ScreenshotColors.moveButtonNormal
         )
         val moveLabel = "Move"
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font,
             moveLabel,
             moveButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(moveLabel)) / 2,

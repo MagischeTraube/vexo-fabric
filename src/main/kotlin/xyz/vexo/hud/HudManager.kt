@@ -1,6 +1,6 @@
 package xyz.vexo.hud
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.HudRenderEvent
@@ -54,7 +54,7 @@ object HudManager {
      *
      * @param context The drawing context
      */
-    private fun renderHuds(context: GuiGraphics) {
+    private fun renderHuds(context: GuiGraphicsExtractor) {
         registeredHuds.forEach { hudSetting ->
             val module = moduleByHud[hudSetting]
             if (module?.enabled == true && hudSetting.shouldRender()) {
@@ -72,7 +72,7 @@ object HudManager {
      * @param context The drawing context
      * @param hud The HUD element to render
      */
-    private fun renderHud(context: GuiGraphics, hud: HudElement) {
+    private fun renderHud(context: GuiGraphicsExtractor, hud: HudElement) {
         renderString(context, hud.text, hud.x.toFloat(), hud.y.toFloat(), hud.scale)
     }
 

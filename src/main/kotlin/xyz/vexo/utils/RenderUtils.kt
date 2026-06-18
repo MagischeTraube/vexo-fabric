@@ -4,13 +4,13 @@ import java.awt.Color
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import net.minecraft.core.BlockPos
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext
-import net.minecraft.client.gui.render.state.GuiTextRenderState
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
+import net.minecraft.client.renderer.state.gui.GuiTextRenderState
 import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
 import org.joml.Matrix3x2f
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.Vexo.mc
 
 /**
@@ -23,7 +23,7 @@ import xyz.vexo.Vexo.mc
  * @param color The default text color
  */
 fun renderString(
-    context: GuiGraphics,
+    context: GuiGraphicsExtractor,
     text: String,
     x: Float,
     y: Float,
@@ -40,7 +40,7 @@ fun renderString(
 
     val comp = Component.literal(text)
 
-    context.guiRenderState.submitText(
+    context.guiRenderState.addText(
         GuiTextRenderState(
             mc.font,
             comp.visualOrderText,
@@ -94,14 +94,15 @@ fun blockBox(fromBlock: BlockPos, toBlock: BlockPos): AABB {
 /**
  * Draws an outlined 3D box
  */
-fun WorldRenderContext.drawBoxOutline(
+fun LevelRenderContext.drawBoxOutline(
     box: AABB,
     color: Color,
     alpha: Int = 255
 ) {
     val expanded = box.inflate(0.002)
 
-    val consumers = consumers()
+    val buffer = mc.renderBuffers().bufferSource()
+
     val cam = mc.gameRenderer.mainCamera.position()
 
     val matrices = PoseStack()
@@ -109,7 +110,7 @@ fun WorldRenderContext.drawBoxOutline(
 
     val pose = matrices.last()
 
-    val buf = consumers.getBuffer(RenderTypes.lines())
+    val buf = buffer.getBuffer(RenderTypes.lines())
 
     val r = color.red
     val g = color.green

@@ -1,6 +1,6 @@
 package xyz.vexo.features.impl.misc.screenshots.ui
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.Vexo
 import xyz.vexo.features.impl.misc.screenshots.ui.components.ColorPickerRenderer
 import xyz.vexo.features.impl.misc.screenshots.RectDrawAction
@@ -24,7 +24,7 @@ object ScreenshotHudRenderer {
      * @param drawnRectangles list of drawn rectangles (DRAW mode)
      */
     fun renderOverlay(
-        graphics: GuiGraphics,
+        graphics: GuiGraphicsExtractor,
         mouseX: Double,
         mouseY: Double,
         selection: SelectionBounds,
@@ -46,7 +46,7 @@ object ScreenshotHudRenderer {
      *
      * @param graphics render context
      */
-    private fun renderBackground(graphics: GuiGraphics) {
+    private fun renderBackground(graphics: GuiGraphicsExtractor) {
         if (!ScreenshotHud.hasImage()) return
         val scale = (1.0 / Vexo.mc.window.guiScale).toFloat()
         val pose = graphics.pose()
@@ -62,7 +62,7 @@ object ScreenshotHudRenderer {
      * @param graphics render context
      * @param selection current selection bounds
      */
-    private fun renderSelectionOverlay(graphics: GuiGraphics, selection: SelectionBounds) {
+    private fun renderSelectionOverlay(graphics: GuiGraphicsExtractor, selection: SelectionBounds) {
         val screenWidth  = Vexo.mc.window.guiScaledWidth
         val screenHeight = Vexo.mc.window.guiScaledHeight
 
@@ -93,7 +93,7 @@ object ScreenshotHudRenderer {
      * @param currentMode active screenshot mode
      */
     private fun renderConfirmedSelectionUI(
-        graphics: GuiGraphics,
+        graphics: GuiGraphicsExtractor,
         mouseX: Double,
         mouseY: Double,
         selection: SelectionBounds,
@@ -127,7 +127,7 @@ object ScreenshotHudRenderer {
      * @param top top boundary of selection
      * @param bottom bottom boundary of selection
      */
-    private fun renderSelectionBorder(graphics: GuiGraphics, left: Int, right: Int, top: Int, bottom: Int) {
+    private fun renderSelectionBorder(graphics: GuiGraphicsExtractor, left: Int, right: Int, top: Int, bottom: Int) {
         graphics.fill(left,     top,        right,      top + 1,    ScreenshotColors.handleFill)
         graphics.fill(left,     bottom - 1, right,      bottom,     ScreenshotColors.handleFill)
         graphics.fill(left,     top,        left + 1,   bottom,     ScreenshotColors.handleFill)
@@ -143,7 +143,7 @@ object ScreenshotHudRenderer {
      * @param top top boundary of selection
      * @param bottom bottom boundary of selection
      */
-    private fun renderCornerHandles(graphics: GuiGraphics, left: Int, right: Int, top: Int, bottom: Int) {
+    private fun renderCornerHandles(graphics: GuiGraphicsExtractor, left: Int, right: Int, top: Int, bottom: Int) {
         drawHandle(graphics, left,                          top)
         drawHandle(graphics, right - HandleConfig.SIZE,     top)
         drawHandle(graphics, left,                          bottom - HandleConfig.SIZE)
@@ -157,7 +157,7 @@ object ScreenshotHudRenderer {
      * @param posX x-coordinate of the handle
      * @param posY y-coordinate of the handle
      */
-    private fun drawHandle(graphics: GuiGraphics, posX: Int, posY: Int) {
+    private fun drawHandle(graphics: GuiGraphicsExtractor, posX: Int, posY: Int) {
         val size = HandleConfig.SIZE
         graphics.fill(posX - 1,      posY - 1,      posX + size + 1, posY + size + 1, ScreenshotColors.handleBorder)
         graphics.fill(posX,          posY,           posX + size,     posY + size,     ScreenshotColors.handleFill)
@@ -169,7 +169,7 @@ object ScreenshotHudRenderer {
      * @param graphics render context
      * @param drawnRectangles list of drawn rectangles
      */
-    private fun renderDrawnRectangles(graphics: GuiGraphics, drawnRectangles: List<RectDrawAction>) {
+    private fun renderDrawnRectangles(graphics: GuiGraphicsExtractor, drawnRectangles: List<RectDrawAction>) {
         for (rect in drawnRectangles) {
             val l = rect.bounds.left.toInt()
             val r = rect.bounds.right.toInt()
@@ -188,13 +188,13 @@ object ScreenshotHudRenderer {
      * @param graphics render context
      * @param currentMode active screenshot mode
      */
-    private fun renderHintText(graphics: GuiGraphics, currentMode: ScreenshotMode) {
+    private fun renderHintText(graphics: GuiGraphicsExtractor, currentMode: ScreenshotMode) {
         val hintText = if (currentMode == ScreenshotMode.SELECT)
             "Enter = Save   Esc = Exit   Click = New Selection   R = Reset"
         else
             "Draw Mode: Drag to draw. Click 'Undo' to remove last box. R = Reset"
 
-        graphics.drawString(
+        graphics.text(
             Vexo.mc.font, hintText,
             (Vexo.mc.window.guiScaledWidth - Vexo.mc.font.width(hintText)) / 2,
             10,

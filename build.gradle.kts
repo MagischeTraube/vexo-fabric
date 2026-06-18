@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom")
+	id("net.fabricmc.fabric-loom")
 	id("maven-publish")
 	kotlin("jvm")
 }
@@ -16,17 +16,18 @@ repositories {
 	maven("https://repo.essential.gg/repository/maven-public")
 	maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
 	maven("https://maven.terraformersmc.com/")
+	maven("https://jitpack.io")
+	maven("https://api.modrinth.com/maven")
 	mavenCentral()
 }
 
 dependencies {
 	minecraft("com.mojang:minecraft:${property("minecraft_version")}")
-	mappings(loom.officialMojangMappings())
-	modImplementation("net.fabricmc:fabric-loader:${property("loader_version")}")
-	modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
-	modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
-	modRuntimeOnly("me.djtheredstoner:DevAuth-fabric:${property("devauth_version")}")
-	modCompileOnly("com.terraformersmc:modmenu:${property("modmenu_version")}")
+	implementation("net.fabricmc:fabric-loader:${property("loader_version")}")
+	implementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
+	implementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
+	runtimeOnly("me.djtheredstoner:DevAuth-fabric:${property("devauth_version")}")
+	compileOnly("com.terraformersmc:modmenu:${property("modmenu_version")}")
 
 	property("elementa_version").let {
 		implementation("gg.essential:elementa:$it")
@@ -34,12 +35,12 @@ dependencies {
 	}
 
 	property("uc_version").let {
-		modImplementation("gg.essential:universalcraft-1.21.11-fabric:$it")
-		include("gg.essential:universalcraft-1.21.11-fabric:$it")
+		implementation("gg.essential:universalcraft-26.1-fabric:$it")
+		include("gg.essential:universalcraft-26.1-fabric:$it")
 	}
 
 	property("commodore_version").let {
-		modImplementation("com.github.stivais:Commodore:$it")
+		implementation("com.github.stivais:Commodore:$it")
 		include("com.github.stivais:Commodore:$it")
 	}
 
@@ -60,13 +61,13 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 tasks.withType<JavaCompile>().configureEach {
-	options.release.set(21)
+	options.release.set(25)
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 tasks.jar {

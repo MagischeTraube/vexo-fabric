@@ -1,6 +1,6 @@
 package xyz.vexo.events.impl
 
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext
 import xyz.vexo.events.Event
 
 /**
@@ -8,4 +8,4 @@ import xyz.vexo.events.Event
  *
  * @param context The context of the world render
  */
-class WorldRenderEvent(val context: WorldRenderContext) : Event()
+class WorldRenderEvent(val context: LevelRenderContext) : Event()

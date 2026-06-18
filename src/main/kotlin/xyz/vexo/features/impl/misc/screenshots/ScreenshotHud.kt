@@ -11,7 +11,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents
 
 import net.minecraft.client.Screenshot
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.Identifier.fromNamespaceAndPath
@@ -71,8 +71,7 @@ object ScreenshotHud {
     init {
         ScreenEvents.AFTER_INIT.register { _, screen: Screen, _, _ ->
             if (screen !is ScreenshotScreen) destroy()
-
-            ScreenEvents.afterRender(screen).register { _, graphics: GuiGraphics, mouseX, mouseY, _ ->
+            ScreenEvents.afterExtract(screen).register { _, graphics: GuiGraphicsExtractor, mouseX, mouseY, _ ->
                 if (mc.screen !is ScreenshotScreen) return@register
                 ScreenshotHudRenderer.renderOverlay(
                     graphics,

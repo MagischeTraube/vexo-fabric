@@ -1,7 +1,7 @@
 package xyz.vexo.events.impl
 
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.events.Event
 
 /**
@@ -11,5 +11,5 @@ import xyz.vexo.events.Event
  * @param context The GUI graphics context
  */
 class HudRenderEvent(
-    val context: GuiGraphics
+    val context: GuiGraphicsExtractor
 ) : Event()

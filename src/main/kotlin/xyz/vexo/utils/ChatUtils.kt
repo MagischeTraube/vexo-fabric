@@ -22,7 +22,7 @@ fun sendCommand(command: String) {
  */
 fun modMessage(message: Any?, prefix: String = "§b[Vexo]§r ") {
     val text = Component.literal("$prefix$message")
-    mc.gui.chat.addMessage(text)
+    mc.execute { mc.gui.chat.addClientSystemMessage(text) }
 }
 
 /**
@@ -48,5 +48,5 @@ fun modButtonsMessage(
         }
     }
 
-    mc.gui.chat.addMessage(messageText)
+    mc.execute { mc.gui.chat.addClientSystemMessage(messageText) }
 }

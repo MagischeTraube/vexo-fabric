@@ -84,7 +84,7 @@ object ChestTracker : Module(
         pose.pushMatrix()
         pose.translate(hud.x.toFloat(), hud.y.toFloat())
         pose.scale(hud.scale, hud.scale)
-        event.context.drawString(mc.font, text, 0, 0, 0xFFFFFF)
+        event.context.text(mc.font, text, 0, 0, 0xFFFFFF)
         pose.popMatrix()
     }
 

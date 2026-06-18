@@ -1,6 +1,6 @@
 package xyz.vexo.features.impl.misc.screenshots.ui.components
 
-import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.features.impl.misc.screenshots.config.ScreenshotColors
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotHud
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotMode
@@ -16,7 +16,7 @@ object ColorPickerRenderer {
      * @param selection The selection bounds.
      * @param currentMode The current mode.
      */
-    fun render(graphics: GuiGraphics, selection: SelectionBounds, currentMode: ScreenshotMode) {
+    fun render(graphics: GuiGraphicsExtractor, selection: SelectionBounds, currentMode: ScreenshotMode) {
         val size = ColorPickerConfig.SIZE
         val gap = ColorPickerConfig.GAP
 
