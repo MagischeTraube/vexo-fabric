@@ -57,6 +57,7 @@ tasks.processResources {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
 	compilerOptions {
 		freeCompilerArgs.add("-Xlambdas=class")
+		jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
 	}
 }
 
@@ -65,6 +66,9 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_25
 	targetCompatibility = JavaVersion.VERSION_25

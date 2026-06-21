@@ -5,8 +5,10 @@
 	"mixins": [
 		"ChatScreenMixin",
 		"ConnectionMixin",
+		"FluidStateModelSetMixin",
 		"KeyboardHandlerMixin",
 		"MainMixin",
+		"ModelManagerAccessor",
 		"ParticleEngineMixin",
 		"SoundManagerMixin"
 	],

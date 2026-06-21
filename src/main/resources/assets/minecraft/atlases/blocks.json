@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:single",
+      "resource": "vexo:block/lava_gray_still"
+    },
+    {
+      "type": "minecraft:single",
+      "resource": "vexo:block/lava_gray_flow"
+    }
+  ]
+}
