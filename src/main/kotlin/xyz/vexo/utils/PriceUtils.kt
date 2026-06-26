@@ -20,28 +20,24 @@ object PriceUtils : IInitializable {
     private const val FETCH_INTERVAL_MS = 15 * 60 * 1000L
     private const val FORCE_FETCH_INTERVAL_MS = 5 * 60 * 1000L
 
-    private val cachedPriceData = ConcurrentHashMap<String, PriceData>()
+    private val cachedBazaarData = ConcurrentHashMap<String, BazaarData>()
+    private val cachedAuctionData = ConcurrentHashMap<String, AuctionData>()
 
     private val fetchMutex = Mutex()
 
-    data class PriceData(
-        val sellLocation: SellLocation,
+    data class BazaarData(
         val sellOfferPrice: Int? = null,
-        val instaSellPrice: Int? = null,
+        val instaSellPrice: Int? = null
+    )
+
+    data class AuctionData(
         val lowestBin: Int? = null
     )
 
-    enum class SellLocation {
-        @SerializedName("auction_house")
-        AUCTION_HOUSE,
-
-        @SerializedName("bazaar")
-        BAZAAR
-    }
-
     private data class PriceBackup(
         val lastFetchTime: Long,
-        val prices: Map<String, PriceData>
+        val bazaar: Map<String, BazaarData>,
+        val auctions: Map<String, AuctionData>
     )
 
     override fun init() {
@@ -98,31 +94,31 @@ object PriceUtils : IInitializable {
 
         val data = rootJson.getAsJsonObject("data") ?: return
 
-        val newPriceData = ConcurrentHashMap<String, PriceData>()
+        val newBazaarData = ConcurrentHashMap<String, BazaarData>()
+        val newAuctionData = ConcurrentHashMap<String, AuctionData>()
 
         // Bazaar
         data.getAsJsonObject("bazaar")?.entrySet()?.forEach { (itemId, element) ->
             val obj = element.asJsonObject
-
-            newPriceData[itemId] = PriceData(
-                sellLocation = SellLocation.BAZAAR,
+            newBazaarData[itemId] = BazaarData(
                 sellOfferPrice = obj.get("sellOfferPrice")?.asInt,
-                instaSellPrice = obj.get("instaSellPrice")?.asInt,
+                instaSellPrice = obj.get("instaSellPrice")?.asInt
             )
         }
 
         // Auctions
         data.getAsJsonObject("auctions")?.entrySet()?.forEach { (itemId, element) ->
             val obj = element.asJsonObject
-
-            newPriceData[itemId] = PriceData(
-                sellLocation = SellLocation.AUCTION_HOUSE,
+            newAuctionData[itemId] = AuctionData(
                 lowestBin = obj.get("lowestBin")?.asInt
             )
         }
 
-        cachedPriceData.clear()
-        cachedPriceData.putAll(newPriceData)
+        cachedBazaarData.clear()
+        cachedBazaarData.putAll(newBazaarData)
+
+        cachedAuctionData.clear()
+        cachedAuctionData.putAll(newAuctionData)
 
         lastFetchTime = System.currentTimeMillis()
 
@@ -139,19 +135,15 @@ object PriceUtils : IInitializable {
      * @return The price of the item.
      */
     fun getPrice(skyblockID: String, sellOffer: Boolean, includeTaxes: Boolean): Int {
-        val itemData = cachedPriceData[skyblockID] ?: return 0
+        val bazaarItem = cachedBazaarData[skyblockID]
+        if (bazaarItem != null) {
+            return if (sellOffer) bazaarItem.sellOfferPrice ?: 0 else bazaarItem.instaSellPrice ?: 0
+        }
 
-        val rawPrice = when (itemData.sellLocation) {
-            SellLocation.AUCTION_HOUSE -> itemData.lowestBin
-            SellLocation.BAZAAR ->
-                if (sellOffer) itemData.sellOfferPrice
-                else itemData.instaSellPrice
-        }?: return 0
+        val auctionItem = cachedAuctionData[skyblockID] ?: return 0
+        val rawPrice = auctionItem.lowestBin ?: return 0
 
-        return if (
-            itemData.sellLocation == SellLocation.AUCTION_HOUSE &&
-            includeTaxes
-        ) {
+        return if (includeTaxes) {
             calculateBinAfterTaxes(rawPrice.toDouble()).toInt()
         } else {
             rawPrice
@@ -192,7 +184,8 @@ object PriceUtils : IInitializable {
 
             val backup = PriceBackup(
                 lastFetchTime = lastFetchTime,
-                prices = cachedPriceData.toMap()
+                bazaar = cachedBazaarData.toMap(),
+                auctions = cachedAuctionData.toMap()
             )
 
             PRICE_DATA_FILE.writeText(gson.toJson(backup))
@@ -214,11 +207,13 @@ object PriceUtils : IInitializable {
             val type = object : TypeToken<PriceBackup>() {}.type
             val backup: PriceBackup = gson.fromJson(PRICE_DATA_FILE.readText(), type)
 
-            cachedPriceData.putAll(backup.prices)
+            cachedBazaarData.putAll(backup.bazaar)
+            cachedAuctionData.putAll(backup.auctions)
             lastFetchTime = backup.lastFetchTime
 
             val minutesAgo = (System.currentTimeMillis() - lastFetchTime) / (60 * 1000)
-            logInfo("Loaded ${backup.prices.size} cached prices (${minutesAgo}m old)")
+            val totalItems = backup.bazaar.size + backup.auctions.size
+            logInfo("Loaded $totalItems cached prices (${minutesAgo}m old)")
         } catch (e: Exception) {
             logError(e, this@PriceUtils)
         }
