@@ -94,24 +94,31 @@ object PriceUtils : IInitializable {
         val rootJson = ApiUtils.fetchJsonWithRetry(API_URL, maxRetries = 3)
             ?: return
 
-        if (!rootJson.get("success").asBoolean) return
+        if (!rootJson["success"].asBoolean) return
 
-        val pricesJson = rootJson.getAsJsonObject("prices") ?: return
+        val data = rootJson.getAsJsonObject("data") ?: return
+
         val newPriceData = ConcurrentHashMap<String, PriceData>()
 
-        for ((itemId, dataElem) in pricesJson.entrySet()) {
-            val dataObj = dataElem.asJsonObject
-            val sellLocation = when (dataObj.get("sellLocation")?.asString) {
-                "auction_house" -> SellLocation.AUCTION_HOUSE
-                "bazaar" -> SellLocation.BAZAAR
-                else -> continue
-            }
+        // Bazaar
+        data.getAsJsonObject("bazaar")?.entrySet()?.forEach { (itemId, element) ->
+            val obj = element.asJsonObject
 
             newPriceData[itemId] = PriceData(
-                sellLocation = sellLocation,
-                sellOfferPrice = dataObj.get("sellOfferPrice")?.asInt,
-                instaSellPrice = dataObj.get("instaSellPrice")?.asInt,
-                lowestBin = dataObj.get("lowestBin")?.asInt
+                sellLocation = SellLocation.BAZAAR,
+                sellOfferPrice = obj.get("sellOfferPrice")?.asInt,
+                instaSellPrice = obj.get("instaSellPrice")?.asInt,
+                lowestBin = null
+            )
+        }
+
+        // Auctions
+        data.getAsJsonObject("auctions")?.entrySet()?.forEach { (itemId, element) ->
+            val obj = element.asJsonObject
+
+            newPriceData[itemId] = PriceData(
+                sellLocation = SellLocation.AUCTION_HOUSE,
+                lowestBin = obj.get("lowestBin")?.asInt
             )
         }
 
@@ -119,7 +126,6 @@ object PriceUtils : IInitializable {
         cachedPriceData.putAll(newPriceData)
 
         saveCachedPriceData()
-
         PriceDataUpdateEvent.postAndCatch()
     }
 
