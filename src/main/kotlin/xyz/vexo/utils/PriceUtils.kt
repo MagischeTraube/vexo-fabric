@@ -49,6 +49,7 @@ object PriceUtils : IInitializable {
         EventBus.subscribe(this)
 
         Vexo.scope.launch {
+            safeFetchPrices()
             while (isActive) {
                 delay(FETCH_INTERVAL_MS)
                 safeFetchPrices()
@@ -77,7 +78,6 @@ object PriceUtils : IInitializable {
 
         try {
             fetchPrices()
-            lastFetchTime = System.currentTimeMillis()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -108,7 +108,6 @@ object PriceUtils : IInitializable {
                 sellLocation = SellLocation.BAZAAR,
                 sellOfferPrice = obj.get("sellOfferPrice")?.asInt,
                 instaSellPrice = obj.get("instaSellPrice")?.asInt,
-                lowestBin = null
             )
         }
 
@@ -124,6 +123,8 @@ object PriceUtils : IInitializable {
 
         cachedPriceData.clear()
         cachedPriceData.putAll(newPriceData)
+
+        lastFetchTime = System.currentTimeMillis()
 
         saveCachedPriceData()
         PriceDataUpdateEvent.postAndCatch()
