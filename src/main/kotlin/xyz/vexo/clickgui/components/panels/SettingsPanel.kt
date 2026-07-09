@@ -2,11 +2,18 @@ package xyz.vexo.clickgui.components.panels
 
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.*
+import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.universal.UScreen
-import xyz.vexo.clickgui.components.ClickGuiColor
+import xyz.vexo.clickgui.gpx
+import xyz.vexo.clickgui.gsib
+import xyz.vexo.clickgui.components.Tooltip
 import xyz.vexo.clickgui.components.settings.*
+import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.Theme.withAlpha
+import xyz.vexo.clickgui.theme.colorTo
+import xyz.vexo.clickgui.theme.xTo
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.config.Setting
 import xyz.vexo.config.impl.*
@@ -14,7 +21,8 @@ import xyz.vexo.features.Module
 import xyz.vexo.hud.MoveActiveHudsGui
 
 /**
- * Settings panel component
+ * Glass settings panel. Shows a header card for the selected module (name, description, master
+ * toggle) and the scrollable list of its visible settings, each wrapped with a hover tooltip.
  */
 class SettingsPanel : UIContainer() {
 
@@ -34,10 +42,10 @@ class SettingsPanel : UIContainer() {
     }
 
     private fun setupBackground() {
-        UIBlock(ClickGuiColor.BACKGROUND_COLOR).constrain {
+        UIRoundedRectangle(5f).constrain {
             width = 100.percent()
             height = 100.percent()
-        } childOf this
+        }.setColor(Theme.panelDark()) childOf this
     }
 
     fun showSettingsHint() {
@@ -45,16 +53,16 @@ class SettingsPanel : UIContainer() {
         setupBackground()
 
         UIText("Settings").constrain {
-            x = 10.pixels()
-            y = 10.pixels()
-            textScale = 1.5.pixels()
-        }.setColor(ClickGuiColor.ACCENT_COLOR) childOf this
+            x = 14.gpx()
+            y = 14.gpx()
+            textScale = 1.5.gpx()
+        }.setColor(Theme.accent()) childOf this
 
-        UIText("Right Click Feature to view settings").constrain {
+        UIText("Right-click a feature to view its settings").constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-            textScale = 1.1.pixels()
-        }.setColor(ClickGuiColor.GRAY_TEXT_COLOR) childOf this
+            textScale = 1.1.gpx()
+        }.setColor(Theme.textMuted()) childOf this
     }
 
     fun showModuleSettings(module: Module, activeKeybindSettings: MutableList<KeybindSetting>) {
@@ -64,11 +72,7 @@ class SettingsPanel : UIContainer() {
         clearChildren()
         setupBackground()
 
-        UIText("Settings: ${module.name}").constrain {
-            x = 10.pixels()
-            y = 10.pixels()
-            textScale = 1.5.pixels()
-        }.setColor(ClickGuiColor.ACCENT_COLOR) childOf this
+        createModuleHeader(module) childOf this
 
         if (settingsScrollComponent == null) {
             settingsScrollComponent = ScrollComponent("", innerPadding = 0f)
@@ -76,9 +80,9 @@ class SettingsPanel : UIContainer() {
 
         val scroll = settingsScrollComponent!!.constrain {
             x = 0.pixels()
-            y = 40.pixels()
+            y = 62.gpx()
             width = 100.percent()
-            height = FillConstraint(false) - 2.pixels()
+            height = FillConstraint(false) - 2.gpx()
         } childOf this
 
         scroll.clearChildren()
@@ -88,25 +92,106 @@ class SettingsPanel : UIContainer() {
 
         if (visibleSettings.isEmpty()) {
             UIText("No settings available").constrain {
-                x = 10.pixels()
-                y = 10.pixels()
-            }.setColor(ClickGuiColor.GRAY_TEXT_COLOR) childOf scroll
+                x = 14.gpx()
+                y = 12.gpx()
+                textScale = 1.gpx()
+            }.setColor(Theme.textMuted()) childOf scroll
         } else {
             visibleSettings.forEachIndexed { index, setting ->
-                createSettingComponent(setting, activeKeybindSettings).constrain {
-                    y = if (index == 0) 10.pixels() else SiblingConstraint(5f)
+                wrapSetting(setting, createSettingComponent(setting, activeKeybindSettings)).constrain {
+                    y = if (index == 0) 4.gpx() else gsib(2f)
                 } childOf scroll
-
-                if (index < visibleSettings.size - 1) {
-                    UIBlock(ClickGuiColor.SEPARATOR_COLOR).constrain {
-                        y = SiblingConstraint(5f)
-                        width = 100.percent() - 20.pixels()
-                        x = 10.pixels()
-                        height = 1.pixels()
-                    } childOf scroll
-                }
             }
         }
+    }
+
+    /** Header card: module name, description and a master enable toggle. */
+    private fun createModuleHeader(module: Module): UIComponent {
+        return UIContainer().constrain {
+            x = 0.pixels()
+            y = 0.pixels()
+            width = 100.percent()
+            height = 58.gpx()
+        }.apply {
+            UIBlock(Theme.divider()).constrain {
+                y = 0.pixels(true)
+                width = 100.percent()
+                height = 1.gpx()
+            } childOf this
+
+            UIText(module.name).constrain {
+                x = 14.gpx()
+                y = 12.gpx()
+                textScale = 1.6.gpx()
+            }.setColor(Theme.accent()) childOf this
+
+            if (module.description.isNotEmpty()) {
+                UIText(module.description).constrain {
+                    x = 14.gpx()
+                    y = 34.gpx()
+                    textScale = 0.9.gpx()
+                }.setColor(Theme.textMuted()) childOf this
+            }
+
+            // Master toggle.
+            val toggle = UIContainer().constrain {
+                x = 14.gpx(true)
+                y = CenterConstraint()
+                width = 40.gpx()
+                height = 20.gpx()
+            } childOf this
+
+            val toggleBg = UIRoundedRectangle(10f).constrain {
+                width = 100.percent()
+                height = 100.percent()
+            }.setColor(if (module.enabled) Theme.accent() else Theme.toggleOff()) childOf toggle
+
+            val knob = UIRoundedRectangle(8f).constrain {
+                x = if (module.enabled) 22.gpx() else 2.gpx()
+                y = 2.gpx()
+                width = 16.gpx()
+                height = 16.gpx()
+            }.setColor(Theme.handle()) childOf toggle
+
+            toggle.onMouseClick {
+                module.toggle()
+                toggleBg.colorTo(if (module.enabled) Theme.accent() else Theme.toggleOff())
+                knob.xTo(if (module.enabled) 22.gpx() else 2.gpx())
+            }
+        }
+    }
+
+    /** Wraps a setting component so hovering anywhere on the row shows its description tooltip. */
+    private fun wrapSetting(setting: Setting<*>, component: UIComponent): UIComponent {
+        // Row height is driven by the component; the hover indicator is fixed-size to avoid a
+        // recursive size constraint.
+        val row = UIContainer().constrain {
+            x = 0.pixels()
+            y = 0.pixels()
+            width = 100.percent()
+            // Max-size (not position-based) so the centered indicator can't create a sizing loop.
+            height = ChildBasedMaxSizeConstraint()
+        }
+
+        // Left accent bar, lit on hover. Fixed height so it never participates in row sizing loops.
+        val indicator = UIRoundedRectangle(2f).constrain {
+            x = 2.gpx()
+            y = CenterConstraint()
+            width = 3.gpx()
+            height = 20.gpx()
+        }.setColor(Theme.accent().withAlpha(0)) childOf row
+
+        component childOf row
+
+        row.onMouseEnter {
+            indicator.colorTo(Theme.accent())
+            Tooltip.show(setting.description, row)
+        }
+        row.onMouseLeave {
+            indicator.colorTo(Theme.accent().withAlpha(0))
+            Tooltip.hide()
+        }
+        return row
     }
 
     private fun createSettingComponent(

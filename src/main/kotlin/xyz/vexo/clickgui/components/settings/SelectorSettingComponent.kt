@@ -1,18 +1,20 @@
 package xyz.vexo.clickgui.components.settings
 
-import gg.essential.elementa.components.UIBlock
 import gg.essential.elementa.components.UIContainer
+import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.UIText
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.CenterConstraint
 import gg.essential.elementa.dsl.*
+import gg.essential.elementa.effects.OutlineEffect
+import xyz.vexo.clickgui.gpx
+import xyz.vexo.clickgui.guiScale
+import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.config.impl.SelectorSetting
-import xyz.vexo.clickgui.components.ClickGuiColor
 
 /**
- * Selector setting component
- *
- * @param setting The selector setting to be displayed
+ * Selector setting component — glass button opening a glass dropdown; the active option is accented.
  */
 class SelectorSettingComponent(
     private val setting: SelectorSetting,
@@ -25,84 +27,80 @@ class SelectorSettingComponent(
     init {
         constrain {
             width = 100.percent()
-            height = 40.pixels()
+            height = 40.gpx()
         }
 
         UIText(setting.name).constrain {
-            x = 10.pixels()
+            x = 14.gpx()
             y = CenterConstraint()
-        } childOf this
+            textScale = 1.gpx()
+        }.setColor(Theme.textPrimary()) childOf this
 
         val selectorButton = UIContainer().constrain {
-            x = 10.pixels(true)
+            x = 14.gpx(true)
             y = CenterConstraint()
-            width = 100.pixels()
-            height = 25.pixels()
+            width = 110.gpx()
+            height = 25.gpx()
         } childOf this
 
-        val selectorBackground = UIBlock(ClickGuiColor.LIGHT_GRAY_BACKGROUND).constrain {
+        val selectorBackground = UIRoundedRectangle(6f).constrain {
             width = 100.percent()
             height = 100.percent()
-        } childOf selectorButton
+        }.setColor(Theme.card()) childOf selectorButton
 
         val selectorText = UIText(setting.getCurrentValue()).constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-        } childOf selectorButton
+            textScale = 1.gpx()
+        }.apply { setColor(Theme.textPrimary()) } childOf selectorButton
 
-        selectorButton.onMouseEnter {
-            selectorBackground.setColor(ClickGuiColor.HOVER_COLOR)
-        }
-
-        selectorButton.onMouseLeave {
-            selectorBackground.setColor(ClickGuiColor.LIGHT_GRAY_BACKGROUND)
-        }
+        selectorButton.onMouseEnter { selectorBackground.colorTo(Theme.cardHover()) }
+        selectorButton.onMouseLeave { selectorBackground.colorTo(Theme.card()) }
 
         selectorButton.onMouseClick { event ->
             event.stopPropagation()
-
-            if (dropdownOpen) {
-                closeDropdown()
-            } else {
-                openDropdown(selectorButton, selectorText)
-            }
+            if (dropdownOpen) closeDropdown() else openDropdown(selectorButton, selectorText)
         }
     }
 
     private fun openDropdown(selectorButton: UIContainer, selectorText: UIText) {
         val window = Window.of(this)
 
+        // Row height scales with the GUI; getLeft()/getTop() are already in real (scaled) pixels.
+        val rowHeight = 25f * guiScale
         val dropdown = UIContainer().constrain {
             x = selectorButton.getLeft().pixels()
-            y = (selectorButton.getTop() + 27).pixels()
-            width = 100.pixels()
+            y = (selectorButton.getTop() + rowHeight + 2f * guiScale).pixels()
+            width = 110.gpx()
+            height = (setting.options.size * rowHeight).pixels()
         } childOf window
+        dropdown.enableEffect(OutlineEffect(Theme.glow(120), 1f))
 
         setting.options.forEachIndexed { index, option ->
             val optionContainer = UIContainer().constrain {
-                y = (index * 25).pixels()
+                y = (index * rowHeight).pixels()
                 width = 100.percent()
-                height = 25.pixels()
+                height = rowHeight.pixels()
             } childOf dropdown
 
-            val optionBackground = UIBlock(ClickGuiColor.LIGHT_GRAY_BACKGROUND).constrain {
+            val isActive = option == setting.getCurrentValue()
+            val optionBackground = UIRoundedRectangle(if (index == 0 || index == setting.options.lastIndex) 5f else 0f).constrain {
                 width = 100.percent()
                 height = 100.percent()
-            } childOf optionContainer
+            }.setColor(if (isActive) Theme.cardActive() else Theme.panelDark()) childOf optionContainer
 
-            val optionText = UIText(option).constrain {
+            UIText(option).constrain {
                 x = CenterConstraint()
                 y = CenterConstraint()
-            } childOf optionContainer
+                textScale = 1.gpx()
+            }.setColor(if (isActive) Theme.accent() else Theme.textPrimary()) childOf optionContainer
 
             optionContainer.onMouseEnter {
-                optionBackground.setColor(ClickGuiColor.HOVER_COLOR)
+                if (option != setting.getCurrentValue()) optionBackground.colorTo(Theme.cardHover())
             }
-
             optionContainer.onMouseLeave {
-                optionBackground.setColor(ClickGuiColor.LIGHT_GRAY_BACKGROUND)
+                if (option != setting.getCurrentValue()) optionBackground.colorTo(Theme.panelDark())
             }
-
             optionContainer.onMouseClick {
                 setting.updateValue(option)
                 selectorText.setText(option)
@@ -111,22 +109,14 @@ class SelectorSettingComponent(
             }
         }
 
-        dropdown.constrain {
-            height = (setting.options.size * 25).pixels()
-        }
-
-        Window.of(this).onMouseClick {
-            closeDropdown()
-        }
+        Window.of(this).onMouseClick { closeDropdown() }
 
         dropdownContainer = dropdown
         dropdownOpen = true
     }
 
     private fun closeDropdown() {
-        dropdownContainer?.let {
-            it.parent.removeChild(it)
-        }
+        dropdownContainer?.let { it.parent.removeChild(it) }
         dropdownContainer = null
         dropdownOpen = false
     }

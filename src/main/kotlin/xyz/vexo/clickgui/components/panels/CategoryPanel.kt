@@ -3,20 +3,34 @@ package xyz.vexo.clickgui.components.panels
 import net.minecraft.util.Util
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.*
+import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
-import xyz.vexo.clickgui.components.ClickGuiColor
+import xyz.vexo.clickgui.gpx
+import xyz.vexo.clickgui.gsib
+import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.Theme.withAlpha
+import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.features.Category
 
 /**
- * Category panel component
+ * Glass category sidebar. Adds two virtual entries on top of the real [Category] list — Favorites
+ * and Active — for quick access. Selection is reported through [Nav].
  */
 class CategoryPanel(
-    private val onCategoryClick: (Category) -> Unit
+    private val onNavClick: (Nav) -> Unit
 ) : UIContainer() {
 
-    private val categoryBackgrounds = mutableMapOf<Category, UIBlock>()
-    private var selectedCategory: Category? = null
+    /** A sidebar destination: a real category, or one of the virtual quick-access views. */
+    sealed interface Nav {
+        data class Cat(val category: Category) : Nav
+        data object Favorites : Nav
+        data object Active : Nav
+    }
+
+    private val rowBackgrounds = mutableMapOf<Nav, UIComponent>()
+    private val rowIndicators = mutableMapOf<Nav, UIComponent>()
+    private var selected: Nav? = null
 
     init {
         constrain {
@@ -30,93 +44,106 @@ class CategoryPanel(
     }
 
     private fun setupPanel() {
-        UIBlock(ClickGuiColor.BACKGROUND_COLOR).constrain {
+        UIRoundedRectangle(5f).constrain {
             width = 100.percent()
+            height = 100.percent()
+        }.setColor(Theme.sidebar()) childOf this
+
+        UIBlock(Theme.divider()).constrain {
+            x = 0.pixels(true)
+            width = 1.gpx()
             height = 100.percent()
         } childOf this
 
         val scrollComponent = ScrollComponent("", innerPadding = 0f).constrain {
             x = 0.pixels()
-            y = 0.pixels()
+            y = 6.gpx()
             width = 100.percent()
-            height = 100.percent() - 45.pixels()
+            height = 100.percent() - 51.gpx()
         } childOf this
 
-        Category.entries.forEachIndexed { index, category ->
-            createCategoryButton(category).constrain {
-                y = if (index == 0) 0.pixels() else SiblingConstraint()
+        val rows = buildList {
+            add(Nav.Favorites to ("Favorites" to Theme.star()))
+            add(Nav.Active to ("Active" to Theme.success()))
+            Category.entries.forEach { add(Nav.Cat(it) to (it.displayName to Theme.accent())) }
+        }
+
+        rows.forEachIndexed { index, (nav, label) ->
+            createRow(nav, label.first, label.second).constrain {
+                y = if (index == 0) 0.pixels() else gsib(2f)
             } childOf scrollComponent
         }
 
         createDiscordButton() childOf this
     }
 
-    private fun createCategoryButton(category: Category): UIComponent {
+    private fun createRow(nav: Nav, label: String, dotColor: java.awt.Color): UIComponent {
         return UIContainer().constrain {
             width = 100.percent()
-            height = 40.pixels()
+            height = 38.gpx()
         }.apply {
-            val background = UIBlock(ClickGuiColor.BACKGROUND_COLOR).constrain {
-                x = 2.pixels()
-                y = 2.pixels()
-                width = 100.percent() - 4.pixels()
-                height = 100.percent() - 4.pixels()
-            } childOf this
+            val background = UIRoundedRectangle(8f).constrain {
+                x = 5.gpx()
+                y = 2.gpx()
+                width = 100.percent() - 9.gpx()
+                height = 100.percent() - 4.gpx()
+            }.setColor(Theme.card()) childOf this
+            rowBackgrounds[nav] = background
 
-            categoryBackgrounds[category] = background
-
-            UIText(category.displayName).constrain {
-                x = 12.pixels()
+            // Left accent indicator, lit only when selected.
+            val indicator = UIRoundedRectangle(2f).constrain {
+                x = 2.gpx()
                 y = CenterConstraint()
-                textScale = 1.3f.pixels()
-            } childOf this
+                width = 3.gpx()
+                height = 18.gpx()
+            }.setColor(Theme.accent().withAlpha(0)) childOf this
+            rowIndicators[nav] = indicator
+
+            UIRoundedRectangle(3f).constrain {
+                x = 14.gpx()
+                y = CenterConstraint()
+                width = 6.gpx()
+                height = 6.gpx()
+            }.setColor(dotColor) childOf this
+
+            UIText(label).constrain {
+                x = 26.gpx()
+                y = CenterConstraint()
+                textScale = 1.2f.gpx()
+            }.setColor(Theme.textPrimary()) childOf this
 
             onMouseEnter {
-                if (selectedCategory != category) {
-                    background.setColor(ClickGuiColor.HOVER_COLOR)
-                }
+                if (selected != nav) background.colorTo(Theme.cardHover())
             }
-
             onMouseLeave {
-                if (selectedCategory != category) {
-                    background.setColor(ClickGuiColor.BACKGROUND_COLOR)
-                }
+                if (selected != nav) background.colorTo(Theme.card())
             }
-
-            onMouseClick {
-                onCategoryClick(category)
-            }
+            onMouseClick { onNavClick(nav) }
         }
     }
 
     private fun createDiscordButton(): UIComponent {
         return UIContainer().constrain {
             x = 0.pixels()
-            y = 0.pixels(true)
+            y = 6.gpx(true)
             width = 100.percent()
-            height = 40.pixels()
+            height = 38.gpx()
         }.apply {
-            val background = UIBlock(ClickGuiColor.ACCENT_COLOR).constrain {
-                x = 2.pixels()
-                y = 2.pixels()
-                width = 100.percent() - 4.pixels()
-                height = 100.percent() - 4.pixels()
-            } childOf this
+            val background = UIRoundedRectangle(8f).constrain {
+                x = 5.gpx()
+                y = 2.gpx()
+                width = 100.percent() - 10.gpx()
+                height = 100.percent() - 4.gpx()
+            }.setColor(Theme.accent()) childOf this
 
             UIText("Discord").constrain {
                 x = CenterConstraint()
                 y = CenterConstraint()
-                textScale = 1.3f.pixels()
-            }.setColor(ClickGuiColor.WHITE_TEXT_COLOR) childOf this
+                textScale = 1.3f.gpx()
+            }.setColor(Theme.textOnAccent()) childOf this
 
-            onMouseEnter {
-                background.setColor(ClickGuiColor.HOVER_COLOR)
-            }
-
-            onMouseLeave {
-                background.setColor(ClickGuiColor.ACCENT_COLOR)
-            }
-
+            onMouseEnter { background.colorTo(Theme.accentHover()) }
+            onMouseLeave { background.colorTo(Theme.accent()) }
             onMouseClick {
                 try {
                     Util.getPlatform().openUri("https://discord.gg/wfW3aEEpVA")
@@ -127,12 +154,13 @@ class CategoryPanel(
         }
     }
 
-    fun selectCategory(category: Category) {
-        selectedCategory?.let { prevCategory ->
-            categoryBackgrounds[prevCategory]?.setColor(ClickGuiColor.BACKGROUND_COLOR)
+    fun select(nav: Nav) {
+        selected?.let {
+            rowBackgrounds[it]?.colorTo(Theme.card())
+            rowIndicators[it]?.colorTo(Theme.accent().withAlpha(0))
         }
-
-        selectedCategory = category
-        categoryBackgrounds[category]?.setColor(ClickGuiColor.ACCENT_COLOR)
+        selected = nav
+        rowBackgrounds[nav]?.colorTo(Theme.cardActive())
+        rowIndicators[nav]?.colorTo(Theme.accent())
     }
 }

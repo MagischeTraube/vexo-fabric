@@ -1,65 +1,55 @@
 package xyz.vexo.clickgui.components.settings
 
-import java.awt.Color
-import gg.essential.elementa.components.UIBlock
 import gg.essential.elementa.components.UIContainer
+import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.UIText
 import gg.essential.elementa.constraints.CenterConstraint
 import gg.essential.elementa.dsl.*
+import xyz.vexo.clickgui.gpx
+import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.config.impl.HudSetting
 
 /**
- * Hud setting component
- *
- * @param setting The hud setting to be displayed
- * @param onMoveClick The callback to be called when the move button is clicked
+ * Hud setting component — glass "Move" button opening the HUD editor.
  */
 class HudSettingComponent(
     private val setting: HudSetting,
     private val onMoveClick: () -> Unit
 ) : UIContainer() {
 
-    private val accentColor = Color(40, 120, 255)
-    private val hoverColor = Color(30, 90, 200)
-
     init {
         constrain {
             width = 100.percent()
-            height = 40.pixels()
+            height = 40.gpx()
         }
 
         UIText(setting.name).constrain {
-            x = 10.pixels()
+            x = 14.gpx()
             y = CenterConstraint()
-        } childOf this
+            textScale = 1.gpx()
+        }.setColor(Theme.textPrimary()) childOf this
 
         val moveButton = UIContainer().constrain {
-            x = 10.pixels(true)
+            x = 14.gpx(true)
             y = CenterConstraint()
-            width = 60.pixels()
-            height = 25.pixels()
+            width = 64.gpx()
+            height = 25.gpx()
         } childOf this
 
-        val moveBackground = UIBlock(accentColor).constrain {
+        val moveBackground = UIRoundedRectangle(6f).constrain {
             width = 100.percent()
             height = 100.percent()
-        } childOf moveButton
+        }.setColor(Theme.accent()) childOf moveButton
 
         UIText("Move").constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-        } childOf moveButton
+            textScale = 1.gpx()
+        }.setColor(Theme.textOnAccent()) childOf moveButton
 
-        moveButton.onMouseEnter {
-            moveBackground.setColor(hoverColor)
-        }
-
-        moveButton.onMouseLeave {
-            moveBackground.setColor(accentColor)
-        }
-
-        moveButton.onMouseClick {
-            onMoveClick()
-        }
+        moveButton.onMouseEnter { moveBackground.colorTo(Theme.accentHover()) }
+        moveButton.onMouseLeave { moveBackground.colorTo(Theme.accent()) }
+        moveButton.onMouseClick { onMoveClick() }
     }
 }

@@ -3,15 +3,30 @@ package xyz.vexo.clickgui.components
 import java.awt.Color
 
 object ClickGuiColor {
-    val HEADER_COLOR = Color(18, 18, 22)
-    val BACKGROUND_COLOR = Color(20, 20, 25)
-    val ACCENT_COLOR = Color(40, 120, 255)
-    val HOVER_COLOR = Color(30, 90, 200)
-    val SEPARATOR_COLOR = Color(40, 40, 45)
-    val WHITE_TEXT_COLOR = Color(255, 255, 255)
-    val GRAY_TEXT_COLOR = Color(150, 150, 150)
-    val GRAY_TEXT_INPUT_BACKGROUND_COLOR = Color(60, 60, 60)
-    val LIGHT_GRAY_BACKGROUND = Color( 80, 80, 80)
-    val WHITE_SLIDER_HANDLE_COLOR = Color(255, 255, 255)
-    val DARK_BACKGROUND_COLOR = Color(16, 16, 16)
+    // Backgrounds
+    val DARK_BACKGROUND_COLOR               = Color(12, 12, 18)
+    val HEADER_COLOR                        = Color(10, 10, 16)
+    val BACKGROUND_COLOR                    = Color(18, 18, 26)
+    val CARD_BG                             = Color(24, 24, 34)
+    val CARD_BG_ACTIVE                      = Color(28, 32, 60)
+    val CARD_HOVER                          = Color(32, 32, 46)
+    val GRAY_TEXT_INPUT_BACKGROUND_COLOR    = Color(22, 22, 34)
+    val LIGHT_GRAY_BACKGROUND               = Color(50, 50, 65)
+
+    // Accent & interactive
+    val ACCENT_COLOR                        = Color(99, 102, 241)
+    val HOVER_COLOR                         = Color(75, 78, 200)
+    val SUCCESS_COLOR                       = Color(52, 211, 153)
+
+    // Separators
+    val SEPARATOR_COLOR                     = Color(35, 35, 50)
+
+    // Text
+    val WHITE_TEXT_COLOR                    = Color(240, 240, 248)
+    val GRAY_TEXT_COLOR                     = Color(120, 120, 145)
+
+    // Slider / Toggle
+    val WHITE_SLIDER_HANDLE_COLOR           = Color(220, 220, 235)
+    val TOGGLE_OFF_COLOR                    = Color(48, 48, 64)
+    val SLIDER_TRACK_COLOR                  = Color(38, 38, 54)
 }

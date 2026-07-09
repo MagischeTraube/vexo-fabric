@@ -82,6 +82,7 @@ object Vexo : ClientModInitializer {
 			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts
 		).forEach { ModuleManager.register(it) }
 
+		xyz.vexo.clickgui.GuiPrefs.load()
 		ConfigManager.load()
 	}
 }

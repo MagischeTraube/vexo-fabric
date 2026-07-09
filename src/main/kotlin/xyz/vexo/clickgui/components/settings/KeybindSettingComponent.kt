@@ -1,19 +1,20 @@
 package xyz.vexo.clickgui.components.settings
 
 import org.lwjgl.glfw.GLFW
-import gg.essential.elementa.components.UIBlock
+import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.UIContainer
+import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.UIText
 import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.CenterConstraint
 import gg.essential.elementa.dsl.*
+import xyz.vexo.clickgui.gpx
+import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.config.impl.KeybindSetting
-import xyz.vexo.clickgui.components.ClickGuiColor
 
 /**
- * Keybind setting component
- *
- * @param setting The keybind setting to be displayed
+ * Keybind setting component — glass button that turns accent while listening for a key.
  */
 class KeybindSettingComponent(
     private val setting: KeybindSetting
@@ -24,30 +25,32 @@ class KeybindSettingComponent(
     init {
         constrain {
             width = 100.percent()
-            height = 40.pixels()
+            height = 40.gpx()
         }
 
         UIText(setting.name).constrain {
-            x = 10.pixels()
+            x = 14.gpx()
             y = CenterConstraint()
-        } childOf this
+            textScale = 1.gpx()
+        }.setColor(Theme.textPrimary()) childOf this
 
         val keybindButton = UIContainer().constrain {
-            x = 10.pixels(true)
+            x = 14.gpx(true)
             y = CenterConstraint()
-            width = 80.pixels()
-            height = 25.pixels()
+            width = 80.gpx()
+            height = 25.gpx()
         } childOf this
 
-        val keybindBackground = UIBlock(ClickGuiColor.LIGHT_GRAY_BACKGROUND).constrain {
+        val keybindBackground = UIRoundedRectangle(6f).constrain {
             width = 100.percent()
             height = 100.percent()
-        } childOf keybindButton
+        }.setColor(Theme.card()) childOf keybindButton
 
         val keybindText = UIText(getKeyName(setting.getCurrentValue())).constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-        } childOf keybindButton
+            textScale = 1.gpx()
+        }.apply { setColor(Theme.textPrimary()) } childOf keybindButton
 
         keybindButton.onMouseClick {
             if (!keyListenerRegistered) {
@@ -57,25 +60,21 @@ class KeybindSettingComponent(
 
             setting.listening = !setting.listening
             keybindText.setText(if (setting.listening) "..." else getKeyName(setting.getCurrentValue()))
-            keybindBackground.setColor(if (setting.listening) ClickGuiColor.ACCENT_COLOR else ClickGuiColor.LIGHT_GRAY_BACKGROUND)
+            keybindBackground.colorTo(if (setting.listening) Theme.accent() else Theme.card())
         }
 
         keybindButton.onMouseEnter {
-            if (!setting.listening) {
-                keybindBackground.setColor(ClickGuiColor.HOVER_COLOR)
-            }
+            if (!setting.listening) keybindBackground.colorTo(Theme.cardHover())
         }
 
         keybindButton.onMouseLeave {
-            if (!setting.listening) {
-                keybindBackground.setColor(ClickGuiColor.LIGHT_GRAY_BACKGROUND)
-            }
+            if (!setting.listening) keybindBackground.colorTo(Theme.card())
         }
     }
 
-    private fun registerKeyListener(keybindText: UIText, keybindBackground: UIBlock) {
+    private fun registerKeyListener(keybindText: UIText, keybindBackground: UIComponent) {
         val window = Window.of(this)
-        window.onKeyType { typedChar, keyCode ->
+        window.onKeyType { _, keyCode ->
             if (setting.listening) {
                 when (keyCode) {
                     GLFW.GLFW_KEY_ESCAPE,
@@ -83,14 +82,13 @@ class KeybindSettingComponent(
                     GLFW.GLFW_KEY_BACKSPACE -> {
                         setting.updateValue(-1)
                         keybindText.setText(getKeyName(-1))
-                        keybindBackground.setColor(ClickGuiColor.LIGHT_GRAY_BACKGROUND)
                     }
                     else -> {
                         setting.updateValue(keyCode)
                         keybindText.setText(getKeyName(keyCode))
-                        keybindBackground.setColor(ClickGuiColor.LIGHT_GRAY_BACKGROUND)
                     }
                 }
+                keybindBackground.colorTo(Theme.card())
                 setting.listening = false
             }
         }
@@ -103,14 +101,12 @@ class KeybindSettingComponent(
         GLFW.GLFW_KEY_TAB to "TAB",
         GLFW.GLFW_KEY_BACKSPACE to "BACK",
         GLFW.GLFW_KEY_DELETE to "DEL",
-
         GLFW.GLFW_KEY_LEFT_SHIFT to "LSHIFT",
         GLFW.GLFW_KEY_RIGHT_SHIFT to "RSHIFT",
         GLFW.GLFW_KEY_LEFT_CONTROL to "LCTRL",
         GLFW.GLFW_KEY_RIGHT_CONTROL to "RCTRL",
         GLFW.GLFW_KEY_LEFT_ALT to "LALT",
         GLFW.GLFW_KEY_RIGHT_ALT to "RALT",
-
         GLFW.GLFW_KEY_UP to "UP",
         GLFW.GLFW_KEY_DOWN to "DOWN",
         GLFW.GLFW_KEY_LEFT to "LEFT",
@@ -119,15 +115,10 @@ class KeybindSettingComponent(
 
     private fun getKeyName(keyCode: Int): String {
         if (keyCode == -1) return "None"
-
         if (keyCode in GLFW.GLFW_KEY_F1..GLFW.GLFW_KEY_F24) {
             return "F${keyCode - GLFW.GLFW_KEY_F1 + 1}"
         }
-
-        GLFW.glfwGetKeyName(keyCode, 0)?.let {
-            return it.uppercase()
-        }
-
+        GLFW.glfwGetKeyName(keyCode, 0)?.let { return it.uppercase() }
         return specialKeys[keyCode] ?: "Key $keyCode"
     }
 }
