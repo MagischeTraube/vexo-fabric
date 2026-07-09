@@ -230,7 +230,7 @@ object PlayerData {
      * @param username The Minecraft username
      * @return The UUID or null if not found
      */
-    private suspend fun getUuidFromUsername(username: String): String? {
+    public suspend fun getUuidFromUsername(username: String): String? {
         val key = username.lowercase()
         val currentTime = System.currentTimeMillis()
 

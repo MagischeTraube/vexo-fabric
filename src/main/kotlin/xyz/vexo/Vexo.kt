@@ -57,7 +57,7 @@ object Vexo : ClientModInitializer {
 			arrayOf(
 				VexoCommand,
 
-				TyfrCommand, reInviteCommand,
+				TyfrCommand, reInviteCommand, KuudraStatsCommand,
 
 				entranceCommand,
 				f1Command, f2Command, f3Command, f4Command, f5Command, f6Command, f7Command,
@@ -76,10 +76,10 @@ object Vexo : ClientModInitializer {
 			DungeonRequeue, StormPillarTimer, NecronBlockHighlight,
 
 			// kuudra
-			AutoKuudraRequeue, SoloDetector, ChestTracker,
+			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, ProfitTracker,
 
 			// misc
-			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava
+			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts
 		).forEach { ModuleManager.register(it) }
 
 		ConfigManager.load()

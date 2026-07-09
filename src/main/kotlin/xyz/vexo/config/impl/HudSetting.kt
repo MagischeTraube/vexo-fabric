@@ -12,13 +12,16 @@ import xyz.vexo.hud.HudManager
  * @param name The name of the setting.
  * @param description A description of the setting. Defaults to an empty string.
  * @param defaultText The default text of the setting. Defaults to the name of the setting.
+ * @param defaultScale The default render scale of the HUD. Defaults to 1. Set this to match the
+ *        real in-game scale so the move-GUI preview reflects the actual size.
  */
 class HudSetting(
     name: String,
     description: String = "",
     defaultText: String = name,
     defaultVisibility: Boolean = false,
-) : Setting<HudElement>(name, description, value = HudElement(name, defaultText, initialVisible = defaultVisibility)) {
+    defaultScale: Float = 1f,
+) : Setting<HudElement>(name, description, value = HudElement(name, defaultText, scale = defaultScale, initialVisible = defaultVisibility)) {
 
     init {
         HudManager.registerHud(this)
