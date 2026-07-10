@@ -160,19 +160,18 @@ class GuiSettingsOverlay(
                 textScale = 1.gpx()
             }.setColor(Theme.textPrimary()) childOf this
 
-            val valueText = UIText(GuiPrefs.scale.toString()).constrain {
+            val row = UIContainer().constrain {
                 x = 0.pixels(true)
                 y = CenterConstraint()
-                textScale = 1.gpx()
-            }.apply { setColor(Theme.accent()) } childOf this
-
-            // 1..5 stepper buttons.
-            val row = UIContainer().constrain {
-                x = 18.gpx(true)
-                y = CenterConstraint()
-                width = 70.gpx()
+                width = 80.gpx()
                 height = 18.gpx()
             } childOf this
+
+            val valueText = UIText(GuiPrefs.scale.toString()).constrain {
+                x = CenterConstraint()
+                y = CenterConstraint()
+                textScale = 1.gpx()
+            }.apply { setColor(Theme.accent()) } childOf row
 
             fun stepBtn(symbol: String, xRight: Boolean, delta: Int) {
                 val b = UIRoundedRectangle(5f).constrain {
@@ -181,18 +180,21 @@ class GuiSettingsOverlay(
                     width = 18.gpx()
                     height = 18.gpx()
                 }.setColor(Theme.card()) childOf row
+
                 UIText(symbol).constrain {
                     x = CenterConstraint()
                     y = CenterConstraint()
                     textScale = 1.gpx()
                 }.setColor(Theme.textPrimary()) childOf b
+
                 b.onMouseEnter { b.colorTo(Theme.accent()) }
                 b.onMouseLeave { b.colorTo(Theme.card()) }
                 b.onMouseClick {
-                    GuiPrefs.scale = GuiPrefs.scale + delta
+                    GuiPrefs.scale += delta
                     valueText.setText(GuiPrefs.scale.toString())
                 }
             }
+
             stepBtn("-", false, -1)
             stepBtn("+", true, 1)
         }
