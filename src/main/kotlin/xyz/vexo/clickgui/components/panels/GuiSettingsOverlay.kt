@@ -233,12 +233,15 @@ class GuiSettingsOverlay(
                     width = 100.percent() - 18.gpx()
                     height = 4.gpx()
                 }.setColor(Theme.sliderTrack()) childOf c
+
+                val handleWidth = 10f
                 val handle = UIRoundedRectangle(6f).constrain {
-                    x = (get() / 255f * 100).percent()
+                    x = (get() / 255f * 100).percent() - (handleWidth / 2).gpx()
                     y = CenterConstraint()
-                    width = 10.gpx()
+                    width = handleWidth.gpx()
                     height = 10.gpx()
                 }.setColor(Theme.handle()) childOf track
+
                 var dragging = false
                 track.onMouseClick { dragging = true }
                 track.onMouseRelease { dragging = false }
@@ -247,9 +250,11 @@ class GuiSettingsOverlay(
                 track.onMouseDrag { mouseX, _, _ ->
                     if (!dragging) return@onMouseDrag
                     val w = track.getWidth()
-                    val pct = mouseX.coerceIn(0f, w) / w
+                    val clampedMouseX = mouseX.coerceIn(0f, w)
+                    val pct = clampedMouseX / w
                     set((pct * 255).roundToInt().coerceIn(0, 255))
-                    handle.setX((pct * 100).percent())
+
+                    handle.setX((clampedMouseX - (handleWidth / 2)).pixels())
                     preview.setColor(GuiPrefs.accentColor)
                 }
             }
