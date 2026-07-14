@@ -57,7 +57,7 @@ object Vexo : ClientModInitializer {
 			arrayOf(
 				VexoCommand,
 
-				TyfrCommand, reInviteCommand, KuudraStatsCommand,
+				TyfrCommand, reInviteCommand, KuudraStatsCommand, deezNutsCommand,
 
 				entranceCommand,
 				f1Command, f2Command, f3Command, f4Command, f5Command, f6Command, f7Command,
