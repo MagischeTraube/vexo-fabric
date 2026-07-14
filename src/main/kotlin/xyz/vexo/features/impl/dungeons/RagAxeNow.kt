@@ -6,7 +6,6 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
-import xyz.vexo.utils.runAfterServerTicks
 
 
 object RagAxeNow : Module (
