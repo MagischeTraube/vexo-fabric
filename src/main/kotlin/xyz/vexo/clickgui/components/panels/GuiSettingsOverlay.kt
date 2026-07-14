@@ -160,19 +160,18 @@ class GuiSettingsOverlay(
                 textScale = 1.gpx()
             }.setColor(Theme.textPrimary()) childOf this
 
-            val valueText = UIText(GuiPrefs.scale.toString()).constrain {
+            val row = UIContainer().constrain {
                 x = 0.pixels(true)
                 y = CenterConstraint()
-                textScale = 1.gpx()
-            }.apply { setColor(Theme.accent()) } childOf this
-
-            // 1..5 stepper buttons.
-            val row = UIContainer().constrain {
-                x = 18.gpx(true)
-                y = CenterConstraint()
-                width = 70.gpx()
+                width = 80.gpx()
                 height = 18.gpx()
             } childOf this
+
+            val valueText = UIText(GuiPrefs.scale.toString()).constrain {
+                x = CenterConstraint()
+                y = CenterConstraint()
+                textScale = 1.gpx()
+            }.apply { setColor(Theme.accent()) } childOf row
 
             fun stepBtn(symbol: String, xRight: Boolean, delta: Int) {
                 val b = UIRoundedRectangle(5f).constrain {
@@ -181,18 +180,21 @@ class GuiSettingsOverlay(
                     width = 18.gpx()
                     height = 18.gpx()
                 }.setColor(Theme.card()) childOf row
+
                 UIText(symbol).constrain {
                     x = CenterConstraint()
                     y = CenterConstraint()
                     textScale = 1.gpx()
                 }.setColor(Theme.textPrimary()) childOf b
+
                 b.onMouseEnter { b.colorTo(Theme.accent()) }
                 b.onMouseLeave { b.colorTo(Theme.card()) }
                 b.onMouseClick {
-                    GuiPrefs.scale = GuiPrefs.scale + delta
+                    GuiPrefs.scale += delta
                     valueText.setText(GuiPrefs.scale.toString())
                 }
             }
+
             stepBtn("-", false, -1)
             stepBtn("+", true, 1)
         }
@@ -231,12 +233,15 @@ class GuiSettingsOverlay(
                     width = 100.percent() - 18.gpx()
                     height = 4.gpx()
                 }.setColor(Theme.sliderTrack()) childOf c
+
+                val handleWidth = 10f
                 val handle = UIRoundedRectangle(6f).constrain {
-                    x = (get() / 255f * 100).percent()
+                    x = (get() / 255f * 100).percent() - (handleWidth / 2).gpx()
                     y = CenterConstraint()
-                    width = 10.gpx()
+                    width = handleWidth.gpx()
                     height = 10.gpx()
                 }.setColor(Theme.handle()) childOf track
+
                 var dragging = false
                 track.onMouseClick { dragging = true }
                 track.onMouseRelease { dragging = false }
@@ -245,9 +250,11 @@ class GuiSettingsOverlay(
                 track.onMouseDrag { mouseX, _, _ ->
                     if (!dragging) return@onMouseDrag
                     val w = track.getWidth()
-                    val pct = mouseX.coerceIn(0f, w) / w
+                    val clampedMouseX = mouseX.coerceIn(0f, w)
+                    val pct = clampedMouseX / w
                     set((pct * 255).roundToInt().coerceIn(0, 255))
-                    handle.setX((pct * 100).percent())
+
+                    handle.setX((clampedMouseX - (handleWidth / 2)).pixels())
                     preview.setColor(GuiPrefs.accentColor)
                 }
             }
