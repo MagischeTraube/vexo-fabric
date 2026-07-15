@@ -79,7 +79,7 @@ object Vexo : ClientModInitializer {
 			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, ProfitTracker, KuudraPartyFinderInfo,
 
 			// misc
-			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts
+			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts, FireVeilOverlay
 		).forEach { ModuleManager.register(it) }
 
 		xyz.vexo.clickgui.GuiPrefs.load()

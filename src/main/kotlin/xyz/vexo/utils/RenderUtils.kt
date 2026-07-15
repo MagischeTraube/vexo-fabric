@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.state.gui.GuiTextRenderState
 import net.minecraft.client.renderer.rendertype.RenderTypes
 import net.minecraft.network.chat.Component
 import net.minecraft.world.phys.AABB
+import net.minecraft.world.phys.Vec3
 import org.joml.Matrix3x2f
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.Vexo.mc
@@ -91,9 +92,6 @@ fun blockBox(fromBlock: BlockPos, toBlock: BlockPos): AABB {
  * @param color The color to use for the outline
  * @param alpha The alpha value (0-255) (default: 255)
  */
-/**
- * Draws an outlined 3D box
- */
 fun LevelRenderContext.drawBoxOutline(
     box: AABB,
     color: Color,
@@ -162,6 +160,66 @@ fun LevelRenderContext.drawBoxOutline(
 
     buf.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
     buf.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
+}
+
+/**
+ * Draws a horizontal circle outline (flat on the XZ plane)
+ *
+ * @param center The center of the circle in world space
+ * @param radius The radius in blocks
+ * @param color The color of the outline
+ * @param alpha The alpha value (0-255) (default: 255)
+ * @param segments How many line segments make up the circle
+ * @param width The line width
+ */
+fun LevelRenderContext.drawCircle(
+    center: Vec3,
+    radius: Double,
+    color: Color,
+    alpha: Int = 255,
+    segments: Int = 72,
+    width: Double = 1.0
+) {
+    // The level renderer's own buffer source: its batch is drawn while the camera transform is
+    // still active, so vertices must be camera-relative.
+    val buffer = bufferSource()
+
+    val cam = mc.gameRenderer.mainCamera.position()
+
+    val pose = PoseStack().last()
+
+    val buf = buffer.getBuffer(RenderTypes.lines())
+
+    val r = color.red
+    val g = color.green
+    val b = color.blue
+
+    val cx = center.x - cam.x
+    val cz = center.z - cam.z
+    val y = (center.y - cam.y).toFloat()
+    val step = (Math.PI * 2.0) / segments
+
+    for (i in 0 until segments) {
+        val a0 = step * i
+        val a1 = step * (i + 1)
+
+        val x0 = (cx + Math.cos(a0) * radius).toFloat()
+        val z0 = (cz + Math.sin(a0) * radius).toFloat()
+        val x1 = (cx + Math.cos(a1) * radius).toFloat()
+        val z1 = (cz + Math.sin(a1) * radius).toFloat()
+
+        // Normal points along the segment so the line shader keeps a constant screen-space width.
+        val nx = x1 - x0
+        val nz = z1 - z0
+        val len = Math.sqrt((nx * nx + nz * nz).toDouble()).toFloat().coerceAtLeast(1e-5f)
+
+        val width = (width*2).toFloat()
+
+        buf.lineVertex(pose, x0, y, z0, r, g, b, alpha, nx / len, 0f, nz / len, width)
+        buf.lineVertex(pose, x1, y, z1, r, g, b, alpha, nx / len, 0f, nz / len, width)
+    }
+
+    buffer.endBatch(RenderTypes.lines())
 }
 
 /**

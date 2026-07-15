@@ -3,7 +3,6 @@ package xyz.vexo.utils
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.ServerTickEvent
-import xyz.vexo.utils.DungeonUtils
 import xyz.vexo.Vexo.mc
 import java.util.LinkedList
 
