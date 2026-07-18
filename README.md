@@ -39,6 +39,11 @@ A Hypixel SkyBlock mod for Minecraft 1.21 built on Fabric, focused on Dungeons, 
 | **Auto Kuudra Requeue** | Automatically starts a new Kuudra instance after each run, with configurable delay |
 | **Solo Detector** | Alerts your party via `/pc` when all other teammates have been eliminated |
 | **Chest Tracker** | Tracks your Kuudra chest count toward the 60-chest limit and displays it on a HUD |
+| **Profit Tracker** | Shows the profit of your Kuudra Croesus chests — values the loot, subtracts the cost, and highlights the most profitable chest |
+| **Backbone Alert** | HUD bar that tracks Bonemerang backbone timing and tells you exactly when to Rend |
+| **Eaten Timer** | Displays a countdown when you get eaten by Kuudra |
+| **Fire Veil Overlay** | Shows the Fire Veil radius as a ring and marks the wand in the hotbar while active |
+| **Kuudra Party Finder Info** | Shows Kuudra stats of players joining your group via Party Finder |
 | **Recolor Lava** | Renders lava as water textures (or a custom color) for better visibility in Kuudra |
 
 </details>
@@ -52,6 +57,8 @@ A Hypixel SkyBlock mod for Minecraft 1.21 built on Fabric, focused on Dungeons, 
 | **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.) |
 | **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked |
 | **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard |
+| **Wardrobe** | Quickly switch armor sets in the Wardrobe using keybinds |
+| **Loadouts** | Equip loadouts in the new Loadouts GUI with keybinds |
 
 </details>
 
@@ -62,7 +69,10 @@ A Hypixel SkyBlock mod for Minecraft 1.21 built on Fabric, focused on Dungeons, 
 |---|---|
 | `/vexo` | Opens the mod configuration menu |
 | `/tyfr` | Leaves the party after the current Dungeon or Kuudra run ends |
-| `/reinvite` | Leavs the Party then will msg Party Lead "!inv" |
+| `/reinvite` | Leaves the party, then messages the party lead "!inv" |
+| `/kuudrastats [player]` | Shows Kuudra stats for yourself or the given player |
+| `/rewarp <warp>` | Warps to your private island, then to the given warp (useful for resetting warp cooldowns) |
+| `/dn` | Warps to the Dungeon Hub |
 | `/entrance` | Queues for the Dungeon Entrance |
 | `/f1` – `/f7` | Queues for Floor 1–7 |
 | `/m1` – `/m7` | Queues for Master Mode Floor 1–7 |

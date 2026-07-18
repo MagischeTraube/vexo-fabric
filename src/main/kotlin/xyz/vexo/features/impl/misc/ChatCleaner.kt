@@ -46,6 +46,11 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val muteMessages by BooleanSetting(
+        name = "Mute Messages",
+        default = false
+    )
+
     private val checks
         get() = listOf(
             randomSpam to randomSpamRegex,
@@ -54,7 +59,8 @@ object ChatCleaner : Module(
             rareDropSpam to rareDropRegex,
             shardsSpam to shardRegex,
             ringOfLove to ringOfLoveRegex,
-            farmingFeast to farmingFeastRegex
+            farmingFeast to farmingFeastRegex,
+            muteMessages to muteMessagesRegex
         )
 
     @EventHandler
@@ -209,5 +215,13 @@ object ChatCleaner : Module(
 
     val farmingFeastRegex = listOf(
         Regex ("""[NPC] Feast Chef Ted: Thanks for the donation! I've added a Kernel to your purse.""")
+    )
+
+    val muteMessagesRegex = listOf(
+        Regex("""^-{53}$"""),
+        Regex("""^You are currently muted for .+"""),
+        Regex("""^Your mute will expire in .+"""),
+        Regex("""^Find out more here: www\.hypixel\.net/mutes$"""),
+        Regex("""^Mute ID: #.+""")
     )
 }
