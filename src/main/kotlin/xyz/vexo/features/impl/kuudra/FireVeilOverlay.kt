@@ -20,10 +20,6 @@ import java.awt.Color
 import kotlin.math.roundToInt
 import xyz.vexo.utils.PlayerUtils.isFirstPerson
 
-/**
- * Draws a ring around the player for the duration of the Fire Veil Wand's ability and
- * tints the wand's hotbar slot green while the veil is active.
- */
 object FireVeilOverlay : Module(
     name = "Fire Veil Overlay",
     description = "Shows the Fire Veil radius as a ring and marks the wand in the hotbar while active",
@@ -101,7 +97,6 @@ object FireVeilOverlay : Module(
     fun onHudRender(event: HudRenderEvent) {
         if (ticksRemaining <= 0 || activeSlot !in 0..8) return
 
-        // Hotbar slots are 20px apart, the item icon sits 3px inside the 22px slot frame.
         val x = Vexo.mc.window.guiScaledWidth / 2 - 91 + 3 + activeSlot * 20
         val y = Vexo.mc.window.guiScaledHeight - 16 - 3
 

@@ -22,10 +22,13 @@ object ChestTracker : Module(
 
     private var total by SliderSetting("chest_total", default = 0.0, min = 0.0, max = 60.0, increment = 1.0)
         .apply { dependsOn { false } }
+
     private var success by SliderSetting("chest_success", default = 0.0, min = 0.0, max = 60.0, increment = 1.0)
         .apply { dependsOn { false } }
+
     private var fail by SliderSetting("chest_fail", default = 0.0, min = 0.0, max = 60.0, increment = 1.0)
         .apply { dependsOn { false } }
+
 
     private var lastInKuudraMs = 0L
     private var tickCount = 0
@@ -125,9 +128,6 @@ object ChestTracker : Module(
 
     private fun shouldShowHud(): Boolean {
         if (total <= 0.0) return false
-        // Rely on the throttled onTick stamp instead of re-scanning the tablist every frame.
-        // lastInKuudraMs is refreshed every ~1s while in Kuudra, so the 10-minute window covers
-        // both "currently in Kuudra" and "recently left".
         return lastInKuudraMs > 0L && System.currentTimeMillis() - lastInKuudraMs < 600_000L
     }
 

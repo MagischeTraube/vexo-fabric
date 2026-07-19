@@ -22,26 +22,41 @@ import xyz.vexo.events.impl.PacketSendEvent
 import xyz.vexo.features.Module
 import xyz.vexo.hud.MoveActiveHudsGui
 
-/**
- * Tracks Bonemerang backbone timing: throw a Bonemerang and a HUD bar fills up to the
- * moment you should Rend ("REND NOW!"). Also detects a back-hit on a mob and fires early.
- * Ported from the IQ addon's Backbone Alert.
- */
+
 object BackboneAlert : Module(
     name = "Backbone Alert",
     description = "Shows a HUD bar timing the Bonemerang backbone and alerts you to Rend",
     toggled = false
 ) {
-    // Proxy text roughly matches the real 72px-wide progress bar so the move-GUI preview reflects its size.
-    private val hud by HudSetting(name = "Move HUD", defaultText = "§a████████████ §b60%")
-    private val playSound by BooleanSetting("Sound", "Play a sound when the alert fires", default = true)
+    private val hud by HudSetting(
+        name = "Move HUD",
+        defaultText = "§a████████████ §b60%"
+    )
+
+    private val playSound by BooleanSetting(
+        "Sound",
+        "Play a sound when the alert fires",
+        default = true
+    )
+
     private val advanceTicks by SliderSetting(
         "Advance (Ticks)",
         "Trigger the Rend this many ticks earlier (recommended 2)",
         default = 2.0, min = 0.0, max = 10.0, increment = 1.0
     )
-    // defaultScale matches the in-game render scale so the move-GUI preview shows the true (large) size.
-    private val rendHud by HudSetting(name = "Move REND HUD", defaultText = "§l§aREND NOW", defaultScale = REND_TEXT_SCALE)
+
+    private val tickAdjustment by SliderSetting(
+        "Tick Adjustment",
+        "Fine-tune the timing: shift the Rend later (+) or earlier (-)",
+        default = 0.0, min = -10.0, max = 10.0, increment = 1.0
+    )
+
+    private val rendHud by HudSetting(
+        name = "Move REND HUD",
+        defaultText = "§l§aREND NOW",
+        defaultScale = REND_TEXT_SCALE
+    )
+
     private val rendColor by SelectorSetting(
         "REND Farbe",
         "Farbe der großen REND NOW Anzeige",
@@ -85,7 +100,7 @@ object BackboneAlert : Module(
 
         cooldownTicks = BACKBONE_COOLDOWN_TICKS
         throwOrigin = player.eyePosition
-        startBackboneTimer(maxOf(1, BACKBONE_TICKS - advanceTicks.toInt()))
+        startBackboneTimer(maxOf(1, BACKBONE_TICKS - advanceTicks.toInt() + tickAdjustment.toInt()))
     }
 
     @EventHandler

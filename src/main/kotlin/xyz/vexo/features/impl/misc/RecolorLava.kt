@@ -15,14 +15,6 @@ import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.ModelManagerAccessor
 
-/**
- * Recolors lava for better visibility in Kuudra: as opaque water, or as a custom color.
- *
- * The swap is driven by [xyz.vexo.mixin.FluidStateModelSetMixin], which asks this module for the
- * model lava should use. "Color" mode tints a bundled grayscale lava texture: the tint is
- * multiplicative (can only darken), so a light base is needed for any color to be reachable, white
- * included.
- */
 object RecolorLava : Module(
     name = "Recolor Lava",
     description = "Renders lava as water textures for better visibility in Kuudra",
@@ -43,30 +35,33 @@ object RecolorLava : Module(
     ).dependsOn { colorMode.getCurrentValue() == "Color" }
         .apply { onChange = { refreshChunks() } }
 
-    // Invalidated when the mode/color or the baked water/lava models change (the latter on reload).
     private var cachedIsColor = false
     private var cachedColor = 0
     private var cachedWater: FluidModel? = null
     private var cachedLava: FluidModel? = null
     private var cachedModel: FluidModel? = null
 
+    /** Rebuilds chunks so the recolor applies. */
     override fun onEnable() {
         refreshChunks()
     }
 
+    /** Rebuilds chunks so lava reverts to vanilla. */
     override fun onDisable() {
         refreshChunks()
     }
 
-    // Force a chunk re-render so toggling/recoloring takes effect without waiting for a rebuild.
+    /** Forces a chunk-mesh rebuild so a changed setting takes effect. */
     private fun refreshChunks() {
         runCatching { mc.levelRenderer.allChanged() }
     }
 
     /**
-     * Returns the model lava should render with. Both modes render in lava's opaque layer.
-     * "Water" uses water's sprites + biome tint; "Color" tints the grayscale lava sprites with a
-     * constant color (falling back to water sprites if the atlas lookup fails).
+     * Builds the fluid model lava renders with, cached until the settings or source models change.
+     *
+     * @param waterModel vanilla water model, used for sprites/tint in "Water" mode
+     * @param lavaModel vanilla lava model, used for its render layer
+     * @return the fluid model to render lava with
      */
     fun modelForLava(waterModel: FluidModel, lavaModel: FluidModel): FluidModel {
         val isColor = colorMode.getCurrentValue() == "Color"
@@ -97,7 +92,11 @@ object RecolorLava : Module(
         return model
     }
 
-    /** Fetches the bundled grayscale lava sprites (still, flow), or null if the atlas isn't ready. */
+    /**
+     * Fetches the bundled grayscale lava sprites so a custom tint shows evenly.
+     *
+     * @return the still and flow sprites, or null if the block atlas isn't ready
+     */
     private fun grayLavaMaterials(): Pair<Material.Baked, Material.Baked>? = runCatching {
         val atlasManager = (mc.modelManager as ModelManagerAccessor).atlasManager
         val atlas = atlasManager.getAtlasOrThrow(AtlasIds.BLOCKS)
@@ -109,6 +108,11 @@ object RecolorLava : Module(
     private val GRAY_STILL = Identifier.fromNamespaceAndPath("vexo", "block/lava_gray_still")
     private val GRAY_FLOW = Identifier.fromNamespaceAndPath("vexo", "block/lava_gray_flow")
 
+    /**
+     * A [BlockTintSource] that returns the same color everywhere, ignoring position-dependent shading.
+     *
+     * @property rgb the packed color returned for every query
+     */
     private class ConstantTint(private val rgb: Int) : BlockTintSource {
         override fun color(state: BlockState) = rgb
         override fun colorInWorld(state: BlockState, view: BlockAndTintGetter, pos: BlockPos) = rgb

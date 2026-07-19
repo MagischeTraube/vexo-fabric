@@ -33,7 +33,7 @@ object Wardrobe : Module(
     private val unequip = KeybindSetting("Unequip")
     private val openWardrobe = KeybindSetting("Open Wardrobe")
 
-    // Hypixel renamed the GUI from "Wardrobe (1/3)" to "(1/3) Armor Sets"; match both.
+
     private val WARDROBE_PATTERN = Regex("""\((\d+)/(\d+)\)""")
     private val EQUIPPED_PATTERN = Regex("""Slot \d+: Equipped""")
 

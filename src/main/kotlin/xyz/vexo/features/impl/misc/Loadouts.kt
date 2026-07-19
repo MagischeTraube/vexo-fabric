@@ -14,15 +14,6 @@ import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
 import xyz.vexo.utils.removeFormatting
 
-/**
- * Keybinds for Hypixel's new "Loadouts" GUI (the successor to the Wardrobe's armor-set page).
- *
- * Unlike the Wardrobe (a column of armor pieces + an equip row), each loadout here is a **single**
- * slot: left-click equips it, right-click edits it. Loadouts can be renamed, so we never match on
- * names — we find the loadout slots by their equip/edit lore (both configured and empty loadouts carry
- * "Right-click to edit") and map keybind N to the N-th loadout **in slot order**, i.e. its physical
- * position in the grid.
- */
 object Loadouts : Module(
     name = "Loadouts",
     description = "Equip loadouts in the new Loadouts GUI with keybinds",
@@ -87,21 +78,17 @@ object Loadouts : Module(
         }
     }
 
-    /** A normal left-click on [slotIndex] — Hypixel reads it as "equip loadout" / "next page". */
     private fun leftClick(containerId: Int, slotIndex: Int, player: Player) {
         mc.gameMode?.handleContainerInput(containerId, slotIndex, 0, ContainerInput.PICKUP, player)
     }
 
-    /** Loadout slots of the top container (excludes the player inventory), in grid/slot order. */
     private fun collectLoadoutSlots(menu: AbstractContainerMenu) =
         menu.slots
             .filter { it.index < menu.slots.size - 36 && it.hasItem() && isLoadout(it.item) }
             .sortedBy { it.index }
 
-    /** Both configured and empty loadouts carry a "Right-click to edit" line — decoration/borders don't. */
     private fun isLoadout(stack: ItemStack): Boolean = "click to edit" in loreOf(stack)
 
-    /** Empty loadouts read "You must customize this loadout before you can equip it!" (no equip line). */
     private fun isEmptyLoadout(stack: ItemStack): Boolean {
         val lore = loreOf(stack)
         return "must customize" in lore || "click to equip" !in lore

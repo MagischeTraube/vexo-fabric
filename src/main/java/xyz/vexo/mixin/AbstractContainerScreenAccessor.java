@@ -7,9 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Exposes the protected GUI offsets of a container screen so Kotlin features can translate
- * slot-relative coordinates ({@link net.minecraft.world.inventory.Slot#x}/{@code y}) into
- * absolute screen coordinates when drawing overlays (e.g. the Kuudra Profit Tracker).
+ * Gives Kotlin features read access to a container screen's protected position fields, so they can
+ * find out where a slot sits on screen and draw overlays on top of it (e.g. the Kuudra Profit Tracker).
  */
 @Mixin(AbstractContainerScreen.class)
 public interface AbstractContainerScreenAccessor {
