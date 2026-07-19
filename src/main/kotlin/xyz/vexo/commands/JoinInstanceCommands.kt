@@ -24,7 +24,7 @@ val f4Command = Commodore("f4", "F4") {
 }
 
 val f5Command = Commodore("f5", "F5") {
-    runs { sendCommand("joindungeon catacombs_floor_fife") }
+    runs { sendCommand("joindungeon catacombs_floor_five") }
 }
 
 val f6Command = Commodore("f6", "F6") {
@@ -52,7 +52,7 @@ val m4Command = Commodore("m4", "M4") {
 }
 
 val m5Command = Commodore("m5", "M5") {
-    runs { sendCommand("joindungeon master_catacombs_floor_fife") }
+    runs { sendCommand("joindungeon master_catacombs_floor_five") }
 }
 
 val m6Command = Commodore("m6", "M6") {

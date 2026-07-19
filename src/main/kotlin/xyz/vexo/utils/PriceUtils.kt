@@ -36,8 +36,8 @@ object PriceUtils : IInitializable {
 
     private data class PriceBackup(
         val lastFetchTime: Long,
-        val bazaar: Map<String, BazaarData>,
-        val auctions: Map<String, AuctionData>
+        val bazaar: Map<String, BazaarData>?,
+        val auctions: Map<String, AuctionData>?
     )
 
     override fun init() {
@@ -207,12 +207,12 @@ object PriceUtils : IInitializable {
             val type = object : TypeToken<PriceBackup>() {}.type
             val backup: PriceBackup = gson.fromJson(PRICE_DATA_FILE.readText(), type)
 
-            cachedBazaarData.putAll(backup.bazaar)
-            cachedAuctionData.putAll(backup.auctions)
+            backup.bazaar?.let { cachedBazaarData.putAll(it) }
+            backup.auctions?.let { cachedAuctionData.putAll(it) }
             lastFetchTime = backup.lastFetchTime
 
             val minutesAgo = (System.currentTimeMillis() - lastFetchTime) / (60 * 1000)
-            val totalItems = backup.bazaar.size + backup.auctions.size
+            val totalItems = (backup.bazaar?.size ?: 0) + (backup.auctions?.size ?: 0)
             logInfo("Loaded $totalItems cached prices (${minutesAgo}m old)")
         } catch (e: Exception) {
             logError(e, this@PriceUtils)

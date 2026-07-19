@@ -7,8 +7,7 @@ import xyz.vexo.utils.runAfterServerTicks
 import xyz.vexo.utils.sendCommand
 
 var rewarping = false
-var serverTicks = 0
-var warping = false
+var islandWarp = false
 var warpName = ""
 
 val RewarpCommand = Commodore("rewarp") {
@@ -23,10 +22,11 @@ private fun rewarp(name: String) {
     warpName = name
 }
 
-@EventHandler
-fun worldJoin(@Suppress("UNUSED_PARAMETER") event: WorldJoinEvent) {
-    if (!rewarping) return
-    runAfterServerTicks(80) {
-        sendCommand("warp $warpName")
+object RewarpCommandQue {
+    @EventHandler
+    fun worldJoin(@Suppress("UNUSED_PARAMETER") event: WorldJoinEvent) {
+        if (!rewarping) return
+        rewarping = false
+        runAfterServerTicks(90) { sendCommand("warp $warpName") }
     }
 }

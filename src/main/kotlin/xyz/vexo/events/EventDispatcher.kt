@@ -62,11 +62,7 @@ object EventDispatcher : IInitializable {
             ServerLeaveEvent.postAndCatch()
         }
 
-        LevelRenderEvents.END_EXTRACTION.register {
-            WorldRenderDataReadyEvent.postAndCatch()
-        }
-
-        LevelRenderEvents.END_MAIN.register { context ->
+        LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register { context ->
             WorldRenderEvent(context).postAndCatch()
         }
 

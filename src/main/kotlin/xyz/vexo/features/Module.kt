@@ -22,7 +22,6 @@ abstract class Module(
     val settings = mutableListOf<Setting<*>>()
 
     var enabled: Boolean = toggled
-        private set
 
     open fun onEnable() {
         EventBus.subscribe(this)

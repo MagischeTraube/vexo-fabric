@@ -99,7 +99,7 @@ fun LevelRenderContext.drawBoxOutline(
 ) {
     val expanded = box.inflate(0.002)
 
-    val buffer = mc.renderBuffers().bufferSource()
+    val buffer = bufferSource()
 
     val cam = mc.gameRenderer.mainCamera.position()
 
@@ -160,6 +160,8 @@ fun LevelRenderContext.drawBoxOutline(
 
     buf.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
     buf.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
+
+    buffer.endBatch(RenderTypes.lines())
 }
 
 /**

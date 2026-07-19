@@ -119,6 +119,7 @@ object ProfitTracker : Module(
         "Tormentor" to "TORMENTOR",
         "Mandraa" to "MANDRAA",
         "Kismet Feather" to "KISMET_FEATHER",
+        "Ananke Feather" to "ANANKE_FEATHER",
         "Hellstorm Staff" to "HELLSTORM_STAFF",
         "Wheel of Fate" to "WHEEL_OF_FATE",
         // Display name differs from the API id ("Cinderbat" vs "CINDER_BAT").
@@ -350,15 +351,36 @@ object ProfitTracker : Module(
         }
     }
 
+    // --- Pricing helpers, usable by other modules (independent of whether this module is enabled)
+    // so chests, shards and the Wheel of Fate are priced consistently everywhere. ---
+
+    /** Single-unit coin value of the loot named [name] using this tracker's price settings, or null if unpriced. */
+    fun priceOf(name: String): Long? = lootValueOrNull(name, 1L)
+
+    /** Profit total of one chest item (its Contents minus Cost), or null if it isn't a priceable chest. */
+    fun chestProfit(stack: ItemStack): Long? = chestBreakdown(stack)?.total
+
     /**
-     * Best openable-chest profit for [screen], or null if it isn't a Kuudra chest GUI or has no
-     * priceable chest. Public so the private AutoProfitOpen module can reuse the pricing logic
-     * without depending on this module being enabled.
+     * Like [chestProfit], but null until *every* content item has a usable API price. Right after a
+     * chest view opens the Contents lore is present while prices are still streaming in, so the raw
+     * profit reads far too low (unpriced items count as 0). Callers that act on the value should wait
+     * on this instead of deciding on a half-loaded number.
      */
-    fun bestProfitFor(screen: AbstractContainerScreen<*>): Long? {
-        val title = screen.title.string.removeFormatting()
-        if (title != "Paid Chest" && title != "Free Chest" && !KUUDRA_TIER_TITLE.containsMatchIn(title)) return null
-        return bestChest(screen)?.second?.total
+    fun chestProfitReady(stack: ItemStack): Long? =
+        chestBreakdown(stack)?.takeUnless { it.hasError }?.total
+
+    /** Loot-item display names (quantity stripped) from a chest item's Contents lore; empty if not a chest. */
+    fun chestLootNames(stack: ItemStack): List<String> {
+        val lore = stack.get(DataComponents.LORE)?.styledLines()
+            ?.map { it.string.removeFormatting().trim() } ?: return emptyList()
+        val contentsIdx = lore.indexOf("Contents")
+        if (contentsIdx == -1) return emptyList()
+        return lore.drop(contentsIdx + 1)
+            .takeWhile { it.isNotBlank() && it != "Cost" }
+            .map { line ->
+                val qty = QTY_REGEX.find(line)
+                (if (qty != null) line.substring(0, qty.range.first) else line).trim()
+            }
     }
 
     /** Picks the single most profitable openable chest in the current GUI, or null if none. */
@@ -628,7 +650,7 @@ object ProfitTracker : Module(
     private fun reportMissing(missing: List<String>) {
         for (item in missing) {
             if (reportedErrors.add(item)) {
-                modMessage("§cKein Preis für §f$item §c— Profit ist unvollständig (API).")
+                modMessage("§cNo price for §f$item §c— profit is incomplete (API).")
             }
         }
     }
