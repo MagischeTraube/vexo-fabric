@@ -21,16 +21,9 @@ import xyz.vexo.utils.PriceUtils
 import xyz.vexo.utils.modMessage
 import xyz.vexo.utils.removeFormatting
 
-/**
- * Shows the Croesus chest profit for Kuudra runs, ported from the 1.8.9 ProfitTracker (dungeons).
- *
- * Croesus flow: `/croesus` -> click a Kuudra run -> `Kuudra - <Tier>` overview -> `Paid Chest` /
- * `Free Chest`. The openable chest carries an "Open Reward Chest" item whose lore lists `Contents`
- * and `Cost`. We parse that lore, value the loot via [PriceUtils], subtract the cost, highlight the
- * single most profitable chest, and (optionally) draw a breakdown panel explaining the number.
- */
-object ProfitTracker : Module(
-    name = "Profit Tracker",
+
+object KuudraProfitTracker : Module(
+    name = "Kuudra Profit Tracker",
     description = "Shows Croesus chest profit for Kuudra runs",
     toggled = false
 ) {
@@ -97,15 +90,13 @@ object ProfitTracker : Module(
         default = Color(78, 0, 2, 150)
     ).apply { dependsOn { highlightCroesus } }
 
-    // Hoisted: GuiRenderEvent fires every frame while a menu is open.
+
+
     private val QTY_REGEX = Regex("""[x×]\s*([\d,]+)\s*$""")
     private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
     private val KUUDRA_TIER_TITLE = Regex("""Kuudra - (Basic|Hot|Burning|Fiery|Infernal)""")
-    // "Enchanted Book (Mana Vampire V)" -> MANA_VAMPIRE_V (the API keys books as <ENCHANT>_<ROMAN>).
     private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
 
-    // Loot whose display name maps to a price-API id by a fixed rule. " Shard" -> SHARD_<NAME> and
-    // " Essence" -> ESSENCE_<NAME> are handled generically; only the rest need an explicit entry.
     private val NAME_TO_ID = mapOf(
         "Kuudra Teeth" to "KUUDRA_TEETH",
         "Kuudra Mandible" to "KUUDRA_MANDIBLE",
@@ -122,23 +113,16 @@ object ProfitTracker : Module(
         "Ananke Feather" to "ANANKE_FEATHER",
         "Hellstorm Staff" to "HELLSTORM_STAFF",
         "Wheel of Fate" to "WHEEL_OF_FATE",
-        // Display name differs from the API id ("Cinderbat" vs "CINDER_BAT").
         "Cinderbat Shard" to "SHARD_CINDER_BAT",
-        // Display uses British "Spectre"; the bazaar id uses American "SPECTER".
         "Wither Spectre Shard" to "SHARD_WITHER_SPECTER",
     )
 
-    // Items that are intentionally worthless (no meaningful market value) — counted as 0, not an error.
     private val ZERO_VALUE = setOf("Magma Slug Shard", "Dusty Travel Scroll to the Kuudra Skull")
 
-    // Tier keys aren't sold directly, so they're valued by their craft recipe: a flat coin cost plus
-    // material components priced live via the API. Recomputed whenever prices update (cache invalidates).
     private data class KeyRecipe(val coins: Long, val components: List<Pair<String, Int>>)
 
-    // Kuudra armor salvage: a piece is worth the Crimson Essence it salvages into — a flat 100 base
-    // plus 20 per star (linear), optionally boosted by the +20% salvage perk (see [salvagePerk]).
     private const val BASE_CRIMSON_ESSENCE = 100
-    private const val ESSENCE_PER_STAR = 20
+    private val ESSENCE_PER_STAR = intArrayOf(15, 17, 20, 22, 25, 27, 30)
 
     private val KUUDRA_ARMOR: Set<String> = buildSet {
         for (set in listOf("Aurora", "Crimson", "Terror", "Hollow", "Fervor")) {
@@ -146,11 +130,16 @@ object ProfitTracker : Module(
         }
     }
 
-    // Non-armor Kuudra gear that is also valued by its Crimson Essence salvage (weapons/accessories).
-    private val SALVAGEABLE_EXTRA = setOf(
-        "Aurora Staff", "Hollow Wand",
-        "Molten Belt", "Molten Bracelet", "Molten Cloak", "Molten Necklace",
+    private val SALVAGE_ESSENCE_OVERRIDE: Map<String, Long> = mapOf(
+        "Aurora Staff" to 500,
+        "Hollow Wand" to 500,
+        "Molten Belt" to 500,
+        "Molten Bracelet" to 500,
+        "Molten Cloak" to 500,
+        "Molten Necklace" to 500,
+        "Kuudra Mandible" to 500
     )
+    private val SALVAGEABLE_EXTRA: Set<String> = SALVAGE_ESSENCE_OVERRIDE.keys
 
     private val KEY_RECIPES = mapOf(
         "Infernal Kuudra Key" to KeyRecipe(
@@ -159,9 +148,7 @@ object ProfitTracker : Module(
         ),
     )
 
-    // --- Expected-value drop tables (wiki-sourced) -------------------------------------------------
-    // A paid chest = guaranteed items + one slot-1 roll + one slot-2 roll. Expected value computes
-    // each slot's average independently (Σ chance × value) and sums them with the guaranteed value.
+
     private data class Drop(val name: String, val qty: Int, val chancePct: Double)
 
     private data class TierTable(
@@ -172,14 +159,13 @@ object ProfitTracker : Module(
 
     private val KEY_TIER_REGEX = Regex("(Basic|Hot|Burning|Fiery|Infernal) Kuudra Key")
 
-    // Guaranteed amounts taken from a real Infernal paid chest tooltip.
-    private val INFERNAL_GUARANTEED = listOf(
+
+    private val INFERNAL_GUARANTEED_DROPS = listOf(
         "Crimson Essence" to 2000,
         "Kuudra Teeth" to 3,
         "Kraken Shard" to 1,
     )
 
-    // Slot 1 sums to ~100% (20 armor pieces @ 2.96% + the shards/items below).
     private val INFERNAL_SLOT1: List<Drop> = buildList {
         for (set in listOf("Aurora", "Crimson", "Fervor", "Hollow", "Terror")) {
             for (piece in listOf("Helmet", "Chestplate", "Leggings", "Boots")) add(Drop("$set $piece", 1, 2.96))
@@ -218,9 +204,7 @@ object ProfitTracker : Module(
         )
     }
 
-    // Slot 2 is partial (~35% of mass listed); the unlisted remainder is cheap filler valued at 0.
     private val INFERNAL_SLOT2: List<Drop> = listOf(
-        // Paid-chest tentacle drop (~10% per the wiki); valued via KUUDRA_TENTACLE bazaar price.
         Drop("Kuudra Tentacle", 1, 10.0),
         Drop("Kuudra Teeth", 100, 0.06),
         Drop("Crimson Essence", 10000, 0.06),
@@ -250,11 +234,11 @@ object ProfitTracker : Module(
     )
 
     private val TIER_TABLES = mapOf(
-        "Infernal" to TierTable(INFERNAL_GUARANTEED, INFERNAL_SLOT1, INFERNAL_SLOT2),
+        "Infernal" to TierTable(INFERNAL_GUARANTEED_DROPS, INFERNAL_SLOT1, INFERNAL_SLOT2),
     )
 
     /**
-     * A single priced row of the breakdown; [parts] are the sub-rows (e.g. a key's recipe).
+     * A single priced row of the profit GUI; [parts] are the sub-rows (e.g. a key's recipe).
      * [error] marks rows containing an item that has no price in the API (rendered red).
      */
     private data class Entry(
@@ -265,32 +249,40 @@ object ProfitTracker : Module(
     )
 
     private data class Breakdown(val loot: List<Entry>, val costs: List<Entry>, val total: Long) {
-        /** True if any priced row references an item with no usable API price. */
-        val hasError: Boolean get() = loot.any { it.error } || costs.any { it.error }
+        val hasApiError: Boolean get() = loot.any { it.error } || costs.any { it.error }
 
-        /** Labels of the rows that failed to price — used for the chat warning. */
-        val missing: List<String> get() = (loot + costs).filter { it.error }.map { it.label }
+        val missingInfo: List<String> get() = (loot + costs).filter { it.error }.map { it.label }
     }
 
     // Cache the computed best chest per GUI content snapshot so we only re-parse when slots change.
     private var cacheHash = 0
     private var cacheResult: Pair<Slot, Breakdown>? = null
 
-    // Translucent red tint for the highlighted chest when its value couldn't be fully priced.
-    private val ERROR_HIGHLIGHT = Color(250, 18, 0, 120).rgb
 
-    // Missing items already announced in chat, so we warn once per item instead of every frame.
-    // Cleared when prices refresh (so a now-priced item won't keep nagging) and on disable.
+    private val ERROR_HIGHLIGHT_COLOR = Color(250, 18, 0, 120).rgb
+
     private val reportedErrors = HashSet<String>()
 
+    /** Drops the cached best-chest result when the module is turned off. */
     override fun onDisable() {
         super.onDisable()
         invalidate()
     }
 
+    /**
+     * Invalidates the cache whenever fresh prices arrive, so the profit re-computes with them.
+     *
+     * @param event the price-data refresh notification
+     */
     @EventHandler
     fun onPriceUpdate(event: PriceDataUpdateEvent) = invalidate()
 
+    /**
+     * Draws the profit overlay each frame: Croesus run tints, the best-chest highlight, and the
+     * optional breakdown panel. Does nothing unless the open screen is a Croesus or Kuudra chest GUI.
+     *
+     * @param event the GUI render event carrying the screen and draw context
+     */
     @EventHandler
     fun onGuiRender(event: GuiRenderEvent) {
         val screen = event.screen as? AbstractContainerScreen<*> ?: return
@@ -317,16 +309,24 @@ object ProfitTracker : Module(
         val (slot, breakdown) = cacheResult ?: return
         val ctx = event.context
 
-        if (breakdown.hasError) reportMissing(breakdown.missing)
+        if (breakdown.hasApiError) reportMissing(breakdown.missingInfo)
 
-        renderHighlight(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), slot, breakdown.total, breakdown.hasError)
+        renderHighlight(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), slot, breakdown.total, breakdown.hasApiError)
 
         if (showBreakdown) {
             renderBreakdown(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width, breakdown)
         }
     }
 
-    /** Tints each Croesus run head by how many of its chests are still openable. */
+    /**
+     * Tints each run in the Croesus menu by its chest status: green when chests are still openable,
+     * dark red when the run is done. Runs with neither lore line are left untouched.
+     *
+     * @param ctx draw context to fill the slot backgrounds into
+     * @param leftPos left pixel edge of the GUI
+     * @param topPos top pixel edge of the GUI
+     * @param screen the Croesus screen whose slots are scanned
+     */
     private fun renderCroesusHighlights(
         ctx: GuiGraphicsExtractor,
         leftPos: Int,
@@ -351,25 +351,37 @@ object ProfitTracker : Module(
         }
     }
 
-    // --- Pricing helpers, usable by other modules (independent of whether this module is enabled)
-    // so chests, shards and the Wheel of Fate are priced consistently everywhere. ---
-
-    /** Single-unit coin value of the loot named [name] using this tracker's price settings, or null if unpriced. */
+    /**
+     * Single-unit coin value of the loot named [name] using this tracker's price settings.
+     *
+     * @param name the loot display name to price
+     * @return the value of one unit, or null if the item is unpriced
+     */
     fun priceOf(name: String): Long? = lootValueOrNull(name, 1L)
 
-    /** Profit total of one chest item (its Contents minus Cost), or null if it isn't a priceable chest. */
+    /**
+     * Profit total of one chest item (its Contents minus Cost).
+     *
+     * @param stack the chest item to value
+     * @return the profit, or null if it isn't a priceable chest
+     */
     fun chestProfit(stack: ItemStack): Long? = chestBreakdown(stack)?.total
 
     /**
-     * Like [chestProfit], but null until *every* content item has a usable API price. Right after a
-     * chest view opens the Contents lore is present while prices are still streaming in, so the raw
-     * profit reads far too low (unpriced items count as 0). Callers that act on the value should wait
-     * on this instead of deciding on a half-loaded number.
+     * Calculates the total profit of a chest, but only once all of its items are priced.
+     *
+     * @param stack the chest item whose Contents lore holds the loot to value
+     * @return the chest profit, or null while any content item still lacks an API price
      */
     fun chestProfitReady(stack: ItemStack): Long? =
-        chestBreakdown(stack)?.takeUnless { it.hasError }?.total
+        chestBreakdown(stack)?.takeUnless { it.hasApiError }?.total
 
-    /** Loot-item display names (quantity stripped) from a chest item's Contents lore; empty if not a chest. */
+    /**
+     * Loot-item display names (quantity stripped) read from a chest item's Contents lore.
+     *
+     * @param stack the chest item to read
+     * @return the loot names, or an empty list if the item has no Contents lore
+     */
     fun chestLootNames(stack: ItemStack): List<String> {
         val lore = stack.get(DataComponents.LORE)?.styledLines()
             ?.map { it.string.removeFormatting().trim() } ?: return emptyList()
@@ -383,7 +395,12 @@ object ProfitTracker : Module(
             }
     }
 
-    /** Picks the single most profitable openable chest in the current GUI, or null if none. */
+    /**
+     * Picks the single most profitable chest in the current GUI.
+     *
+     * @param screen the chest GUI whose slots are scanned
+     * @return the winning slot paired with its breakdown, or null if no slot holds a priceable chest
+     */
     private fun bestChest(screen: AbstractContainerScreen<*>): Pair<Slot, Breakdown>? {
         var best: Pair<Slot, Breakdown>? = null
         for (slot in screen.menu.slots) {
@@ -394,7 +411,13 @@ object ProfitTracker : Module(
         return best
     }
 
-    /** Parses the `Contents`/`Cost` lore of a chest item into a priced breakdown. */
+    /**
+     * Parses the `Contents`/`Cost` lore of a chest item into a priced breakdown. In "Expected" value
+     * mode the actual contents are replaced by the tier's average chest value.
+     *
+     * @param stack the chest item to parse
+     * @return the priced breakdown, or null if the item has no `Contents` lore to value
+     */
     private fun chestBreakdown(stack: ItemStack): Breakdown? {
         val lore = stack.get(DataComponents.LORE)?.styledLines()
             ?.map { it.string.removeFormatting().trim() }
@@ -423,6 +446,14 @@ object ProfitTracker : Module(
         return Breakdown(loot, costs, total)
     }
 
+    /**
+     * Builds the average-value breakdown for a tier: guaranteed loot plus the expected value of each
+     * of the two slot rolls, minus the given costs.
+     *
+     * @param table the tier's guaranteed and per-slot drop tables
+     * @param costs the already-priced cost rows to subtract
+     * @return the expected-value breakdown
+     */
     private fun expectedBreakdown(table: TierTable, costs: List<Entry>): Breakdown {
         var guaranteedError = false
         val guaranteed = table.guaranteed.sumOf {
@@ -440,7 +471,12 @@ object ProfitTracker : Module(
         return Breakdown(loot, costs, total)
     }
 
-    /** Expected value of one slot roll; the flag is true if any drop has no API price. */
+    /**
+     * Expected value of one slot roll: the sum of each drop's chance times its coin value.
+     *
+     * @param drops the possible drops for this slot with their chances
+     * @return the expected coin value paired with a flag that is true if any drop had no API price
+     */
     private fun expectedSlot(drops: List<Drop>): Pair<Long, Boolean> {
         var sum = 0.0
         var error = false
@@ -451,6 +487,13 @@ object ProfitTracker : Module(
         return sum.toLong() to error
     }
 
+    /**
+     * Turns one Contents lore line into a priced loot row, appending a tag for salvage or the
+     * Lvl 100 essence bonus where it applies.
+     *
+     * @param line a single Contents lore line, e.g. `Aurora Helmet` or `Crimson Essence x2,500`
+     * @return the priced entry, flagged as an error if the item has no API price
+     */
     private fun lootEntry(line: String): Entry {
         val qtyMatch = QTY_REGEX.find(line)
         val qty = qtyMatch?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
@@ -468,7 +511,11 @@ object ProfitTracker : Module(
 
     /**
      * Coin value of [qty] of the loot named [name]; shared by the actual and expected-value modes.
-     * Returns null when the item has no usable API price (so callers can flag it as an error).
+     * Kuudra gear is valued by the Crimson Essence it salvages into rather than its market price.
+     *
+     * @param name the loot display name (quantity stripped)
+     * @param qty how many of the item to value
+     * @return the total coin value, or null when the item has no usable API price
      */
     private fun lootValueOrNull(name: String, qty: Long): Long? {
         if (name in ZERO_VALUE) return 0L
@@ -488,21 +535,48 @@ object ProfitTracker : Module(
         return value
     }
 
+    /** @return the current coin price of a single Crimson Essence. */
     private fun crimsonPrice(): Long = PriceUtils.getPrice("ESSENCE_CRIMSON", sellOffer, includeTaxes).toLong()
 
+    /**
+     * Whether an item is valued by its Crimson Essence salvage rather than its market price.
+     *
+     * @param name the item display name (stars are ignored)
+     * @return true for Kuudra armor and the salvageable weapons/accessories
+     */
     private fun isSalvageable(name: String): Boolean {
         val clean = name.replace("✪", "").trim()
         return clean in KUUDRA_ARMOR || clean in SALVAGEABLE_EXTRA
     }
 
-    /** Crimson Essence an armor piece salvages into: 100 base + 20 per star, +20% with the perk. */
+    /**
+     * Crimson Essence an item salvages into. Non-armor gear uses its fixed value from
+     * [SALVAGE_ESSENCE_OVERRIDE]; armor uses 100 base plus a per-star increment that grows with each
+     * star (see [ESSENCE_PER_STAR]). The +20% perk applies to both.
+     *
+     * @param name the item display name; its `✪` count is read as the star level
+     * @return the salvage essence amount, including the perk bonus when it is enabled
+     */
     private fun salvageEssence(name: String): Long {
-        val stars = name.count { it == '✪' }
-        var essence = (BASE_CRIMSON_ESSENCE + ESSENCE_PER_STAR * stars).toLong()
+        val clean = name.replace("✪", "").trim()
+        var essence = SALVAGE_ESSENCE_OVERRIDE[clean]
+            ?: run {
+                val stars = name.count { it == '✪' }.coerceAtMost(ESSENCE_PER_STAR.size)
+                var e = BASE_CRIMSON_ESSENCE.toLong()
+                for (i in 0 until stars) e += ESSENCE_PER_STAR[i]
+                e
+            }
         if (salvagePerk) essence = essence * 12 / 10
         return essence
     }
 
+    /**
+     * Prices one Cost lore line. A known key is expanded into its recipe as sub-rows; an unknown key
+     * falls back to the coin amount in the line, or 0 if it lists none.
+     *
+     * @param line a single Cost lore line, e.g. `Infernal Kuudra Key` or `FREE`
+     * @return the priced cost entry, with recipe components as its parts where applicable
+     */
     private fun costEntry(line: String): Entry {
         if (line.equals("FREE", ignoreCase = true)) return Entry(line, 0L)
 
@@ -522,6 +596,13 @@ object ProfitTracker : Module(
         return Entry(line, coins ?: 0L)
     }
 
+    /**
+     * Resolves a loot display name to its price-API id. Enchanted books and explicit [NAME_TO_ID]
+     * overrides take priority, then the generic ` Shard`/` Essence` suffix rules.
+     *
+     * @param name the loot display name
+     * @return the API id, or null if the name maps to no known id
+     */
     private fun lootIdFor(name: String): String? {
         ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
             return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
@@ -536,10 +617,26 @@ object ProfitTracker : Module(
         }
     }
 
-    /** Turns a price-API id like `CORRUPTED_NETHER_STAR` into a readable `Corrupted Nether Star`. */
+    /**
+     * Turns a price-API id like `CORRUPTED_NETHER_STAR` into a readable `Corrupted Nether Star`.
+     *
+     * @param id the upper-snake-case API id
+     * @return the human-readable, title-cased name
+     */
     private fun prettyName(id: String): String =
         id.split('_').joinToString(" ") { it.lowercase().replaceFirstChar(Char::uppercase) }
 
+    /**
+     * Tints the best chest's slot and draws its profit as a coin label just below it. The tint is red
+     * and the value incomplete when a price is missing.
+     *
+     * @param ctx draw context
+     * @param leftPos left pixel edge of the GUI
+     * @param topPos top pixel edge of the GUI
+     * @param slot the chest slot to highlight
+     * @param profit the profit to render as the label
+     * @param hasError true when some content item had no API price
+     */
     private fun renderHighlight(
         ctx: GuiGraphicsExtractor,
         leftPos: Int,
@@ -552,7 +649,7 @@ object ProfitTracker : Module(
         val y = topPos + slot.y
 
         // Translucent tint over the chest item — red when the value is incomplete (missing API price).
-        ctx.fill(x, y, x + 16, y + 16, if (hasError) ERROR_HIGHLIGHT else highlightColor.getRGBA())
+        ctx.fill(x, y, x + 16, y + 16, if (hasError) ERROR_HIGHLIGHT_COLOR else highlightColor.getRGBA())
 
         // Coin label centred just below the slot, scaled to fit the 16px cell.
         val color = if (profit >= 0) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
@@ -565,7 +662,17 @@ object ProfitTracker : Module(
         pose.popMatrix()
     }
 
-    /** Draws the breakdown panel beside the GUI, flipping to the left side if it would clip off-screen. */
+    /**
+     * Draws the breakdown panel beside the GUI, flipping to the left side if it would clip off-screen
+     * (in "Auto" mode) or following the configured side otherwise.
+     *
+     * @param ctx draw context
+     * @param leftPos left pixel edge of the GUI
+     * @param topPos top pixel edge of the GUI
+     * @param imageWidth width of the GUI, used to place the panel on its right
+     * @param screenWidth full screen width, used for the off-screen clip check
+     * @param breakdown the priced breakdown to render
+     */
     private fun renderBreakdown(
         ctx: GuiGraphicsExtractor,
         leftPos: Int,
@@ -596,11 +703,18 @@ object ProfitTracker : Module(
         }
     }
 
+    /**
+     * Formats a breakdown into the colored, ready-to-draw text lines of the panel: a header, the loot
+     * rows, the cost rows with their recipe parts, and the profit total.
+     *
+     * @param breakdown the priced breakdown to format
+     * @return the panel's lines as Minecraft [Component]s
+     */
     private fun breakdownLines(breakdown: Breakdown): List<Component> {
         val lines = ArrayList<Component>()
         fun add(s: String) = lines.add(Component.literal(s))
 
-        add(if (breakdown.hasError) "§c§lProfit Breakdown §4(API error)" else "§6§lProfit Breakdown")
+        add(if (breakdown.hasApiError) "§c§lProfit Breakdown §4(API error)" else "§6§lProfit Breakdown")
         add("§a§lLoot")
         for (e in breakdown.loot) {
             when {
@@ -622,6 +736,12 @@ object ProfitTracker : Module(
         return lines
     }
 
+    /**
+     * Shortens a coin amount with a k/M/B suffix, e.g. `1500` becomes `1.5k`.
+     *
+     * @param value the coin amount (may be negative)
+     * @return the compact string; amounts below 1,000 are shown in full
+     */
     private fun formatCoins(value: Long): String {
         val a = abs(value)
         return when {
@@ -632,6 +752,13 @@ object ProfitTracker : Module(
         }
     }
 
+    /**
+     * Builds a cache key from the GUI's slot items (name, count and lore) plus the pricing settings,
+     * so the best-chest result is only recomputed when the contents or settings actually change.
+     *
+     * @param screen the chest GUI to fingerprint
+     * @return a hash identifying this content-and-settings snapshot
+     */
     private fun contentHash(screen: AbstractContainerScreen<*>): Int {
         val slots = screen.menu.slots.joinToString("|") {
             if (!it.hasItem()) return@joinToString "e"
@@ -646,7 +773,11 @@ object ProfitTracker : Module(
         return "$slots|$sellOffer|$includeTaxes|$lvl100Kuudra|$armorSalvage|$salvagePerk|$valueMode".hashCode()
     }
 
-    /** Warns once per missing item which loot the API couldn't price, so the gap is visible in-game. */
+    /**
+     * Warns in chat once per item which loot the API couldn't price, so the gap is visible in-game.
+     *
+     * @param missing the display names of items that had no price
+     */
     private fun reportMissing(missing: List<String>) {
         for (item in missing) {
             if (reportedErrors.add(item)) {
@@ -655,6 +786,9 @@ object ProfitTracker : Module(
         }
     }
 
+    /**
+     * Clears the cached best-chest result and the per-item missing-price warnings.
+     */
     private fun invalidate() {
         cacheHash = 0
         cacheResult = null

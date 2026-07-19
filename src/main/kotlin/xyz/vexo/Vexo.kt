@@ -76,7 +76,7 @@ object Vexo : ClientModInitializer {
 			DungeonRequeue, StormPillarTimer, NecronBlockHighlight,
 
 			// kuudra
-			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, ProfitTracker, KuudraPartyFinderInfo,
+			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, KuudraProfitTracker, KuudraPartyFinderInfo,
 
 			// misc
 			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts, FireVeilOverlay
