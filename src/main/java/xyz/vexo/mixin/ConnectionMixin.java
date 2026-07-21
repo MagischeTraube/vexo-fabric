@@ -19,7 +19,7 @@ public abstract class ConnectionMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/Connection;genericsFtw(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketListener;)V"),
             cancellable = true
     )
-    private void onPacketReceive(ChannelHandlerContext ctx, Packet<?> packet, CallbackInfo ci) {
+    private void vexo$onPacketReceive(ChannelHandlerContext ctx, Packet<?> packet, CallbackInfo ci) {
         var event = new PacketReceiveEvent(packet);
         event.postAndCatch();
         if (event.isCancelled()) {
@@ -32,7 +32,7 @@ public abstract class ConnectionMixin {
             at = @At("HEAD"),
             cancellable = true
     )
-    private void onPacketSend(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
+    private void vexo$onPacketSend(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo ci) {
         var event = new PacketSendEvent(packet);
         event.postAndCatch();
         if (event.isCancelled()) {

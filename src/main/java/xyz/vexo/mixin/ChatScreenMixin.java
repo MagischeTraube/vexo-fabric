@@ -14,7 +14,7 @@ import static xyz.vexo.utils.chatbuttons.ActionRegistry.runAction;
 @Mixin(ChatScreen.class)
 public class ChatScreenMixin {
     @Inject(method = "handleChatInput", at = @At("HEAD"), cancellable = true)
-    private void onSendMessage(String message, boolean addToHistory, CallbackInfo ci) {
+    private void vexo$onSendMessage(String message, boolean addToHistory, CallbackInfo ci) {
         var event = new ChatMessageSendEvent(message);
         event.postAndCatch();
         if (event.isCancelled()) {
@@ -23,7 +23,7 @@ public class ChatScreenMixin {
     }
 
     @Inject(method = "handleComponentClicked", at = @At("HEAD"), cancellable = true)
-    private void handleClick(Style style, boolean bl, CallbackInfoReturnable<Boolean> cir) {
+    private void vexo$handleClick(Style style, boolean bl, CallbackInfoReturnable<Boolean> cir) {
         if (style == null || style.getClickEvent() == null) return;
 
         ClickEvent click = style.getClickEvent();

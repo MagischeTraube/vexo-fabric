@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Main.class)
 public class MainMixin {
     @Inject(method = "main", at = @At("HEAD"))
-    private static void mainSetHeadlessFalse(CallbackInfo ci) {
+    private static void vexo$mainSetHeadlessFalse(CallbackInfo ci) {
         System.setProperty("java.awt.headless", "false");
     }
 }

@@ -17,7 +17,7 @@ public class KeyboardHandlerMixin {
             method = "keyPress(JILnet/minecraft/client/input/KeyEvent;)V",
             at = @At("HEAD")
     )
-    private void onKeyPress(long windowPtr, int action,
+    private void vexo$onKeyPress(long windowPtr, int action,
                             net.minecraft.client.input.KeyEvent keyEvent,
                             CallbackInfo ci) {
 

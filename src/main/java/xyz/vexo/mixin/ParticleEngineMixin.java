@@ -15,7 +15,7 @@ public class ParticleEngineMixin {
             at = @At("HEAD"),
             cancellable = true
     )
-    private void onParticleSpawn(Particle particle, CallbackInfo ci) {
+    private void vexo$onParticleSpawn(Particle particle, CallbackInfo ci) {
         var event = new ParticleSpawnEvent(particle);
         event.postAndCatch();
         if (event.isCancelled()) {

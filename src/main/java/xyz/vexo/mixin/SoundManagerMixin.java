@@ -12,7 +12,7 @@ import xyz.vexo.events.impl.SoundEvent;
 @Mixin(SoundManager.class)
 public abstract class SoundManagerMixin {
     @Inject(method = "play", at = @At("HEAD"), cancellable = true)
-    private void onPlaySound(SoundInstance soundInstance, CallbackInfoReturnable<SoundEngine.PlayResult> ci) {
+    private void vexo$onPlaySound(SoundInstance soundInstance, CallbackInfoReturnable<SoundEngine.PlayResult> ci) {
         new SoundEvent(soundInstance).postAndCatch();
         var event = new SoundEvent(soundInstance);
         event.postAndCatch();
