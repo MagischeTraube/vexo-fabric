@@ -1,17 +1,20 @@
 package xyz.vexo.clickgui.components.panels
 
-import net.minecraft.util.Util
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.*
 import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
+import gg.essential.universal.UScreen
+import net.minecraft.util.Util
+import xyz.vexo.Vexo.mc
 import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.gsib
 import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.Theme.withAlpha
 import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.features.Category
+import xyz.vexo.hud.MoveActiveHudsGui
 
 /**
  * Glass category sidebar. Adds two virtual entries on top of the real [Category] list — Favorites
@@ -74,7 +77,20 @@ class CategoryPanel(
             } childOf scrollComponent
         }
 
-        createDiscordButton() childOf this
+        createButton("Discord") {
+            try {
+                Util.getPlatform().openUri("https://discord.gg/wfW3aEEpVA")
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }.constrain {
+            y = 6.gpx(true)
+        } childOf this
+        createButton("Move GUI") {
+            mc.execute { UScreen.displayScreen(MoveActiveHudsGui()) }
+        }.constrain {
+            y = 44.gpx(true)
+        } childOf this
     }
 
     private fun createRow(nav: Nav, label: String, dotColor: java.awt.Color): UIComponent {
@@ -122,10 +138,9 @@ class CategoryPanel(
         }
     }
 
-    private fun createDiscordButton(): UIComponent {
+    private fun createButton(label: String, onClick: () -> Unit): UIComponent {
         return UIContainer().constrain {
             x = 0.pixels()
-            y = 6.gpx(true)
             width = 100.percent()
             height = 38.gpx()
         }.apply {
@@ -136,7 +151,7 @@ class CategoryPanel(
                 height = 100.percent() - 4.gpx()
             }.setColor(Theme.accent()) childOf this
 
-            UIText("Discord").constrain {
+            UIText(label).constrain {
                 x = CenterConstraint()
                 y = CenterConstraint()
                 textScale = 1.3f.gpx()
@@ -144,13 +159,7 @@ class CategoryPanel(
 
             onMouseEnter { background.colorTo(Theme.accentHover()) }
             onMouseLeave { background.colorTo(Theme.accent()) }
-            onMouseClick {
-                try {
-                    Util.getPlatform().openUri("https://discord.gg/wfW3aEEpVA")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+            onMouseClick { onClick() }
         }
     }
 
