@@ -36,26 +36,25 @@ internal fun showKuudraStats(name: String) {
     }
 }
 
-// Only these terminator ultimates matter for carries; mapped to their display name.
-private val RELEVANT_TERMINATORS = mapOf(
+private val RELEVANT_TERMINATOR_ENCHANTMENTS = mapOf(
     "ultimate_rend" to "Rend",
     "ultimate_reiterate" to "Duplex",
 )
 
-// Known Kuudra talisman accessory types -> proper display name. Anything not listed
-// falls back to generic title-casing (see talismanDisplay).
 private val TALISMAN_NAMES = mapOf(
+    "KUUDRAS_KIDNEY" to "Kuudra's Kidney",
+    "KUUDRAS_LUNG" to "Kuudra's Lung",
     "KUUDRAS_HEART" to "Kuudra's Heart",
 )
 
 private const val DIVIDER = "§6§m                                            §r"
 
-/** Sends a styled chat component (no [Vexo] prefix) — used for the stats output lines. */
+
 private fun statLine(component: Component) {
     Vexo.mc.execute { Vexo.mc.gui.chat.addClientSystemMessage(component) }
 }
 
-/** Sends a plain stats line (no [Vexo] prefix). */
+
 private fun statLine(text: String) = statLine(Component.literal(text))
 
 private fun renderKuudraStats(name: String, data: JsonObject) {
@@ -69,7 +68,7 @@ private fun renderKuudraStats(name: String, data: JsonObject) {
     statLine("  §6§lKUUDRA STATS §r§8» §f$name")
     statLine("")
 
-    // ── Profile ──────────────────────────────────────────
+
     statLine("  §e§lProfile")
     statLine("  §7Magical Power: §b${grouped(int("magical_power"))}")
     statLine("  §7Catacombs: §a${int("cata_level")}")
@@ -80,18 +79,17 @@ private fun renderKuudraStats(name: String, data: JsonObject) {
     statLine("  §7Kuudra Talisman: ${talismanDisplay(talisman)}")
     statLine("")
 
-    // ── Gear ─────────────────────────────────────────────
+
     statLine("  §e§lGear")
     statLine("  §7Wither Blade: ${check(flag("wither_blade"))}")
 
-    // "terminators" is an array of bow objects (one per owned terminator), or null when none. Only
-    // Rend & Duplex (reiterate) are relevant; each line carries a hover tooltip with all enchants.
+
     val termEl = data.get("terminators")
     val terminators = if (termEl != null && termEl.isJsonArray) {
         termEl.asJsonArray.filterIsInstance<JsonObject>()
     } else emptyList()
     val relevant = terminators.filter {
-        it.get("ultimate_name")?.takeUnless { e -> e.isJsonNull }?.asString in RELEVANT_TERMINATORS
+        it.get("ultimate_name")?.takeUnless { e -> e.isJsonNull }?.asString in RELEVANT_TERMINATOR_ENCHANTMENTS
     }
     if (relevant.isEmpty()) {
         statLine("  §7Terminator: ${check(false)}")
@@ -114,10 +112,7 @@ private fun renderKuudraStats(name: String, data: JsonObject) {
         statLine("  §7Ragnarock Axe: ${check(false)}")
     }
 
-    // ── Armor Sets ───────────────────────────────────────
-    // "armor" is an array of loadouts: the worn set (slot == "armor") plus each saved wardrobe page
-    // (slot == "wardrobe_slot_N"). Each carries its pieces with per-piece enchant levels.
-    // Only show full 4/4 loadouts (pure or mixed); partial pages (1–3 pieces) are skipped.
+
     val armorEl = data.get("armor")
     val armorSets = if (armorEl != null && armorEl.isJsonArray) {
         armorEl.asJsonArray.filterIsInstance<JsonObject>().filter { (it.getAsJsonArray("pieces")?.size() ?: 0) == 4 }
@@ -133,20 +128,15 @@ private fun renderKuudraStats(name: String, data: JsonObject) {
     statLine(DIVIDER)
 }
 
-/** Armor-slot nouns stripped from an item id to get its set name (kept for non-armor nouns). */
 private val ARMOR_SLOT_NOUNS = setOf("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS")
 
-/** "INFERNAL_HOLLOW_CHESTPLATE" -> "Infernal Hollow"; keeps other nouns (Goggles, Crown …). */
 private fun armorBaseName(id: String): String {
     val parts = id.split('_')
     val kept = if (parts.size > 1 && parts.last().uppercase() in ARMOR_SLOT_NOUNS) parts.dropLast(1) else parts
     return titleCase(kept.joinToString("_"))
 }
 
-/**
- * One armor line: the loadout's dominant set name (aqua, "(worn)" tag for the equipped set),
- * with a hover listing every piece and its enchant levels.
- */
+
 private fun armorSetComponent(entry: JsonObject): Component {
     val slot = entry.get("slot")?.takeUnless { it.isJsonNull }?.asString ?: ""
     val worn = slot == "armor"
@@ -175,37 +165,30 @@ private fun armorSetComponent(entry: JsonObject): Component {
     return Component.literal("  §7$label$tag").setStyle(style)
 }
 
-/** Enchant key as a label: "ultimate_wisdom" -> light-purple "Wisdom", "growth" -> grey "Growth". */
 private fun enchantName(key: String): String {
     val ultimate = key.startsWith("ultimate_", ignoreCase = true)
     val name = titleCase(if (ultimate) key.substring("ultimate_".length) else key)
     return if (ultimate) "§d$name" else "§7$name"
 }
 
-/** Green tick / red cross for a boolean gear flag. */
 private fun check(b: Boolean): String = if (b) "§a✔" else "§c✘"
 
-/** 1877 -> "1,877". */
 private fun grouped(value: Int): String = "%,d".format(value)
 
-/** UPPER_SNAKE or CAPS -> "Title Case" (e.g. "PERFECT" -> "Perfect"). */
 private fun titleCase(raw: String): String = raw.split('_', ' ')
     .filter { it.isNotBlank() }
     .joinToString(" ") { it.lowercase().replaceFirstChar(Char::uppercase) }
 
-/** Talisman type as a colored label; grey "None" when the player has none. */
 private fun talismanDisplay(type: String): String {
     if (type.equals("NONE", ignoreCase = true)) return "§8None"
-    // Fix the apostrophe for the "Kuudra's ..." accessory line, then fall back to title-case.
     val name = TALISMAN_NAMES[type]
         ?: titleCase(type).replace(Regex("^Kuudras\\b"), "Kuudra's")
     return "§6$name"
 }
 
-/** One terminator line: "  <Name> <ultLvl>" (aqua), hover shows every enchant level. */
 private fun terminatorComponent(t: JsonObject): Component {
     val ultName = t.get("ultimate_name")?.takeUnless { it.isJsonNull }?.asString
-    val display = RELEVANT_TERMINATORS[ultName] ?: "Terminator"
+    val display = RELEVANT_TERMINATOR_ENCHANTMENTS[ultName] ?: "Terminator"
     val ultLvl = t.get("ultimate_level")?.takeUnless { it.isJsonNull }?.asInt ?: 0
 
     val hover = Component.literal("§6$display §e$ultLvl")
