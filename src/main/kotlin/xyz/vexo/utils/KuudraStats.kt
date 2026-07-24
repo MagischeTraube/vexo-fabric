@@ -8,7 +8,7 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Style
 import xyz.vexo.Vexo
 
-private const val KUUDRA_API = "https://api.infm7.xyz/kuudra"
+private const val KUUDRA_API = "${Vexo.VEXO_API}/kuudra"
 
 internal fun showKuudraStats(name: String) {
     modMessage("§7Loading Kuudra stats for §f$name§7 ...")

@@ -8,7 +8,7 @@ import xyz.vexo.events.EventBus
 
 object PlayerData {
     private const val MOJANG_API = "https://api.mojang.com/users/profiles/minecraft"
-    private const val PLAYER_API = "https://api.infm7.xyz/player"
+    private const val PLAYER_API = "${Vexo.VEXO_API}/player"
 
     private const val CACHE_EVICTION_MS = 60 * 60 * 1000L // 60 min
     private const val EVICTION_CHECK_INTERVAL_MS = 15 * 60 * 1000L // 15 min

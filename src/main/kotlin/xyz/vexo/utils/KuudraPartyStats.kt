@@ -7,7 +7,7 @@ import xyz.vexo.Vexo
 
 
 object KuudraPartyStats {
-    private const val KUUDRA_API = "https://api.infm7.xyz/kuudra"
+    private const val KUUDRA_API = "${Vexo.VEXO_API}/kuudra"
     private const val MAX_CACHE_SIZE = 300
 
     data class Stats(

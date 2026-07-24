@@ -26,6 +26,7 @@ import xyz.vexo.utils.*
 
 object Vexo : ClientModInitializer {
 	const val MOD_ID = "vexo"
+	const val VEXO_API = "https://api.infm7.xyz"
 
 	private val metadata: ModMetadata by lazy {
 		FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow().metadata

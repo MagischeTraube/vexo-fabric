@@ -14,7 +14,7 @@ object PriceUtils : IInitializable {
     private val gson get() = Vexo.gson
     private val PRICE_DATA_FILE = File(Vexo.configDir, "price_data.json")
 
-    private const val API_URL = "https://api.infm7.xyz/prices"
+    private const val API_URL = "${Vexo.VEXO_API}/prices"
 
     private var lastFetchTime: Long = 0
     private const val FETCH_INTERVAL_MS = 15 * 60 * 1000L
