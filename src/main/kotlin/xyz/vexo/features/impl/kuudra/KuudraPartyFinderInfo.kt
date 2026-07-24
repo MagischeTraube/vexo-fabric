@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import xyz.vexo.Vexo
 import xyz.vexo.config.impl.BooleanSetting
+import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ClientTickEvent
@@ -29,6 +30,19 @@ object KuudraPartyFinderInfo : Module(
         "Stats On Join",
         "Prints full Kuudra stats in chat when a player joins your party",
         default = true
+    )
+
+    private val selectedTier by SelectorSetting(
+        "Kuudra Tier",
+        "Which Kuudra tier should be displayed",
+        default = "Infernal",
+        options = listOf(
+            "Basic",
+            "Hot",
+            "Burning",
+            "Fiery",
+            "Infernal"
+        )
     )
 
     private val debugPrefetch by BooleanSetting(
@@ -139,13 +153,16 @@ object KuudraPartyFinderInfo : Module(
     private fun buildLine(original: Component, name: String): Component {
         val suffix = when (val stats = KuudraPartyStats.get(name)) {
             null -> " §8[...]"
+
             else -> if (stats.isError) {
                 " §c[?]"
             } else {
-                " §8| §dRuns §f${"%,d".format(stats.infernalRuns)}" +
-                    " §8· §aC: §f${stats.cataLevel}" +
-                    " §8· §bMP §f${"%,d".format(stats.magicalPower)}" +
-                    " §8· §7Rend ${if (stats.rendBone) "§a✔" else "§c✘"}"
+                val runs = stats.runs[selectedTier.lowercase()] ?: 0
+
+                " §8| §dRuns §f${"%,d".format(runs)}" +
+                        " §8· §aC: §f${stats.cataLevel}" +
+                        " §8· §bMP §f${"%,d".format(stats.magicalPower)}" +
+                        " §8· §7Rend ${if (stats.rendBone) "§a✔" else "§c✘"}"
             }
         }
         val color = firstColor(original) ?: TextColor.fromRgb(0x55FFFF)

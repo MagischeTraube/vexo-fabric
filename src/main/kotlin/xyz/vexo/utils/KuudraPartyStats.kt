@@ -10,16 +10,21 @@ object KuudraPartyStats {
     private const val KUUDRA_API = "https://api.infm7.xyz/kuudra"
     private const val MAX_CACHE_SIZE = 300
 
-
     data class Stats(
-        val infernalRuns: Int,
+        val runs: Map<String, Int>,
         val cataLevel: Int,
         val magicalPower: Int,
         val rendBone: Boolean,
         val isError: Boolean = false,
     )
 
-    private val ERROR = Stats(0, 0, 0, false, isError = true)
+    private val ERROR = Stats(
+        runs = emptyMap(),
+        cataLevel = 0,
+        magicalPower = 0,
+        rendBone = false,
+        isError = true
+    )
 
     private val cache = ConcurrentHashMap<String, Stats>()
     private val pending = ConcurrentHashMap.newKeySet<String>()
@@ -27,8 +32,10 @@ object KuudraPartyStats {
 
     fun get(name: String): Stats? {
         val key = name.lowercase()
+
         cache[key]?.let { return it }
         fetch(name, key)
+
         return null
     }
 
@@ -61,11 +68,29 @@ object KuudraPartyStats {
     }
 
     private fun parse(data: JsonObject): Stats {
-        fun int(k: String): Int = data.get(k)?.takeUnless { it.isJsonNull }?.asInt ?: 0
+        fun int(k: String): Int =
+            data.get(k)?.takeUnless { it.isJsonNull }?.asInt ?: 0
+
         fun flag(k: String): Boolean {
             val el = data.get(k) ?: return false
-            return el.isJsonPrimitive && el.asJsonPrimitive.isBoolean && el.asBoolean
+            return el.isJsonPrimitive &&
+                    el.asJsonPrimitive.isBoolean &&
+                    el.asBoolean
         }
-        return Stats(int("infernal_runs"), int("cata_level"), int("magical_power"), flag("rend_bone"))
+
+        val runs = data
+            .getAsJsonObject("total_runs")
+            ?.entrySet()
+            ?.associate { (key, value) ->
+                key to value.asInt
+            }
+            ?: emptyMap()
+
+        return Stats(
+            runs,
+            int("cata_level"),
+            int("magical_power"),
+            flag("rend_bone")
+        )
     }
 }
