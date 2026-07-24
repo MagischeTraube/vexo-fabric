@@ -22,6 +22,7 @@ import xyz.vexo.features.impl.misc.*
 import xyz.vexo.features.impl.kuudra.*
 import xyz.vexo.features.impl.dungeons.*
 import xyz.vexo.utils.*
+import xyz.vexo.features.impl.misc.recipe.RecipeRepository
 
 
 object Vexo : ClientModInitializer {
@@ -51,12 +52,13 @@ object Vexo : ClientModInitializer {
 
 	override fun onInitializeClient() {
 		arrayOf(
-			EventDispatcher, PriceUtils
+			EventDispatcher, PriceUtils, RecipeRepository
 		).forEach { it.init() }
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			arrayOf(
 				VexoCommand,
+				RecipeCommand,
 
 				TyfrCommand, KuudraStatsCommand, deezNutsCommand, RewarpCommand,
 
