@@ -60,6 +60,7 @@ object PartyFinder : Module(
         val firstLine = lines[0].string.removeFormatting()
         if (!firstLine.endsWith("Party")) return
 
+        if (lines.any { it.string.removeFormatting().trim().startsWith("Tier:") }) return
         val dungeonInfo = parseDungeonInfo(lines)
         updateTooltipLines(lines, dungeonInfo.floor, dungeonInfo.isMaster)
     }
