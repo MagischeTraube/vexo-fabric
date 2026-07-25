@@ -57,7 +57,6 @@ class SliderSettingComponent(
             y = CenterConstraint()
         }.setColor(Theme.accent()) childOf sliderTrack
 
-        // Soft glow ring behind the handle.
         val handleGlow = UIRoundedRectangle(9f).constrain {
             x = (startPercentage * 100).percent() - 9.gpx()
             y = CenterConstraint()

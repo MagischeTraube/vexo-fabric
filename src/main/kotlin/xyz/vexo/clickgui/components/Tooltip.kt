@@ -13,12 +13,6 @@ import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.guiScale
 import xyz.vexo.clickgui.theme.Theme
 
-/**
- * A single, window-level tooltip reused by every hoverable element. Anchored to the hovered
- * component (no per-frame mouse tracking) and clamped to the screen. Respects [GuiPrefs.tooltips].
- *
- * Lifecycle: [attach] once from the screen, [detach] on close.
- */
 object Tooltip {
     private var holder: UIContainer? = null
     private var background: UIComponent? = null
@@ -26,7 +20,6 @@ object Tooltip {
 
     fun attach(window: Window) {
         detach()
-        // Width is set explicitly in show() from the text width to avoid a child-based sizing loop.
         val h = UIContainer().constrain {
             width = 20.gpx()
             height = 20.gpx()
@@ -56,12 +49,10 @@ object Tooltip {
         label?.setText(text)
 
         val win = Window.of(h)
-        // Text renders at the scaled text size, so size the box from the scaled width + padding.
         val width = (text.width() + 14f) * guiScale
         val height = 20f * guiScale
         h.setWidth(width.pixels())
         var x = anchor.getLeft()
-        // Keep on-screen.
         if (x + width > win.getWidth()) x = (win.getWidth() - width - 4f).coerceAtLeast(4f)
         var y = anchor.getBottom() + 4f * guiScale
         if (y + height > win.getHeight()) y = (anchor.getTop() - height - 4f * guiScale).coerceAtLeast(4f)

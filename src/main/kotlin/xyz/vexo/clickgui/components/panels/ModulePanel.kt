@@ -44,6 +44,7 @@ class ModulePanel(
         }.setColor(Theme.panel()) childOf this
     }
 
+    /** Shows modules from [category], optionally filtered by [searchText]. */
     fun showCategoryModules(category: Category, searchText: String) {
         refreshCurrent = { showCategoryModules(category, searchText) }
         val modules = ModuleManager.getModulesByCategory(category).filterMatches(searchText)
@@ -52,18 +53,21 @@ class ModulePanel(
         displayModules(modules, empty, searchText)
     }
 
+    /** Searches all modules across every category for [searchText]. */
     fun searchAllModules(searchText: String) {
         refreshCurrent = { searchAllModules(searchText) }
         val modules = ModuleManager.getAllModules().filterMatches(searchText)
         displayModules(modules, "No modules found for \"$searchText\"", searchText)
     }
 
+    /** Shows favorited modules. */
     fun showFavorites() {
         refreshCurrent = { showFavorites() }
         val modules = ModuleManager.getAllModules().filter { GuiPrefs.isFavorite(it.name) }
         displayModules(modules, "No favorites yet — click the star on a module", "")
     }
 
+    /** Shows currently enabled modules. */
     fun showActiveModules() {
         refreshCurrent = { showActiveModules() }
         val modules = ModuleManager.getEnabledModules()
@@ -110,7 +114,6 @@ class ModulePanel(
             width = 100.percent()
             height = 46.gpx()
         }.apply {
-            // Faux drop-shadow (slightly larger, offset, dark translucent).
             UIRoundedRectangle(9f).constrain {
                 x = 6.gpx()
                 y = 5.gpx()
@@ -118,7 +121,6 @@ class ModulePanel(
                 height = 100.percent() - 4.gpx()
             }.setColor(Theme.shadow()) childOf this
 
-            // Accent glow behind active cards.
             val glow = UIRoundedRectangle(10f).constrain {
                 x = 3.gpx()
                 y = 1.gpx()

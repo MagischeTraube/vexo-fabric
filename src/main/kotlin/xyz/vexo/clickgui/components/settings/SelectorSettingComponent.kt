@@ -66,7 +66,6 @@ class SelectorSettingComponent(
     private fun openDropdown(selectorButton: UIContainer, selectorText: UIText) {
         val window = Window.of(this)
 
-        // Row height scales with the GUI; getLeft()/getTop() are already in real (scaled) pixels.
         val rowHeight = 25f * guiScale
         val dropdown = UIContainer().constrain {
             x = selectorButton.getLeft().pixels()

@@ -16,15 +16,10 @@ import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.features.Category
 import xyz.vexo.hud.MoveActiveHudsGui
 
-/**
- * Glass category sidebar. Adds two virtual entries on top of the real [Category] list — Favorites
- * and Active — for quick access. Selection is reported through [Nav].
- */
 class CategoryPanel(
     private val onNavClick: (Nav) -> Unit
 ) : UIContainer() {
 
-    /** A sidebar destination: a real category, or one of the virtual quick-access views. */
     sealed interface Nav {
         data class Cat(val category: Category) : Nav
         data object Favorites : Nav
@@ -106,7 +101,6 @@ class CategoryPanel(
             }.setColor(Theme.card()) childOf this
             rowBackgrounds[nav] = background
 
-            // Left accent indicator, lit only when selected.
             val indicator = UIRoundedRectangle(2f).constrain {
                 x = 2.gpx()
                 y = CenterConstraint()

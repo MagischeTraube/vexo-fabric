@@ -55,15 +55,11 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
         val w = (86f * mult).coerceIn(50f, 97f)
         val h = (86f * mult).coerceIn(50f, 95f)
 
-        // Dim scrim behind the window, faded in.
         val scrim = UIBlock(Theme.overlayScrim()).constrain {
             width = 100.percent()
             height = 100.percent()
         } childOf window
 
-        // Rounded backing behind the window, kept OUTSIDE mainContainer so it can't affect the panel
-        // layout. This gives the few-pixel rounded outer corners (plus a faint accent edge); the
-        // panels round their own corners (radius 5) and reveal this dark base at the corners/seams.
         UIRoundedRectangle(7f).constrain {
             x = CenterConstraint()
             y = CenterConstraint()
@@ -107,7 +103,6 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
 
         onNavSelected(currentNav)
 
-        // Open animation: grow from a touch smaller + fade the scrim in.
         if (GuiPrefs.animations) {
             scrim.setColor(Theme.overlayScrim().let { java.awt.Color(it.red, it.green, it.blue, 0) })
             scrim.colorTo(Theme.overlayScrim(), 0.25f)
@@ -145,7 +140,6 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
 
     private fun openGuiSettings() {
         GuiSettingsOverlay(onApply = {
-            // Reopen so structural theme changes (glass / accent / scale) take effect.
             mc.execute { runAfterClientTicks(1) { displayScreen(ClickGui()) } }
         }) childOf window
     }
