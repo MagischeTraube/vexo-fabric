@@ -70,7 +70,6 @@ A Hypixel SkyBlock mod for Minecraft 26.1.2 built on Fabric, focused on Dungeons
 |---|---|
 | `/vexo` | Opens the mod configuration menu |
 | `/tyfr` | Leaves the party after the current Dungeon or Kuudra run ends |
-| `/reinvite` | Leaves the party, then messages the party lead "!inv" |
 | `/kuudrastats [player]` | Shows Kuudra stats for yourself or the given player |
 | `/rewarp <warp>` | Warps to your private island, then to the given warp (useful for resetting warp cooldowns) |
 | `/dn` | Warps to the Dungeon Hub |

@@ -1,14 +1,10 @@
 package xyz.vexo.features.impl.kuudra
 
 import java.awt.Color
-import kotlin.math.abs
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
-import net.minecraft.network.chat.Component
-import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
-import xyz.vexo.Vexo.mc
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.SelectorSetting
@@ -18,7 +14,9 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 import xyz.vexo.utils.PriceUtils
-import xyz.vexo.utils.modMessage
+import xyz.vexo.utils.chestprofit.Breakdown
+import xyz.vexo.utils.chestprofit.ChestProfitEngine
+import xyz.vexo.utils.chestprofit.Entry
 import xyz.vexo.utils.removeFormatting
 
 
@@ -26,7 +24,7 @@ object KuudraProfitTracker : Module(
     name = "Kuudra Profit Tracker",
     description = "Shows Croesus chest profit for Kuudra runs",
     toggled = false
-) {
+), ChestProfitEngine.Valuer {
     private val sellOffer by BooleanSetting(
         "Sell Offer",
         "Use Bazaar sell-offer prices instead of insta-sell",
@@ -92,7 +90,6 @@ object KuudraProfitTracker : Module(
 
 
 
-    private val QTY_REGEX = Regex("""[x×]\s*([\d,]+)\s*$""")
     private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
     private val KUUDRA_TIER_TITLE = Regex("""Kuudra - (Basic|Hot|Burning|Fiery|Infernal)""")
     private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
@@ -237,52 +234,16 @@ object KuudraProfitTracker : Module(
         "Infernal" to TierTable(INFERNAL_GUARANTEED_DROPS, INFERNAL_SLOT1, INFERNAL_SLOT2),
     )
 
-    /**
-     * A single priced row of the profit GUI; [parts] are the sub-rows (e.g. a key's recipe).
-     * [error] marks rows containing an item that has no price in the API (rendered red).
-     */
-    private data class Entry(
-        val label: String,
-        val value: Long,
-        val parts: List<Entry> = emptyList(),
-        val error: Boolean = false
-    )
+    private val engine = ChestProfitEngine(this)
 
-    private data class Breakdown(val loot: List<Entry>, val costs: List<Entry>, val total: Long) {
-        val hasApiError: Boolean get() = loot.any { it.error } || costs.any { it.error }
-
-        val missingInfo: List<String> get() = (loot + costs).filter { it.error }.map { it.label }
-    }
-
-    // Cache the computed best chest per GUI content snapshot so we only re-parse when slots change.
-    private var cacheHash = 0
-    private var cacheResult: Pair<Slot, Breakdown>? = null
-
-
-    private val ERROR_HIGHLIGHT_COLOR = Color(250, 18, 0, 120).rgb
-
-    private val reportedErrors = HashSet<String>()
-
-    /** Drops the cached best-chest result when the module is turned off. */
     override fun onDisable() {
         super.onDisable()
-        invalidate()
+        engine.invalidate()
     }
 
-    /**
-     * Invalidates the cache whenever fresh prices arrive, so the profit re-computes with them.
-     *
-     * @param event the price-data refresh notification
-     */
     @EventHandler
-    fun onPriceUpdate(event: PriceDataUpdateEvent) = invalidate()
+    fun onPriceUpdate(event: PriceDataUpdateEvent) = engine.invalidate()
 
-    /**
-     * Draws the profit overlay each frame: Croesus run tints, the best-chest highlight, and the
-     * optional breakdown panel. Does nothing unless the open screen is a Croesus or Kuudra chest GUI.
-     *
-     * @param event the GUI render event carrying the screen and draw context
-     */
     @EventHandler
     fun onGuiRender(event: GuiRenderEvent) {
         val screen = event.screen as? AbstractContainerScreen<*> ?: return
@@ -300,33 +261,24 @@ object KuudraProfitTracker : Module(
             return
         }
 
-        val hash = contentHash(screen)
-        if (hash != cacheHash) {
-            cacheHash = hash
-            cacheResult = bestChest(screen)
-        }
-
-        val (slot, breakdown) = cacheResult ?: return
+        val (slot, breakdown) = engine.cachedBestChest(screen) ?: return
         val ctx = event.context
 
-        if (breakdown.hasApiError) reportMissing(breakdown.missingInfo)
+        if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
 
-        renderHighlight(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), slot, breakdown.total, breakdown.hasApiError)
+        engine.renderHighlight(
+            ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
+            slot, breakdown.total, breakdown.hasApiError, highlightColor.getRGBA()
+        )
 
         if (showBreakdown) {
-            renderBreakdown(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width, breakdown)
+            engine.renderBreakdown(
+                ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
+                accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide
+            )
         }
     }
 
-    /**
-     * Tints each run in the Croesus menu by its chest status: green when chests are still openable,
-     * dark red when the run is done. Runs with neither lore line are left untouched.
-     *
-     * @param ctx draw context to fill the slot backgrounds into
-     * @param leftPos left pixel edge of the GUI
-     * @param topPos top pixel edge of the GUI
-     * @param screen the Croesus screen whose slots are scanned
-     */
     private fun renderCroesusHighlights(
         ctx: GuiGraphicsExtractor,
         leftPos: Int,
@@ -351,109 +303,26 @@ object KuudraProfitTracker : Module(
         }
     }
 
-    /**
-     * Single-unit coin value of the loot named [name] using this tracker's price settings.
-     *
-     * @param name the loot display name to price
-     * @return the value of one unit, or null if the item is unpriced
-     */
     fun priceOf(name: String): Long? = lootValueOrNull(name, 1L)
 
-    /**
-     * Profit total of one chest item (its Contents minus Cost).
-     *
-     * @param stack the chest item to value
-     * @return the profit, or null if it isn't a priceable chest
-     */
-    fun chestProfit(stack: ItemStack): Long? = chestBreakdown(stack)?.total
+    fun chestProfit(stack: ItemStack): Long? = engine.chestBreakdown(stack)?.total
 
-    /**
-     * Calculates the total profit of a chest, but only once all of its items are priced.
-     *
-     * @param stack the chest item whose Contents lore holds the loot to value
-     * @return the chest profit, or null while any content item still lacks an API price
-     */
     fun chestProfitReady(stack: ItemStack): Long? =
-        chestBreakdown(stack)?.takeUnless { it.hasApiError }?.total
+        engine.chestBreakdown(stack)?.takeUnless { it.hasApiError }?.total
 
-    /**
-     * Loot-item display names (quantity stripped) read from a chest item's Contents lore.
-     *
-     * @param stack the chest item to read
-     * @return the loot names, or an empty list if the item has no Contents lore
-     */
-    fun chestLootNames(stack: ItemStack): List<String> {
-        val lore = stack.get(DataComponents.LORE)?.styledLines()
-            ?.map { it.string.removeFormatting().trim() } ?: return emptyList()
-        val contentsIdx = lore.indexOf("Contents")
-        if (contentsIdx == -1) return emptyList()
-        return lore.drop(contentsIdx + 1)
-            .takeWhile { it.isNotBlank() && it != "Cost" }
-            .map { line ->
-                val qty = QTY_REGEX.find(line)
-                (if (qty != null) line.substring(0, qty.range.first) else line).trim()
-            }
-    }
+    fun chestLootNames(stack: ItemStack): List<String> = engine.chestLootNames(stack)
 
-    /**
-     * Picks the single most profitable chest in the current GUI.
-     *
-     * @param screen the chest GUI whose slots are scanned
-     * @return the winning slot paired with its breakdown, or null if no slot holds a priceable chest
-     */
-    private fun bestChest(screen: AbstractContainerScreen<*>): Pair<Slot, Breakdown>? {
-        var best: Pair<Slot, Breakdown>? = null
-        for (slot in screen.menu.slots) {
-            if (!slot.hasItem()) continue
-            val breakdown = chestBreakdown(slot.item) ?: continue
-            if (best == null || breakdown.total > best.second.total) best = slot to breakdown
-        }
-        return best
-    }
-
-    /**
-     * Parses the `Contents`/`Cost` lore of a chest item into a priced breakdown. In "Expected" value
-     * mode the actual contents are replaced by the tier's average chest value.
-     *
-     * @param stack the chest item to parse
-     * @return the priced breakdown, or null if the item has no `Contents` lore to value
-     */
-    private fun chestBreakdown(stack: ItemStack): Breakdown? {
-        val lore = stack.get(DataComponents.LORE)?.styledLines()
-            ?.map { it.string.removeFormatting().trim() }
+    override fun overrideBreakdown(costLines: List<String>, costs: List<Entry>): Breakdown? {
+        if (valueMode != "Expected") return null
+        val table = costLines.firstNotNullOfOrNull { KEY_TIER_REGEX.find(it)?.groupValues?.get(1) }
+            ?.let { TIER_TABLES[it] }
             ?: return null
-
-        val contentsIdx = lore.indexOf("Contents")
-        if (contentsIdx == -1) return null
-
-        val lootLines = lore.drop(contentsIdx + 1).takeWhile { it.isNotBlank() && it != "Cost" }
-        if (lootLines.isEmpty()) return null
-
-        val costIdx = lore.indexOf("Cost")
-        val costLines = if (costIdx >= 0) lore.drop(costIdx + 1).takeWhile { it.isNotBlank() } else emptyList()
-
-        val costs = costLines.map { costEntry(it) }
-
-        // Expected-value mode: replace the actual contents with the tier's average chest value.
-        if (valueMode == "Expected") {
-            val table = costLines.firstNotNullOfOrNull { KEY_TIER_REGEX.find(it)?.groupValues?.get(1) }
-                ?.let { TIER_TABLES[it] }
-            if (table != null) return expectedBreakdown(table, costs)
-        }
-
-        val loot = lootLines.map { lootEntry(it) }
-        val total = loot.sumOf { it.value } - costs.sumOf { it.value }
-        return Breakdown(loot, costs, total)
+        return expectedBreakdown(table, costs)
     }
 
-    /**
-     * Builds the average-value breakdown for a tier: guaranteed loot plus the expected value of each
-     * of the two slot rolls, minus the given costs.
-     *
-     * @param table the tier's guaranteed and per-slot drop tables
-     * @param costs the already-priced cost rows to subtract
-     * @return the expected-value breakdown
-     */
+    override fun settingsFingerprint(): String =
+        "$sellOffer|$includeTaxes|$lvl100Kuudra|$armorSalvage|$salvagePerk|$valueMode"
+
     private fun expectedBreakdown(table: TierTable, costs: List<Entry>): Breakdown {
         var guaranteedError = false
         val guaranteed = table.guaranteed.sumOf {
@@ -471,12 +340,6 @@ object KuudraProfitTracker : Module(
         return Breakdown(loot, costs, total)
     }
 
-    /**
-     * Expected value of one slot roll: the sum of each drop's chance times its coin value.
-     *
-     * @param drops the possible drops for this slot with their chances
-     * @return the expected coin value paired with a flag that is true if any drop had no API price
-     */
     private fun expectedSlot(drops: List<Drop>): Pair<Long, Boolean> {
         var sum = 0.0
         var error = false
@@ -487,40 +350,15 @@ object KuudraProfitTracker : Module(
         return sum.toLong() to error
     }
 
-    /**
-     * Turns one Contents lore line into a priced loot row, appending a tag for salvage or the
-     * Lvl 100 essence bonus where it applies.
-     *
-     * @param line a single Contents lore line, e.g. `Aurora Helmet` or `Crimson Essence x2,500`
-     * @return the priced entry, flagged as an error if the item has no API price
-     */
-    private fun lootEntry(line: String): Entry {
-        val qtyMatch = QTY_REGEX.find(line)
-        val qty = qtyMatch?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
-        val name = (if (qtyMatch != null) line.substring(0, qtyMatch.range.first) else line).trim()
-
-        val value = lootValueOrNull(name, qty)
-            ?: return Entry(line, 0L, error = true)
-        val tag = when {
-            armorSalvage && isSalvageable(name) -> " §8(Salvage ${salvageEssence(name)} Ess)"
-            lvl100Kuudra && lootIdFor(name)?.startsWith("ESSENCE_") == true -> " §d(+20%)"
-            else -> ""
-        }
-        return Entry("$line$tag", value)
+    override fun lootTag(name: String): String = when {
+        armorSalvage && isSalvageable(name) -> " §8(Salvage ${salvageEssence(name)} Ess)"
+        lvl100Kuudra && lootIdFor(name)?.startsWith("ESSENCE_") == true -> " §d(+20%)"
+        else -> ""
     }
 
-    /**
-     * Coin value of [qty] of the loot named [name]; shared by the actual and expected-value modes.
-     * Kuudra gear is valued by the Crimson Essence it salvages into rather than its market price.
-     *
-     * @param name the loot display name (quantity stripped)
-     * @param qty how many of the item to value
-     * @return the total coin value, or null when the item has no usable API price
-     */
-    private fun lootValueOrNull(name: String, qty: Long): Long? {
+    override fun lootValueOrNull(name: String, qty: Long): Long? {
         if (name in ZERO_VALUE) return 0L
 
-        // Kuudra gear is valued by the Crimson Essence it salvages into, not its market price.
         if (armorSalvage && isSalvageable(name)) {
             val price = crimsonPrice()
             return if (price <= 0) null else qty * salvageEssence(name) * price
@@ -530,33 +368,17 @@ object KuudraProfitTracker : Module(
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
         if (unit <= 0) return null
         var value = qty * unit.toLong()
-        // Kuudra collection Lvl 100 grants +20% essence; reflect it on essence drops when enabled.
         if (lvl100Kuudra && id.startsWith("ESSENCE_")) value = value * 12 / 10
         return value
     }
 
-    /** @return the current coin price of a single Crimson Essence. */
     private fun crimsonPrice(): Long = PriceUtils.getPrice("ESSENCE_CRIMSON", sellOffer, includeTaxes).toLong()
 
-    /**
-     * Whether an item is valued by its Crimson Essence salvage rather than its market price.
-     *
-     * @param name the item display name (stars are ignored)
-     * @return true for Kuudra armor and the salvageable weapons/accessories
-     */
     private fun isSalvageable(name: String): Boolean {
         val clean = name.replace("✪", "").trim()
         return clean in KUUDRA_ARMOR || clean in SALVAGEABLE_EXTRA
     }
 
-    /**
-     * Crimson Essence an item salvages into. Non-armor gear uses its fixed value from
-     * [SALVAGE_ESSENCE_OVERRIDE]; armor uses 100 base plus a per-star increment that grows with each
-     * star (see [ESSENCE_PER_STAR]). The +20% perk applies to both.
-     *
-     * @param name the item display name; its `✪` count is read as the star level
-     * @return the salvage essence amount, including the perk bonus when it is enabled
-     */
     private fun salvageEssence(name: String): Long {
         val clean = name.replace("✪", "").trim()
         var essence = SALVAGE_ESSENCE_OVERRIDE[clean]
@@ -570,19 +392,12 @@ object KuudraProfitTracker : Module(
         return essence
     }
 
-    /**
-     * Prices one Cost lore line. A known key is expanded into its recipe as sub-rows; an unknown key
-     * falls back to the coin amount in the line, or 0 if it lists none.
-     *
-     * @param line a single Cost lore line, e.g. `Infernal Kuudra Key` or `FREE`
-     * @return the priced cost entry, with recipe components as its parts where applicable
-     */
-    private fun costEntry(line: String): Entry {
+    override fun costEntry(line: String): Entry {
         if (line.equals("FREE", ignoreCase = true)) return Entry(line, 0L)
 
         KEY_RECIPES[line]?.let { recipe ->
             val parts = buildList {
-                if (recipe.coins > 0) add(Entry("${formatCoins(recipe.coins)} Coins", recipe.coins))
+                if (recipe.coins > 0) add(Entry("${ChestProfitEngine.formatCoins(recipe.coins)} Coins", recipe.coins))
                 recipe.components.forEach { (id, qty) ->
                     val value = qty.toLong() * PriceUtils.getPrice(id, sellOffer, includeTaxes).toLong()
                     add(Entry("${qty}x ${prettyName(id)}", value))
@@ -591,24 +406,14 @@ object KuudraProfitTracker : Module(
             return Entry(line, parts.sumOf { it.value }, parts)
         }
 
-        // Tier keys without a known recipe (Basic/Hot/Burning/Fiery) aren't priced yet, so 0.
         val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
         return Entry(line, coins ?: 0L)
     }
 
-    /**
-     * Resolves a loot display name to its price-API id. Enchanted books and explicit [NAME_TO_ID]
-     * overrides take priority, then the generic ` Shard`/` Essence` suffix rules.
-     *
-     * @param name the loot display name
-     * @return the API id, or null if the name maps to no known id
-     */
     private fun lootIdFor(name: String): String? {
         ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
             return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
         }
-        // Explicit overrides win first: some display names (e.g. "Cinderbat Shard") don't follow the
-        // generic " Shard"/" Essence" -> ID rule, so the map entry must take priority over the suffix.
         NAME_TO_ID[name]?.let { return it }
         return when {
             name.endsWith(" Shard") -> "SHARD_" + name.removeSuffix(" Shard").uppercase().replace(' ', '_')
@@ -617,181 +422,6 @@ object KuudraProfitTracker : Module(
         }
     }
 
-    /**
-     * Turns a price-API id like `CORRUPTED_NETHER_STAR` into a readable `Corrupted Nether Star`.
-     *
-     * @param id the upper-snake-case API id
-     * @return the human-readable, title-cased name
-     */
     private fun prettyName(id: String): String =
         id.split('_').joinToString(" ") { it.lowercase().replaceFirstChar(Char::uppercase) }
-
-    /**
-     * Tints the best chest's slot and draws its profit as a coin label just below it. The tint is red
-     * and the value incomplete when a price is missing.
-     *
-     * @param ctx draw context
-     * @param leftPos left pixel edge of the GUI
-     * @param topPos top pixel edge of the GUI
-     * @param slot the chest slot to highlight
-     * @param profit the profit to render as the label
-     * @param hasError true when some content item had no API price
-     */
-    private fun renderHighlight(
-        ctx: GuiGraphicsExtractor,
-        leftPos: Int,
-        topPos: Int,
-        slot: Slot,
-        profit: Long,
-        hasError: Boolean
-    ) {
-        val x = leftPos + slot.x
-        val y = topPos + slot.y
-
-        // Translucent tint over the chest item — red when the value is incomplete (missing API price).
-        ctx.fill(x, y, x + 16, y + 16, if (hasError) ERROR_HIGHLIGHT_COLOR else highlightColor.getRGBA())
-
-        // Coin label centred just below the slot, scaled to fit the 16px cell.
-        val color = if (profit >= 0) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
-        val text = Component.literal(formatCoins(profit))
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate((x + 8).toFloat(), (y + 18).toFloat())
-        pose.scale(0.8f, 0.8f)
-        ctx.text(mc.font, text, -mc.font.width(text) / 2, 0, color)
-        pose.popMatrix()
-    }
-
-    /**
-     * Draws the breakdown panel beside the GUI, flipping to the left side if it would clip off-screen
-     * (in "Auto" mode) or following the configured side otherwise.
-     *
-     * @param ctx draw context
-     * @param leftPos left pixel edge of the GUI
-     * @param topPos top pixel edge of the GUI
-     * @param imageWidth width of the GUI, used to place the panel on its right
-     * @param screenWidth full screen width, used for the off-screen clip check
-     * @param breakdown the priced breakdown to render
-     */
-    private fun renderBreakdown(
-        ctx: GuiGraphicsExtractor,
-        leftPos: Int,
-        topPos: Int,
-        imageWidth: Int,
-        screenWidth: Int,
-        breakdown: Breakdown
-    ) {
-        val lines = breakdownLines(breakdown)
-        val width = (lines.maxOf { mc.font.width(it) }) + 8
-        val lineH = mc.font.lineHeight + 2
-        val height = lines.size * lineH + 4
-
-        val rightX = leftPos + imageWidth + 4
-        val leftX = leftPos - width - 4
-        val x = when (breakdownSide) {
-            "Left" -> leftX
-            "Right" -> rightX
-            else -> if (rightX + width > screenWidth) leftX else rightX // Auto
-        }
-        val y = topPos
-
-        ctx.fill(x, y, x + width, y + height, 0xD0000000.toInt())
-        var ty = y + 3
-        for (line in lines) {
-            ctx.text(mc.font, line, x + 4, ty, 0xFFFFFFFF.toInt())
-            ty += lineH
-        }
-    }
-
-    /**
-     * Formats a breakdown into the colored, ready-to-draw text lines of the panel: a header, the loot
-     * rows, the cost rows with their recipe parts, and the profit total.
-     *
-     * @param breakdown the priced breakdown to format
-     * @return the panel's lines as Minecraft [Component]s
-     */
-    private fun breakdownLines(breakdown: Breakdown): List<Component> {
-        val lines = ArrayList<Component>()
-        fun add(s: String) = lines.add(Component.literal(s))
-
-        add(if (breakdown.hasApiError) "§c§lProfit Breakdown §4(API error)" else "§6§lProfit Breakdown")
-        add("§a§lLoot")
-        for (e in breakdown.loot) {
-            when {
-                e.error -> add("§c${e.label} +${formatCoins(e.value)} §c(API error)")
-                e.value > 0 -> add("§7${e.label} §a+${formatCoins(e.value)}")
-                else -> add("§8${e.label} §8(no price)")
-            }
-        }
-
-        add("§c§lCost")
-        if (breakdown.costs.isEmpty()) add("§7  none")
-        for (e in breakdown.costs) {
-            add("§7${e.label} §c-${formatCoins(e.value)}")
-            for (p in e.parts) add("§8  ${p.label} §c-${formatCoins(p.value)}")
-        }
-
-        val sign = if (breakdown.total >= 0) "§a+" else "§c"
-        add("§e§lProfit: $sign${formatCoins(breakdown.total)}")
-        return lines
-    }
-
-    /**
-     * Shortens a coin amount with a k/M/B suffix, e.g. `1500` becomes `1.5k`.
-     *
-     * @param value the coin amount (may be negative)
-     * @return the compact string; amounts below 1,000 are shown in full
-     */
-    private fun formatCoins(value: Long): String {
-        val a = abs(value)
-        return when {
-            a >= 1_000_000_000 -> "%.1fB".format(value / 1e9)
-            a >= 1_000_000 -> "%.1fM".format(value / 1e6)
-            a >= 1_000 -> "%.1fk".format(value / 1e3)
-            else -> value.toString()
-        }
-    }
-
-    /**
-     * Builds a cache key from the GUI's slot items (name, count and lore) plus the pricing settings,
-     * so the best-chest result is only recomputed when the contents or settings actually change.
-     *
-     * @param screen the chest GUI to fingerprint
-     * @return a hash identifying this content-and-settings snapshot
-     */
-    private fun contentHash(screen: AbstractContainerScreen<*>): Int {
-        val slots = screen.menu.slots.joinToString("|") {
-            if (!it.hasItem()) return@joinToString "e"
-            val stack = it.item
-            // Hypixel sends chest items with their name first and fills in the Contents/Cost lore a
-            // few ticks later. Hash the lore too, otherwise a name-stable item whose lore just loaded
-            // in wouldn't invalidate the cache and the profit would stay stale until the GUI reopens.
-            val loreHash = stack.get(DataComponents.LORE)?.styledLines()?.hashCode() ?: 0
-            "${stack.hoverName.string}:${stack.count}:$loreHash"
-        }
-        // Fold in the pricing settings so toggling them re-computes while a GUI stays open.
-        return "$slots|$sellOffer|$includeTaxes|$lvl100Kuudra|$armorSalvage|$salvagePerk|$valueMode".hashCode()
-    }
-
-    /**
-     * Warns in chat once per item which loot the API couldn't price, so the gap is visible in-game.
-     *
-     * @param missing the display names of items that had no price
-     */
-    private fun reportMissing(missing: List<String>) {
-        for (item in missing) {
-            if (reportedErrors.add(item)) {
-                modMessage("§cNo price for §f$item §c— profit is incomplete (API).")
-            }
-        }
-    }
-
-    /**
-     * Clears the cached best-chest result and the per-item missing-price warnings.
-     */
-    private fun invalidate() {
-        cacheHash = 0
-        cacheResult = null
-        reportedErrors.clear()
-    }
 }
