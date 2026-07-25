@@ -13,11 +13,12 @@ import net.minecraft.world.item.ItemStack
 import java.io.File
 import xyz.vexo.Vexo
 import xyz.vexo.Vexo.mc
+import xyz.vexo.clickgui.components.UIItem
+import xyz.vexo.clickgui.components.UIItemRenderer
 import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.gsib
 import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.colorTo
-import net.minecraft.client.gui.GuiGraphicsExtractor
 import xyz.vexo.utils.sendCommand
 
 class RecipeGUI(
@@ -86,9 +87,13 @@ class RecipeGUI(
     override fun afterInitialization() {
         super.afterInitialization()
         searchInput?.grabWindowFocus()
+    }
+
+    override fun initScreen(width: Int, height: Int) {
+        super.initScreen(width, height)
 
         ScreenEvents.afterExtract(this).register { _, graphics, _, _, _ ->
-            drawItemIcons(graphics)
+            UIItemRenderer.renderQueued(graphics)
         }
     }
 
@@ -126,16 +131,6 @@ class RecipeGUI(
                 textScale = 1.1f.gpx()
             }.setColor(Theme.textPrimary()) as UIText
             loadingText?.let { it childOf s }
-        }
-    }
-
-    private fun drawItemIcons(graphics: GuiGraphicsExtractor) {
-        val s = scroll ?: return
-        rows.forEach { row ->
-            if (row.getBottom() > s.getTop() && row.getTop() < s.getBottom()) {
-                val anchor = row.iconAnchor
-                graphics.item(row.recipe.itemStack, anchor.getLeft().toInt(), anchor.getTop().toInt())
-            }
         }
     }
 
@@ -336,13 +331,6 @@ class RecipeGUI(
         val recipe: RecipeItem
     ) : UIContainer() {
 
-        val iconAnchor: UIComponent = UIContainer().constrain {
-            x = 8.gpx()
-            y = CenterConstraint()
-            width = 16.gpx()
-            height = 16.gpx()
-        }
-
         init {
             val bg = UIRoundedRectangle(6f).constrain {
                 x = 4.gpx()
@@ -357,7 +345,10 @@ class RecipeGUI(
                 textScale = 1.25f.gpx()
             }.setColor(Theme.textPrimary()) childOf this
 
-            iconAnchor childOf this
+            UIItem(recipe.itemStack).constrain {
+                x = 8.gpx()
+                y = CenterConstraint()
+            } childOf this
 
             onMouseEnter {
                 bg.colorTo(Theme.cardHover())
