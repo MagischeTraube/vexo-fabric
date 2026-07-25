@@ -3,7 +3,7 @@
 	"id": "vexo",
 	"version": "${version}",
 	"name": "Vexo",
-	"description": "Dungeon focused Hypixel Skyblock Mod",
+	"description": "Dungeon and Kuudra focused Hypixel Skyblock Mod",
 	"authors": [
 		"Traube", "Lloyd"
 	],
