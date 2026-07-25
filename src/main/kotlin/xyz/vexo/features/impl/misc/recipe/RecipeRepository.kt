@@ -38,7 +38,8 @@ object RecipeRepository : IInitializable{
         val itemModel: String?,
         val textureValue: String?,
         val textureSignature: String?,
-        val dyedColor: Int?
+        val dyedColor: Int?,
+        val hasGlint: Boolean
     )
 
     private var cache: List<RemoteRecipe>? = null
@@ -126,7 +127,8 @@ object RecipeRepository : IInitializable{
                     itemModel = o.get("item_model")?.takeUnless { it.isJsonNull }?.asString,
                     textureValue = o.get("texture_value")?.takeUnless { it.isJsonNull }?.asString,
                     textureSignature = o.get("texture_signature")?.takeUnless { it.isJsonNull }?.asString,
-                    dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt
+                    dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt,
+                    hasGlint = o.get("has_glint")?.takeUnless { it.isJsonNull }?.asBoolean ?: false
                 )
             } catch (e: Exception) {
                 null
@@ -174,6 +176,10 @@ object RecipeRepository : IInitializable{
 
         if (r.name.isNotBlank()) {
             stack.set(DataComponents.CUSTOM_NAME, Component.literal(r.name))
+        }
+
+        if (r.hasGlint) {
+            stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true)
         }
 
         return stack
