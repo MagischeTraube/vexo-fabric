@@ -15,13 +15,6 @@ import xyz.vexo.clickgui.theme.xTo
 import java.awt.Color
 import kotlin.math.roundToInt
 
-/**
- * Modal glass overlay for tuning the GUI's own presentation: the effect toggles (animations, glass,
- * shadows, glow, tooltips), the accent color and the GUI scale. Writes straight to [GuiPrefs].
- *
- * Structural changes (glass transparency, accent, scale) are applied by reopening the GUI via
- * [onApply] when the overlay is dismissed.
- */
 class GuiSettingsOverlay(
     private val onApply: () -> Unit
 ) : UIContainer() {
@@ -32,7 +25,6 @@ class GuiSettingsOverlay(
             height = 100.percent()
         }
 
-        // Scrim — clicking it dismisses.
         val scrim = UIBlock(Theme.overlayScrim()).constrain {
             width = 100.percent()
             height = 100.percent()
@@ -83,7 +75,6 @@ class GuiSettingsOverlay(
         scaleRow().constrain { y = nextY() } childOf content
         accentRow().constrain { y = nextY() } childOf content
 
-        // Done button.
         val done = UIRoundedRectangle(8f).constrain {
             x = CenterConstraint()
             y = 14.gpx(true)

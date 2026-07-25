@@ -1,21 +1,26 @@
 package xyz.vexo.features.impl.dungeons
 
 import java.util.concurrent.ConcurrentHashMap
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
+import xyz.vexo.Vexo
 import xyz.vexo.events.EventHandler
+import xyz.vexo.events.impl.ClientTickEvent
 import xyz.vexo.events.impl.TooltipEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.features.Module
 import xyz.vexo.utils.PlayerData
 import xyz.vexo.utils.removeFormatting
+import net.minecraft.network.chat.MutableComponent
 
 
-object PartyFinder : Module(
-    name = "Party Finder",
+object DungeonPartyFinder : Module(
+    name = "Dungeon Party Finder",
     description = "Adds more information to the party finder",
     toggled = false
 ) {
@@ -23,10 +28,14 @@ object PartyFinder : Module(
     private val showFairyPerk by BooleanSetting("Show Fairy Perk", "Shows Fairy Perk in the tooltip")
 
     private const val MAX_CACHE_SIZE = 300
+    private const val PREFETCH_INTERVAL_TICKS = 10
 
     private val originalLinesCache = ConcurrentHashMap<String, Component>()
 
     private val playerDataComponentCache = ConcurrentHashMap<PlayerDataCacheKey, PlayerDataComponent>()
+
+    private var tickCounter = 0
+    private var lastScreen: Screen? = null
 
     private data class PlayerDataCacheKey(
         val playerName: String,
@@ -44,6 +53,51 @@ object PartyFinder : Module(
     @EventHandler
     fun onWorldJoin(event: WorldJoinEvent) {
         clearCaches()
+        lastScreen = null
+    }
+
+    /**
+     * Prefetches player data for everyone listed in any dungeon party finder
+     * lore, so it's already cached by the time the player hovers a tooltip.
+     */
+    @EventHandler
+    fun onTick(event: ClientTickEvent) {
+        val screen = Vexo.mc.screen
+        if (screen !is AbstractContainerScreen<*> || screen.title.string.removeFormatting() != "Party Finder") {
+            lastScreen = null
+            return
+        }
+
+        val justOpened = screen !== lastScreen
+        if (!justOpened && ++tickCounter % PREFETCH_INTERVAL_TICKS != 0) return
+        lastScreen = screen
+
+        val queued = HashSet<String>()
+        for (slot in screen.menu.slots) {
+            if (!slot.hasItem()) continue
+            val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                ?.map { it.string.removeFormatting().trim() }
+                ?: continue
+            for (name in dungeonPartyMembers(lore)) if (queued.add(name)) PlayerData.fetchAndCachePlayerData(name)
+        }
+    }
+
+    private fun dungeonPartyMembers(lore: List<String>): List<String> {
+        if (lore.none { it.startsWith("Dungeon:") }) return emptyList()
+        if (lore.any { it.startsWith("Tier:") }) return emptyList()
+
+        val membersIndex = lore.indexOfFirst { it == "Members:" }
+        if (membersIndex == -1) return emptyList()
+
+        val names = ArrayList<String>()
+        for (i in (membersIndex + 1) until lore.size) {
+            val text = lore[i]
+            if (text.isEmpty() || text.startsWith("Click to join") || text.startsWith("Empty")) break
+
+            val name = text.substringBefore(':').trim()
+            if (name.isNotEmpty() && name.all { it.isLetterOrDigit() || it == '_' }) names.add(name)
+        }
+        return names
     }
 
     @EventHandler
@@ -67,12 +121,6 @@ object PartyFinder : Module(
 
     private data class DungeonInfo(val floor: Int?, val isMaster: Boolean)
 
-    /**
-     * Parses the dungeon info from the tooltip
-     *
-     * @param lines The lines of the tooltip
-     * @return The dungeon info
-     */
     private fun parseDungeonInfo(lines: List<Component>): DungeonInfo {
         var floor: Int? = null
         var isMaster = false
@@ -99,22 +147,9 @@ object PartyFinder : Module(
         "Floor VII" to 7
     )
 
-    /**
-     * Parses the floor from the tooltip
-     *
-     * @param text The text of the tooltip
-     * @return The floor
-     */
     private fun parseFloor(text: String): Int? =
         FLOOR_MAP[text.substringAfter("Floor:").trim()]
 
-    /**
-     * Updates the tooltip lines
-     *
-     * @param lines The lines of the tooltip
-     * @param floor The floor of the dungeon
-     * @param isMaster Whether the dungeon is in master mode
-     */
     private fun updateTooltipLines(
         lines: MutableList<Component>,
         floor: Int?,
@@ -253,12 +288,6 @@ object PartyFinder : Module(
         return "%dm%02ds".format(min, sec)
     }
 
-    /**
-     * Gets the color for a given level
-     *
-     * @param level The level to get the color for
-     * @return The color for the given level
-     */
     fun getLevelColor(level: Int): String = when {
         level >= 50 -> "§c§l"
         level >= 45 -> "§c"
@@ -275,29 +304,14 @@ object PartyFinder : Module(
 
     private val CLASS_REGEX = Regex("(Mage|Archer|Berserk|Healer|Tank) \\((\\d+)\\)")
 
-    /**
-     * Recolors the class component
-     *
-     * @param original The original component
-     * @return The recolored component
-     */
     private fun recolorClassComponent(original: Component): Component {
         val text = original.string.removeFormatting()
-        val match = CLASS_REGEX.find(text)
-
-        if (match == null) return original.copy()
+        val match = CLASS_REGEX.find(text) ?: return original.copy()
 
         val clazz = match.groupValues[1]
         val level = match.groupValues[2].toIntOrNull() ?: 0
 
-        val base = Component.empty()
-
-        if (original.siblings.size >= 3) {
-            base.append(original.siblings[0].copy())
-            base.append(original.siblings[1].copy())
-            base.append(original.siblings[2].copy())
-        }
-
+        val base: MutableComponent = buildPrefixComponent(original, match.range.first)
         base.append(
             Component.literal("${getLevelColor(level)}$clazz ($level)")
         )
@@ -305,9 +319,34 @@ object PartyFinder : Module(
         return base
     }
 
-    /**
-     * Clears all caches
-     */
+    private fun buildPrefixComponent(original: Component, matchStart: Int): MutableComponent {
+        val base: MutableComponent = Component.empty()
+        var consumed = 0
+
+        original.visit<Unit>({ style, rawText ->
+            val segmentText = rawText.removeFormatting()
+
+            if (consumed < matchStart) {
+                val remaining = matchStart - consumed
+                val part = if (segmentText.length <= remaining) segmentText else segmentText.substring(0, remaining)
+                if (part.isNotEmpty()) {
+                    base.append(Component.literal(part).withStyle(style))
+                }
+            }
+
+            consumed += segmentText.length
+            java.util.Optional.empty()
+        }, Style.EMPTY)
+
+        return base
+    }
+
+    private fun firstColor(component: Component): TextColor? {
+        component.style.color?.let { return it }
+        for (sibling in component.siblings) firstColor(sibling)?.let { return it }
+        return null
+    }
+
     private fun clearCaches() {
         originalLinesCache.clear()
         playerDataComponentCache.clear()

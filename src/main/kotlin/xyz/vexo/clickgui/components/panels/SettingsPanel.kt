@@ -48,6 +48,7 @@ class SettingsPanel : UIContainer() {
         }.setColor(Theme.panelDark()) childOf this
     }
 
+    /** Shows the default settings hint screen. */
     fun showSettingsHint() {
         clearChildren()
         setupBackground()
@@ -65,6 +66,7 @@ class SettingsPanel : UIContainer() {
         }.setColor(Theme.textMuted()) childOf this
     }
 
+    /** Shows settings for [module], tracking active keybind listeners in [activeKeybindSettings]. */
     fun showModuleSettings(module: Module, activeKeybindSettings: MutableList<KeybindSetting>) {
         currentModule = module
         activeKeybindSettings.clear()
@@ -133,7 +135,6 @@ class SettingsPanel : UIContainer() {
                 }.setColor(Theme.textMuted()) childOf this
             }
 
-            // Master toggle.
             val toggle = UIContainer().constrain {
                 x = 14.gpx(true)
                 y = CenterConstraint()
@@ -163,17 +164,13 @@ class SettingsPanel : UIContainer() {
 
     /** Wraps a setting component so hovering anywhere on the row shows its description tooltip. */
     private fun wrapSetting(setting: Setting<*>, component: UIComponent): UIComponent {
-        // Row height is driven by the component; the hover indicator is fixed-size to avoid a
-        // recursive size constraint.
         val row = UIContainer().constrain {
             x = 0.pixels()
             y = 0.pixels()
             width = 100.percent()
-            // Max-size (not position-based) so the centered indicator can't create a sizing loop.
             height = ChildBasedMaxSizeConstraint()
         }
 
-        // Left accent bar, lit on hover. Fixed height so it never participates in row sizing loops.
         val indicator = UIRoundedRectangle(2f).constrain {
             x = 2.gpx()
             y = CenterConstraint()

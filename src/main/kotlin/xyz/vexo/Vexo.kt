@@ -22,10 +22,12 @@ import xyz.vexo.features.impl.misc.*
 import xyz.vexo.features.impl.kuudra.*
 import xyz.vexo.features.impl.dungeons.*
 import xyz.vexo.utils.*
+import xyz.vexo.features.impl.misc.recipe.RecipeRepository
 
 
 object Vexo : ClientModInitializer {
 	const val MOD_ID = "vexo"
+	const val VEXO_API = "https://api.infm7.xyz"
 
 	private val metadata: ModMetadata by lazy {
 		FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow().metadata
@@ -50,12 +52,13 @@ object Vexo : ClientModInitializer {
 
 	override fun onInitializeClient() {
 		arrayOf(
-			EventDispatcher, PriceUtils
+			EventDispatcher, PriceUtils, RecipeRepository
 		).forEach { it.init() }
 
 		ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
 			arrayOf(
 				VexoCommand,
+				RecipeCommand,
 
 				TyfrCommand, KuudraStatsCommand, deezNutsCommand, RewarpCommand,
 
@@ -72,7 +75,7 @@ object Vexo : ClientModInitializer {
 
 		arrayOf(
 			// dungeons
-			HealerP5LeapAlert, PadTimer, PartyFinder, PositionalMessages, RagAxeNow, ParticleHider,
+			HealerP5LeapAlert, PadTimer, DungeonPartyFinder, PositionalMessages, RagAxeNow, ParticleHider,
 			DungeonRequeue, StormPillarTimer, NecronBlockHighlight,
 
 			// kuudra

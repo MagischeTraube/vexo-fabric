@@ -8,7 +8,7 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Style
 import xyz.vexo.Vexo
 
-private const val KUUDRA_API = "https://api.infm7.xyz/kuudra"
+private const val KUUDRA_API = "${Vexo.VEXO_API}/kuudra"
 
 internal fun showKuudraStats(name: String) {
     modMessage("§7Loading Kuudra stats for §f$name§7 ...")
@@ -58,7 +58,14 @@ private fun statLine(component: Component) {
 private fun statLine(text: String) = statLine(Component.literal(text))
 
 private fun renderKuudraStats(name: String, data: JsonObject) {
-    fun int(key: String): Int = data.get(key)?.takeUnless { it.isJsonNull }?.asInt ?: 0
+    fun int(key: String): Int =
+        data.get(key)?.takeUnless { it.isJsonNull }?.asInt ?: 0
+
+    fun kuudraRuns(tier: String): Int =
+        data.getAsJsonObject("total_runs")
+            ?.get(tier)
+            ?.takeUnless { it.isJsonNull }
+            ?.asInt ?: 0
     fun flag(key: String): Boolean {
         val el = data.get(key) ?: return false
         return el.isJsonPrimitive && el.asJsonPrimitive.isBoolean && el.asBoolean
@@ -72,7 +79,7 @@ private fun renderKuudraStats(name: String, data: JsonObject) {
     statLine("  §e§lProfile")
     statLine("  §7Magical Power: §b${grouped(int("magical_power"))}")
     statLine("  §7Catacombs: §a${int("cata_level")}")
-    statLine("  §7Infernal Runs: §d${grouped(int("infernal_runs"))}")
+    statLine("  §7Infernal Runs: §d${grouped(kuudraRuns("infernal"))}")
 
     val talisman = data.getAsJsonObject("kuudra_talisman")
         ?.get("type")?.takeUnless { it.isJsonNull }?.asString ?: "NONE"

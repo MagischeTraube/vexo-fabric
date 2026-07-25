@@ -13,10 +13,6 @@ import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.Theme.withAlpha
 import xyz.vexo.clickgui.theme.colorTo
 
-/**
- * Glass header: brand + version, a focus-glowing search field, and a button that opens the GUI
- * effects overlay.
- */
 class HeaderPanel(
     private val onSearchUpdate: (String) -> Unit,
     private val onOpenSettings: () -> Unit = {}
@@ -37,7 +33,6 @@ class HeaderPanel(
             height = 100.percent()
         }.setColor(Theme.header()) childOf this
 
-        // Faint top highlight + bottom divider sell the frosted-glass edge.
         UIBlock(Theme.glassEdge()).constrain {
             width = 100.percent()
             height = 1.gpx()
@@ -78,7 +73,6 @@ class HeaderPanel(
             height = 100.percent()
         }.setColor(Theme.card()) childOf button
 
-        // A simple, always-renderable "sliders/menu" glyph: three stacked rounded lines.
         listOf(8f, 13f, 18f).forEach { yy ->
             UIRoundedRectangle(1f).constrain {
                 x = CenterConstraint()
@@ -106,7 +100,6 @@ class HeaderPanel(
             height = 26.gpx()
         }
 
-        // Glow layer behind the field, lit on focus.
         val glow = UIRoundedRectangle(8f).constrain {
             x = (-2).gpx()
             y = (-2).gpx()

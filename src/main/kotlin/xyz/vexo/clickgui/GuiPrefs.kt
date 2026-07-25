@@ -6,20 +6,10 @@ import xyz.vexo.utils.logError
 import java.awt.Color
 import java.io.File
 
-/**
- * Standalone preferences for the ClickGui's "luxury" presentation layer, stored separately from the
- * module config (`config/vexo/gui.json`) so it never interferes with [xyz.vexo.config.ConfigManager]'s
- * format. Holds the user-facing effect toggles (animations / glass / shadows / glow / tooltips), the
- * accent color, the GUI scale and the per-module favorites.
- *
- * Everything is read live by the GUI components, so toggling an effect generally takes effect on the
- * next interaction (color/animation toggles immediately; structural ones like glass transparency on
- * the next GUI open).
- */
 object GuiPrefs {
     private val file = File(Vexo.configDir, "gui.json")
 
-    // Effect toggles -------------------------------------------------------------------------------
+    // Effect toggles
     var animations: Boolean = true
     var blurGlass: Boolean = true
     var shadows: Boolean = true
