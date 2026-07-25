@@ -154,7 +154,6 @@ object KuudraPartyFinderInfo : Module(
     private fun buildLine(original: Component, name: String): Component {
         val suffix = when (val stats = KuudraPartyStats.get(name)) {
             null -> " §8[...]"
-
             else -> if (stats.isError) {
                 " §c[?]"
             } else {
@@ -167,7 +166,11 @@ object KuudraPartyFinderInfo : Module(
             }
         }
 
-        val nameComp = buildPrefixComponent(original, name.length)
+        val unformattedOriginal = original.string.removeFormatting()
+        val nameIndex = unformattedOriginal.indexOf(name)
+        val cutLength = if (nameIndex != -1) nameIndex + name.length else name.length
+
+        val nameComp = buildPrefixComponent(original, cutLength)
         return Component.empty().append(nameComp).append(Component.literal(suffix))
     }
 
