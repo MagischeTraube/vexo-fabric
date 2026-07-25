@@ -22,6 +22,7 @@ import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.launch
 import xyz.vexo.utils.IInitializable
+import net.minecraft.world.item.component.DyedItemColor
 
 object RecipeRepository : IInitializable{
 
@@ -36,7 +37,8 @@ object RecipeRepository : IInitializable{
         val material: String?,
         val itemModel: String?,
         val textureValue: String?,
-        val textureSignature: String?
+        val textureSignature: String?,
+        val dyedColor: Int?
     )
 
     private var cache: List<RemoteRecipe>? = null
@@ -123,7 +125,8 @@ object RecipeRepository : IInitializable{
                     material = o.get("material")?.takeUnless { it.isJsonNull }?.asString,
                     itemModel = o.get("item_model")?.takeUnless { it.isJsonNull }?.asString,
                     textureValue = o.get("texture_value")?.takeUnless { it.isJsonNull }?.asString,
-                    textureSignature = o.get("texture_signature")?.takeUnless { it.isJsonNull }?.asString
+                    textureSignature = o.get("texture_signature")?.takeUnless { it.isJsonNull }?.asString,
+                    dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt
                 )
             } catch (e: Exception) {
                 null
@@ -181,11 +184,22 @@ object RecipeRepository : IInitializable{
 
         applySkyblockData(stack, r.id)
 
+        r.dyedColor?.let {
+            stack.set(
+                DataComponents.DYED_COLOR,
+                DyedItemColor(it)
+            )
+        }
+
         r.itemModel?.let {
             val parts = it.split(":", limit = 2)
             val namespace = if (parts.size == 2) parts[0] else "minecraft"
             val path = if (parts.size == 2) parts[1] else parts[0]
-            stack.set(DataComponents.ITEM_MODEL, Identifier.fromNamespaceAndPath(namespace, path))
+
+            stack.set(
+                DataComponents.ITEM_MODEL,
+                Identifier.fromNamespaceAndPath(namespace, path)
+            )
         }
 
         return stack
