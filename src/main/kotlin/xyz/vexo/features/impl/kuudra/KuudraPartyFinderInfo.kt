@@ -5,8 +5,8 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.Style
-import net.minecraft.network.chat.TextColor
 import xyz.vexo.Vexo
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.SelectorSetting
@@ -20,11 +20,12 @@ import xyz.vexo.utils.KuudraPartyStats
 import xyz.vexo.utils.modMessage
 import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.showKuudraStats
+import java.util.Optional
 
 object KuudraPartyFinderInfo : Module(
-        name = "Kuudra Party Finder Info",
-        description = "Shows Kuudra stats behind each member in the party finder",
-        toggled = false
+    name = "Kuudra Party Finder Info",
+    description = "Shows Kuudra stats behind each member in the party finder",
+    toggled = false
 ){
     private val statsOnJoin by BooleanSetting(
         "Stats On Join",
@@ -165,15 +166,30 @@ object KuudraPartyFinderInfo : Module(
                         " §8· §7Rend ${if (stats.rendBone) "§a✔" else "§c✘"}"
             }
         }
-        val color = firstColor(original) ?: TextColor.fromRgb(0x55FFFF)
-        val nameComp = Component.literal(name).setStyle(Style.EMPTY.withColor(color))
+
+        val nameComp = buildPrefixComponent(original, name.length)
         return Component.empty().append(nameComp).append(Component.literal(suffix))
     }
 
-    /** The first explicit text color in the component tree (member lines carry it on name or root). */
-    private fun firstColor(component: Component): TextColor? {
-        component.style.color?.let { return it }
-        for (sibling in component.siblings) firstColor(sibling)?.let { return it }
-        return null
+    private fun buildPrefixComponent(original: Component, length: Int): MutableComponent {
+        val base: MutableComponent = Component.empty()
+        var consumed = 0
+
+        original.visit<Unit>({ style, rawText ->
+            val segmentText = rawText.removeFormatting()
+
+            if (consumed < length) {
+                val remaining = length - consumed
+                val part = if (segmentText.length <= remaining) segmentText else segmentText.substring(0, remaining)
+                if (part.isNotEmpty()) {
+                    base.append(Component.literal(part).withStyle(style))
+                }
+            }
+
+            consumed += segmentText.length
+            Optional.empty()
+        }, Style.EMPTY)
+
+        return base
     }
 }
