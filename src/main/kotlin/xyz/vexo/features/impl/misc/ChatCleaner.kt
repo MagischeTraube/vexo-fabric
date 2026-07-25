@@ -214,7 +214,7 @@ object ChatCleaner : Module(
     )
 
     val farmingFeastRegex = listOf(
-        Regex ("""[NPC] Feast Chef Ted: Thanks for the donation! I've added a Kernel to your purse.""")
+        Regex("""\[NPC] Feast Chef Ted: Thanks for the donation! I've added a Kernel to your purse.""")
     )
 
     val muteMessagesRegex = listOf(

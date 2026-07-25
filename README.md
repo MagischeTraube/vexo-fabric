@@ -28,6 +28,7 @@ A Hypixel SkyBlock mod for Minecraft 1.21 built on Fabric, focused on Dungeons, 
 | **Auto Dungeon Requeue** | Automatically starts a new run of the current floor after a configurable delay |
 | **Storm Pillar Timer** | Displays a HUD title confirming when Storm has been crushed |
 | **Necron Block Highlight** | Highlights the exact blocks to mine during the Necron fight |
+| **Dungeon Profit Tracker** | Shows the profit of your Dungeon Croesus chests — values the loot and subtracts the cost |
 
 </details>
 
