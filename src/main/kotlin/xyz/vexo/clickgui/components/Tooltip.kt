@@ -59,15 +59,23 @@ object Tooltip {
 
         h.setX(x.pixels())
         h.setY(y.pixels())
-        h.unhide()
+        Window.enqueueRenderOperation {
+            h.unhide()
+        }
     }
 
     fun hide() {
-        holder?.hide(instantly = true)
+        val h = holder ?: return
+        Window.enqueueRenderOperation {
+            h.hide(instantly = true)
+        }
     }
 
     fun detach() {
-        holder?.let { it.parent.removeChild(it) }
+        val h = holder ?: return
+        Window.enqueueRenderOperation {
+            h.parent.removeChild(h)
+        }
         holder = null
         background = null
         label = null
