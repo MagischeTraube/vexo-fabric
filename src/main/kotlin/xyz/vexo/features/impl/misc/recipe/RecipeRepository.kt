@@ -37,7 +37,6 @@ object RecipeRepository : IInitializable{
         val material: String?,
         val itemModel: String?,
         val textureValue: String?,
-        val textureSignature: String?,
         val dyedColor: Int?,
         val hasGlint: Boolean
     )
@@ -126,7 +125,6 @@ object RecipeRepository : IInitializable{
                     material = o.get("material")?.takeUnless { it.isJsonNull }?.asString,
                     itemModel = o.get("item_model")?.takeUnless { it.isJsonNull }?.asString,
                     textureValue = o.get("texture_value")?.takeUnless { it.isJsonNull }?.asString,
-                    textureSignature = o.get("texture_signature")?.takeUnless { it.isJsonNull }?.asString,
                     dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt,
                     hasGlint = o.get("has_glint")?.takeUnless { it.isJsonNull }?.asBoolean ?: false
                 )
@@ -218,7 +216,7 @@ object RecipeRepository : IInitializable{
 
         if (r.textureValue != null) {
             val propertyMap = HashMultimap.create<String, Property>().apply {
-                put("textures", Property("textures", r.textureValue, r.textureSignature))
+                put("textures", Property("textures", r.textureValue, "default"))
             }
             val profile = GameProfile(UUID.randomUUID(), "", PropertyMap(propertyMap))
             stack.set(DataComponents.PROFILE, ResolvableProfile.createResolved(profile))
