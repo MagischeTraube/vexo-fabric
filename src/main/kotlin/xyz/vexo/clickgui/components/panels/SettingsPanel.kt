@@ -205,6 +205,7 @@ class SettingsPanel : UIContainer() {
                 currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
             }
             is ColorSetting -> ColorSettingComponent(setting)
+            is ButtonSetting -> ButtonSettingComponent(setting)
             is KeybindSetting -> {
                 activeKeybindSettings.add(setting)
                 KeybindSettingComponent(setting)
