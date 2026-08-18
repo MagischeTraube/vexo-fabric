@@ -68,11 +68,16 @@ object DungeonProfitTracker : Module(
 
     private val NAME_TO_ID = mapOf(
         "Necron's Handle" to "NECRON_HANDLE",
+        "Shiny Necron's Handle" to "SHINY_NECRON_HANDLE",
         "Necron Dye" to "DYE_NECRON",
         "Bonzo's Staff" to "BONZO_STAFF",
         "Bonzo's Mask" to "BONZO_MASK",
         "Scarf's Studies" to "SCARF_STUDIES",
         "Adaptive Blade" to "STONE_BLADE",
+        "Shiny Wither Helmet" to "SHINY_WITHER_HELMET",
+        "Shiny Wither Chestplate" to "SHINY_WITHER_CHESTPLATE",
+        "Shiny Wither Leggings" to "SHINY_WITHER_LEGGINGS",
+        "Shiny Wither Boots" to "SHINY_WITHER_BOOTS",
     )
 
     private val engine = ChestProfitEngine(this)
