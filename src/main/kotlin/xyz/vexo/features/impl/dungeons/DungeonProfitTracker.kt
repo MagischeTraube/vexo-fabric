@@ -154,6 +154,9 @@ object DungeonProfitTracker : Module(
             return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
         }
         NAME_TO_ID[name]?.let { return it }
+        if (name.endsWith(" Shard")) {
+            return "SHARD_" + name.removeSuffix(" Shard").uppercase().replace(' ', '_')
+        }
         if (name.endsWith(" Essence")) {
             return "ESSENCE_" + name.removeSuffix(" Essence").uppercase().replace(' ', '_')
         }
