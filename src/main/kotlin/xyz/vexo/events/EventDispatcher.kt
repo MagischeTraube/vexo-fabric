@@ -12,7 +12,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
-import net.minecraft.world.level.block.LevelEvent
 import xyz.vexo.Vexo
 import xyz.vexo.utils.IInitializable
 import xyz.vexo.events.impl.ChatMessagePacketEvent
@@ -21,7 +20,6 @@ import xyz.vexo.events.impl.HudRenderEvent
 import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
-import xyz.vexo.events.impl.WorldRenderDataReadyEvent
 import xyz.vexo.events.impl.WorldRenderEvent
 import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
@@ -76,8 +74,6 @@ object EventDispatcher : IInitializable {
             !event.isCancelled()
         }
 
-        // Bridge item tooltip rendering (lore lines) into TooltipEvent. Fires per frame while an item
-        // is hovered; the current screen is the container the item lives in.
         ItemTooltipCallback.EVENT.register { stack, _, _, lines ->
             val screen = Vexo.mc.screen ?: return@register
             TooltipEvent(screen, stack, lines).postAndCatch()

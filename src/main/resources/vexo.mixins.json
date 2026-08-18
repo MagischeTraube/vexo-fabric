@@ -4,6 +4,7 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"AbstractContainerScreenAccessor",
+		"AbstractContainerScreenMixin",
 		"ChatScreenMixin",
 		"ConnectionMixin",
 		"FluidStateModelSetMixin",
