@@ -125,7 +125,7 @@ object DungeonProfitTracker : Module(
     override fun lootValueOrNull(name: String, qty: Long): Long? {
         val id = lootIdFor(name) ?: return null
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
-        if (unit <= 0) return null
+        if (unit < 0) return null
         return qty * unit.toLong()
     }
 
@@ -135,7 +135,7 @@ object DungeonProfitTracker : Module(
         if (line.startsWith("Dungeon Chest Key")) {
             val qty = KEY_QTY_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
             val unit = PriceUtils.getPrice("DUNGEON_CHEST_KEY", sellOffer, includeTaxes).toLong()
-            return Entry(line, qty * unit, error = unit <= 0)
+            return Entry(line, qty * unit, error = unit < 0)
         }
 
         val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()

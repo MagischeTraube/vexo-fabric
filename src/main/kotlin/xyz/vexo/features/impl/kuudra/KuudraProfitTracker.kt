@@ -361,12 +361,12 @@ object KuudraProfitTracker : Module(
 
         if (armorSalvage && isSalvageable(name)) {
             val price = crimsonPrice()
-            return if (price <= 0) null else qty * salvageEssence(name) * price
+            return if (price < 0) null else qty * salvageEssence(name) * price
         }
 
         val id = lootIdFor(name) ?: return null
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
-        if (unit <= 0) return null
+        if (unit < 0) return null
         var value = qty * unit.toLong()
         if (lvl100Kuudra && id.startsWith("ESSENCE_")) value = value * 12 / 10
         return value

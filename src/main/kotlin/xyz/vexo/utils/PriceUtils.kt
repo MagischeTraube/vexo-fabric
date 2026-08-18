@@ -137,11 +137,11 @@ object PriceUtils : IInitializable {
     fun getPrice(skyblockID: String, sellOffer: Boolean, includeTaxes: Boolean): Int {
         val bazaarItem = cachedBazaarData[skyblockID]
         if (bazaarItem != null) {
-            return if (sellOffer) bazaarItem.sellOfferPrice ?: 0 else bazaarItem.instaSellPrice ?: 0
+            return if (sellOffer) bazaarItem.sellOfferPrice ?: -1 else bazaarItem.instaSellPrice ?: -1
         }
 
-        val auctionItem = cachedAuctionData[skyblockID] ?: return 0
-        val rawPrice = auctionItem.lowestBin ?: return 0
+        val auctionItem = cachedAuctionData[skyblockID] ?: return -1
+        val rawPrice = auctionItem.lowestBin ?: return -1
 
         return if (includeTaxes) {
             calculateBinAfterTaxes(rawPrice.toDouble()).toInt()
