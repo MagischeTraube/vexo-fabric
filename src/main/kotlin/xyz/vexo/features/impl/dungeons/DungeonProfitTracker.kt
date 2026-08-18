@@ -100,7 +100,7 @@ object DungeonProfitTracker : Module(
         }
 
         val chests = engine.cachedChests(screen)
-        val (slot, breakdown) = chests.firstOrNull { it.second.total > 0 } ?: return
+        val (slot, breakdown) = chests.firstOrNull() ?: return
         val ctx = event.context
         val accessor = screen as AbstractContainerScreenAccessor
 
@@ -119,7 +119,7 @@ object DungeonProfitTracker : Module(
         }
 
         if (showSecondChest) {
-            val (slot2, breakdown2) = chests.drop(1).firstOrNull { it.second.total > 0 } ?: return
+            val (slot2, breakdown2) = chests.drop(1).firstOrNull() ?: return
             engine.renderHighlight(
                 ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
                 slot2, breakdown2.total, breakdown2.hasApiError, secondChestColor.getRGBA()
