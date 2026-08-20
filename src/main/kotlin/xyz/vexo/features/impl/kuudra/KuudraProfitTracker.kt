@@ -1,7 +1,6 @@
 package xyz.vexo.features.impl.kuudra
 
 import java.awt.Color
-import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.ItemStack
@@ -14,6 +13,7 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 import xyz.vexo.utils.PriceUtils
+import xyz.vexo.utils.renderSlotHighlights
 import xyz.vexo.utils.chestprofit.Breakdown
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
@@ -252,7 +252,20 @@ object KuudraProfitTracker : Module(
 
         if (title == "Croesus") {
             if (highlightCroesus) {
-                renderCroesusHighlights(event.context, accessor.vexoLeftPos(), accessor.vexoTopPos(), screen)
+                val highlights = buildMap {
+                    for (slot in screen.menu.slots) {
+                        if (!slot.hasItem()) continue
+                        val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                            ?.map { it.string.removeFormatting() } ?: continue
+                        when {
+                            lore.any { "No more chests to open" in it } -> put(slot, doneColor.getRGBA())
+                            lore.any { "Chests expire in" in it } -> put(slot, openableColor.getRGBA())
+                        }
+                    }
+                }
+                if (highlights.isNotEmpty()) {
+                    renderSlotHighlights(event.context, screen, highlights)
+                }
             }
             return
         }
@@ -276,30 +289,6 @@ object KuudraProfitTracker : Module(
                 ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
                 accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide
             )
-        }
-    }
-
-    private fun renderCroesusHighlights(
-        ctx: GuiGraphicsExtractor,
-        leftPos: Int,
-        topPos: Int,
-        screen: AbstractContainerScreen<*>
-    ) {
-        for (slot in screen.menu.slots) {
-            if (!slot.hasItem()) continue
-            val lore = slot.item.get(DataComponents.LORE)?.styledLines()
-                ?.map { it.string.removeFormatting() }
-                ?: continue
-
-            val color = when {
-                lore.any { "No more chests to open" in it } -> doneColor.getRGBA()
-                lore.any { "Chests expire in" in it } -> openableColor.getRGBA()
-                else -> continue
-            }
-
-            val x = leftPos + slot.x
-            val y = topPos + slot.y
-            ctx.fill(x, y, x + 16, y + 16, color)
         }
     }
 

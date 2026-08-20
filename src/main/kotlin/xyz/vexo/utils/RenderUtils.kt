@@ -12,7 +12,10 @@ import net.minecraft.world.phys.AABB
 import net.minecraft.world.phys.Vec3
 import org.joml.Matrix3x2f
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.world.inventory.Slot
 import xyz.vexo.Vexo.mc
+import xyz.vexo.mixin.AbstractContainerScreenAccessor
 
 /**
  * Renders a string with transformation support
@@ -57,6 +60,29 @@ fun renderString(
     )
 
     context.pose().popMatrix()
+}
+
+/**
+ * Draws translucent tints over highlighted slots in a GUI.
+ *
+ * @param context the GUI graphics context
+ * @param screen the GUI whose slots are rendered
+ * @param highlights mapping of slot to RGBA tint color
+ */
+fun renderSlotHighlights(
+    context: GuiGraphicsExtractor,
+    screen: AbstractContainerScreen<*>,
+    highlights: Map<Slot, Int>
+) {
+    val accessor = screen as AbstractContainerScreenAccessor
+    val leftPos = accessor.vexoLeftPos()
+    val topPos = accessor.vexoTopPos()
+
+    for ((slot, color) in highlights) {
+        val x = leftPos + slot.x
+        val y = topPos + slot.y
+        context.fill(x, y, x + 16, y + 16, color)
+    }
 }
 
 /**

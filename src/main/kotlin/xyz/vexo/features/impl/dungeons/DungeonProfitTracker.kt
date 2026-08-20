@@ -2,6 +2,8 @@ package xyz.vexo.features.impl.dungeons
 
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.inventory.Slot
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.SelectorSetting
@@ -11,6 +13,7 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 import xyz.vexo.utils.PriceUtils
+import xyz.vexo.utils.renderSlotHighlights
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
 import xyz.vexo.utils.removeFormatting
@@ -58,6 +61,29 @@ object DungeonProfitTracker : Module(
         default = Color(250, 200, 0, 120)
     ).apply { dependsOn { showSecondChest } }
 
+    private val highlightCroesus by BooleanSetting(
+        "Highlight Croesus",
+        "Tints runs in the Croesus menu by chest status",
+        default = true
+    )
+
+    private val unopenedColor = ColorSetting(
+        "Color: Unopened",
+        "Run with 2 chests left to open",
+        default = Color(18, 250, 0, 130)
+    ).apply { dependsOn { highlightCroesus } }
+
+    private val openableColor = ColorSetting(
+        "Color: Openable",
+        "Run with 1 chests left to open",
+        default = Color(250, 250, 0, 130)
+    ).apply { dependsOn { highlightCroesus } }
+
+    private val doneColor = ColorSetting(
+        "Color: Done",
+        "Run with no chests left",
+        default = Color(78, 0, 2, 150)
+    ).apply { dependsOn { highlightCroesus } }
 
     private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
     private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
@@ -94,6 +120,30 @@ object DungeonProfitTracker : Module(
     fun onGuiRender(event: GuiRenderEvent) {
         val screen = event.screen as? AbstractContainerScreen<*> ?: return
         val title = screen.title.string.removeFormatting().trim()
+        val accessor = screen as AbstractContainerScreenAccessor
+
+        if (title == "Croesus") {
+            if (highlightCroesus) {
+                val highlights = buildMap {
+                    for (slot in screen.menu.slots) {
+                        if (!slot.hasItem()) continue
+                        val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                            ?.map { it.string.removeFormatting() } ?: continue
+                        val color = when {
+                            lore.any { "No chests opened yet!" in it } -> unopenedColor.getRGBA()
+                            lore.any { "Chests expire in" in it } -> openableColor.getRGBA()
+                            lore.any { "No more chests to open" in it } -> doneColor.getRGBA()
+                            else -> continue
+                        }
+                        put(slot, color)
+                    }
+                }
+                if (highlights.isNotEmpty()) {
+                    renderSlotHighlights(event.context, screen, highlights)
+                }
+            }
+            return
+        }
 
         if (!CATACOMBS_TITLE.containsMatchIn(title) && title.removeSuffix(" Chest") !in CHEST_TITLES) {
             return
@@ -102,7 +152,6 @@ object DungeonProfitTracker : Module(
         val chests = engine.cachedChests(screen)
         val (slot, breakdown) = chests.firstOrNull() ?: return
         val ctx = event.context
-        val accessor = screen as AbstractContainerScreenAccessor
 
         if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
 
