@@ -21,6 +21,7 @@ import xyz.vexo.features.ModuleManager
 import xyz.vexo.features.impl.misc.*
 import xyz.vexo.features.impl.kuudra.*
 import xyz.vexo.features.impl.dungeons.*
+import xyz.vexo.features.impl.chat.*
 import xyz.vexo.utils.*
 import xyz.vexo.features.impl.misc.recipe.RecipeRepository
 
@@ -82,7 +83,10 @@ object Vexo : ClientModInitializer {
 			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, KuudraProfitTracker, KuudraPartyFinderInfo,
 
 			// misc
-			AutoRejoin, ChatCleaner, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts, FireVeilOverlay
+			AutoRejoin, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts, FireVeilOverlay,
+
+			// chat
+			ChatCleaner, CompactChat
 		).forEach { ModuleManager.register(it) }
 
 		xyz.vexo.clickgui.GuiPrefs.load()

@@ -1,4 +1,4 @@
-package xyz.vexo.features.impl.misc
+package xyz.vexo.features.impl.chat
 
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.events.EventHandler
@@ -51,6 +51,16 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val safariMessages by BooleanSetting(
+        name = "Safari Messages",
+        default = false
+    )
+
+    private val kuudraSpam by BooleanSetting(
+        name = "Kuudra Elle messages",
+        default = false
+    )
+
     private val checks
         get() = listOf(
             randomSpam to randomSpamRegex,
@@ -60,12 +70,15 @@ object ChatCleaner : Module(
             shardsSpam to shardRegex,
             ringOfLove to ringOfLoveRegex,
             farmingFeast to farmingFeastRegex,
-            muteMessages to muteMessagesRegex
+            muteMessages to muteMessagesRegex,
+            safariMessages to safariMessagesRegex,
+            kuudraSpam to kuudraRegex
         )
 
     @EventHandler
     fun onChat(event: ChatMessageEvent) {
         val message = event.unformattedMessage
+
         if (checks.any { (enabled, regexList) -> enabled && regexList.any { it.containsMatchIn(message) } }) {
             event.cancel()
         }
@@ -223,5 +236,32 @@ object ChatCleaner : Module(
         Regex("""^Your mute will expire in .+"""),
         Regex("""^Find out more here: www\.hypixel\.net/mutes$"""),
         Regex("""^Mute ID: #.+""")
+    )
+
+    val safariMessagesRegex = listOf(
+        Regex("""^FLOOR DROP! You found .+ on the ground!$"""),
+        Regex("""Your Critter Capsule doesn't seem to work on this creature..."""),
+        Regex("""You threw a Critter Capsule at the .+!"""),
+        Regex("""The .+ escaped your Critter Capsule!"""),
+        Regex("""You startled the Bloodbat!"""),
+        Regex("""You used the Soothing Incense to light the candle! +."""),
+        Regex("""This candle is already lit..."""),
+        Regex("""A rumbling sound can be heard, and the door at the back of the chamber opens..."""),
+        Regex("""Your ritual summoned a Doomspiral into this world. Stay still."""),
+        Regex(""" Something stirs in the Haunted Biome..."""),
+        Regex("""The darkness in the Haunted Biome fades away..."""),
+        Regex("""You hear the sound of massive footsteps echoing through the Icy Biome... What could it be?"""),
+        Regex("""You found a Duplico that was disguised as a block!"""),
+        Regex("""The cave is collapsing..."""),
+        Regex("""The cave opens up again..."""),
+        Regex("""You wake up suddenly..."""),
+        Regex("""A Gimmiegold appeared out of nowhere and gobbled up your Shining Coin!""")
+    )
+
+    val kuudraRegex = listOf(
+        Regex("""^\[NPC] Elle:.*$"""),
+        Regex("""Elle has been eaten by Kuudra!"""),
+        Regex("""You do not have enough tokens to upgrade this perk!"""),
+        Regex("""The Supply Chest is too heavy to use abilities while carrying it!""")
     )
 }
