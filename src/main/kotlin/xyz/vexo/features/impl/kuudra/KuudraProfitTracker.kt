@@ -250,7 +250,7 @@ object KuudraProfitTracker : Module(
         val title = screen.title.string.removeFormatting()
         val accessor = screen as AbstractContainerScreenAccessor
 
-        if (title == "Croesus") {
+        if (title.endsWith("Croesus")) {
             if (highlightCroesus) {
                 val highlights = buildMap {
                     for (slot in screen.menu.slots) {
