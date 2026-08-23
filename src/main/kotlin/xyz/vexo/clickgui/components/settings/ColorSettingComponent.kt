@@ -71,8 +71,9 @@ class ColorSettingComponent(
 
         sliderContainer.hide(instantly = true)
 
-        svBox = SvBox(initial, onChange = { newColor ->
-            hue = Color.RGBtoHSB(newColor.red, newColor.green, newColor.blue, null)[0]
+        svBox = SvBox(initial, onChange = { s, b ->
+            saturation = s
+            brightness = b
             applyColor()
         }).constrain {
             x = 0.gpx()

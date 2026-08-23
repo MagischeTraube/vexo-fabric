@@ -9,7 +9,7 @@ import xyz.vexo.clickgui.gpx
 
 class SvBox(
     initialColor: Color,
-    private val onChange: (Color) -> Unit,
+    private val onChange: (saturation: Float, brightness: Float) -> Unit,
     initHeight: Float = 100f
 ) : UIContainer() {
 
@@ -70,7 +70,7 @@ class SvBox(
             currentBrightness = 1f - mouseY.coerceIn(0f, boxHeight) / boxHeight
             pointer!!.setX((currentSaturation * 100).percent() - (POINT_SIZE / 2f).gpx())
             pointer!!.setY(((1 - currentBrightness) * boxHeight).gpx() - (POINT_SIZE / 2f).gpx())
-            onChange(Color.getHSBColor(currentHue, currentSaturation, currentBrightness))
+            onChange(currentSaturation, currentBrightness)
         }
 
         onMouseClick { dragging = true }
@@ -83,11 +83,9 @@ class SvBox(
 
     fun updateColor(color: Color) {
         val hsb = Color.RGBtoHSB(color.red, color.green, color.blue, null)
-        currentHue = hsb[0]
-        currentSaturation = hsb[1]
-        currentBrightness = hsb[2]
-        hueGradient!!.setEndColor(Color.getHSBColor(currentHue, 1f, 1f))
-        pointer!!.setX((currentSaturation * 100).percent() - (POINT_SIZE / 2f).gpx())
-        pointer!!.setY(((1 - currentBrightness) * boxHeight).gpx() - (POINT_SIZE / 2f).gpx())
+        if (hsb[1] > 0.01f) {
+            currentHue = hsb[0]
+            hueGradient!!.setEndColor(Color.getHSBColor(currentHue, 1f, 1f))
+        }
     }
 }

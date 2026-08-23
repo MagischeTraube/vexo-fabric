@@ -219,13 +219,20 @@ class GuiSettingsOverlay(
                 null
             )
             var hue = hsb[0]
+            var saturation = hsb[1]
+            var brightness = hsb[2]
             var svBox: SvBox? = null
+
+            fun applyAccent() {
+                val color = Color.getHSBColor(hue, saturation, brightness)
+                GuiPrefs.accentColor = color
+                preview.setColor(color)
+            }
 
             val hueBar = HueBar(hue) { newHue ->
                 hue = newHue
                 svBox!!.updateColor(Color.getHSBColor(hue, 1f, 1f))
-                GuiPrefs.accentColor = Color.getHSBColor(hue, 1f, 1f)
-                preview.setColor(GuiPrefs.accentColor)
+                applyAccent()
             }.constrain {
                 x = 0.gpx()
                 y = 18.gpx()
@@ -233,9 +240,10 @@ class GuiSettingsOverlay(
                 height = HueBar.HEIGHT.gpx()
             } childOf this
 
-            svBox = SvBox(GuiPrefs.accentColor, onChange = { newColor ->
-                GuiPrefs.accentColor = newColor
-                preview.setColor(newColor)
+            svBox = SvBox(GuiPrefs.accentColor, onChange = { s, b ->
+                saturation = s
+                brightness = b
+                applyAccent()
             }).constrain {
                 x = 0.gpx()
                 y = (18f + HueBar.HEIGHT + 4).gpx()
