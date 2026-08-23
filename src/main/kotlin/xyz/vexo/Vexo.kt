@@ -71,19 +71,20 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			DungeonUtils, PartyUtils, TyfrTrigger, DungeonDevTest, HelpOfTheFairysUtils, RewarpCommandQue
+			DungeonDevTest, DungeonUtils, HelpOfTheFairysUtils, PartyUtils, RewarpCommandQue, TyfrTrigger
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
 			// dungeons
-			HealerP5LeapAlert, PadTimer, DungeonPartyFinder, PositionalMessages, RagAxeNow, ParticleHider,
-			DungeonRequeue, StormPillarTimer, NecronBlockHighlight, DungeonProfitTracker,
+			DungeonPartyFinder, DungeonProfitTracker, DungeonRequeue, HealerP5LeapAlert, NecronBlockHighlight,
+			PadTimer, ParticleHider, PositionalMessages, RagAxeNow, StormPillarTimer,
 
 			// kuudra
-			AutoKuudraRequeue, SoloDetector, EatenTimer, ChestTracker, BackboneAlert, KuudraProfitTracker, KuudraPartyFinderInfo,
+			AutoKuudraRequeue, BackboneAlert, ChestTracker, EatenTimer, KuudraPartyFinderInfo, KuudraProfitTracker,
+			SoloDetector,
 
 			// misc
-			AutoRejoin, ScreenshotActions, SlayerHelper, RecolorLava, Wardrobe, Loadouts, FireVeilOverlay,
+			AutoRejoin, FireVeilOverlay, Loadouts, RecolorLava, ScreenshotActions, SlayerHelper, TimeControl, Wardrobe,
 
 			// chat
 			ChatCleaner, CompactChat

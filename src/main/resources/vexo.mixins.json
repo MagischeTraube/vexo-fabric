@@ -6,6 +6,7 @@
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenMixin",
 		"ChatScreenMixin",
+		"ClientClockManagerMixin",
 		"ConnectionMixin",
 		"FluidStateModelSetMixin",
 		"KeyboardHandlerMixin",
