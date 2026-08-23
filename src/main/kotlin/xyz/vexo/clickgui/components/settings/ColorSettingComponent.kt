@@ -71,10 +71,10 @@ class ColorSettingComponent(
 
         sliderContainer.hide(instantly = true)
 
-        svBox = SvBox(initial) { newColor ->
+        svBox = SvBox(initial, onChange = { newColor ->
             hue = Color.RGBtoHSB(newColor.red, newColor.green, newColor.blue, null)[0]
             applyColor()
-        }.constrain {
+        }).constrain {
             x = 0.gpx()
             y = (HueBar.HEIGHT + SPACING).gpx()
             width = 100.percent()

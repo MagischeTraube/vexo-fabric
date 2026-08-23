@@ -9,7 +9,8 @@ import xyz.vexo.clickgui.gpx
 
 class SvBox(
     initialColor: Color,
-    private val onChange: (Color) -> Unit
+    private val onChange: (Color) -> Unit,
+    initHeight: Float = 100f
 ) : UIContainer() {
 
     companion object {
@@ -22,16 +23,18 @@ class SvBox(
     private var currentHue = 0f
     private var currentSaturation = 0f
     private var currentBrightness = 1f
+    private val boxHeight: Float
 
     init {
         val hsb = Color.RGBtoHSB(initialColor.red, initialColor.green, initialColor.blue, null)
         currentHue = hsb[0]
         currentSaturation = hsb[1]
         currentBrightness = hsb[2]
+        boxHeight = initHeight
 
         constrain {
             width = 100.percent()
-            height = HEIGHT.gpx()
+            height = initHeight.gpx()
         }
 
         hueGradient = GradientComponent(
@@ -55,7 +58,7 @@ class SvBox(
 
         pointer = UIRoundedRectangle(POINT_SIZE / 2f).constrain {
             x = (currentSaturation * 100).percent() - (POINT_SIZE / 2f).gpx()
-            y = ((1 - currentBrightness) * HEIGHT).gpx() - (POINT_SIZE / 2f).gpx()
+            y = ((1 - currentBrightness) * boxHeight).gpx() - (POINT_SIZE / 2f).gpx()
             width = POINT_SIZE.gpx()
             height = POINT_SIZE.gpx()
         }.also { it.setColor(Color.WHITE) } childOf this
@@ -63,11 +66,10 @@ class SvBox(
         var dragging = false
         fun updateFromMouse(mouseX: Float, mouseY: Float) {
             val width = getWidth()
-            val height = getHeight()
             currentSaturation = mouseX.coerceIn(0f, width) / width
-            currentBrightness = 1f - mouseY.coerceIn(0f, height) / height
+            currentBrightness = 1f - mouseY.coerceIn(0f, boxHeight) / boxHeight
             pointer!!.setX((currentSaturation * 100).percent() - (POINT_SIZE / 2f).gpx())
-            pointer!!.setY(((1 - currentBrightness) * HEIGHT).gpx() - (POINT_SIZE / 2f).gpx())
+            pointer!!.setY(((1 - currentBrightness) * boxHeight).gpx() - (POINT_SIZE / 2f).gpx())
             onChange(Color.getHSBColor(currentHue, currentSaturation, currentBrightness))
         }
 
@@ -86,6 +88,6 @@ class SvBox(
         currentBrightness = hsb[2]
         hueGradient!!.setEndColor(Color.getHSBColor(currentHue, 1f, 1f))
         pointer!!.setX((currentSaturation * 100).percent() - (POINT_SIZE / 2f).gpx())
-        pointer!!.setY(((1 - currentBrightness) * HEIGHT).gpx() - (POINT_SIZE / 2f).gpx())
+        pointer!!.setY(((1 - currentBrightness) * boxHeight).gpx() - (POINT_SIZE / 2f).gpx())
     }
 }
