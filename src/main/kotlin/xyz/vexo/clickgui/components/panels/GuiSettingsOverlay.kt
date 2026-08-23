@@ -7,6 +7,9 @@ import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.elementa.effects.OutlineEffect
 import xyz.vexo.clickgui.GuiPrefs
+import xyz.vexo.clickgui.components.AlphaBar
+import xyz.vexo.clickgui.components.HueBar
+import xyz.vexo.clickgui.components.SvBox
 import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.gsib
 import xyz.vexo.clickgui.theme.Theme
@@ -35,7 +38,7 @@ class GuiSettingsOverlay(
             x = CenterConstraint()
             y = CenterConstraint()
             width = 340.gpx()
-            height = 350.gpx()
+            height = 420.gpx()
         }.setColor(Theme.panelDark()) childOf this
         card.enableEffect(OutlineEffect(Theme.glow(140), 1f))
         card.onMouseClick { it.stopPropagation() }
@@ -194,7 +197,7 @@ class GuiSettingsOverlay(
     private fun accentRow(): UIComponent {
         return UIContainer().constrain {
             width = 100.percent()
-            height = 56.gpx()
+            height = 120.gpx()
         }.apply {
             UIText("Accent color").constrain {
                 x = 2.gpx()
@@ -209,56 +212,36 @@ class GuiSettingsOverlay(
                 height = 14.gpx()
             }.setColor(GuiPrefs.accentColor) childOf this
 
-            fun channel(label: String, yy: Float, get: () -> Int, set: (Int) -> Unit) {
-                val c = UIContainer().constrain {
-                    x = 0.pixels()
-                    y = yy.gpx()
-                    width = 100.percent()
-                    height = 16.gpx()
-                } childOf this
-                UIText(label).constrain { x = 0.pixels(); y = CenterConstraint(); textScale = 1.gpx() }
-                    .setColor(Theme.textMuted()) childOf c
-                val track = UIRoundedRectangle(2f).constrain {
-                    x = 18.gpx()
-                    y = CenterConstraint()
-                    width = 100.percent() - 18.gpx()
-                    height = 4.gpx()
-                }.setColor(Theme.sliderTrack()) childOf c
+            val hsb = Color.RGBtoHSB(
+                GuiPrefs.accentColor.red,
+                GuiPrefs.accentColor.green,
+                GuiPrefs.accentColor.blue,
+                null
+            )
+            var hue = hsb[0]
+            var svBox: SvBox? = null
 
-                val handleWidth = 10f
-                val handle = UIRoundedRectangle(6f).constrain {
-                    x = (get() / 255f * 100).percent() - (handleWidth / 2).gpx()
-                    y = CenterConstraint()
-                    width = handleWidth.gpx()
-                    height = 10.gpx()
-                }.setColor(Theme.handle()) childOf track
+            val hueBar = HueBar(hue) { newHue ->
+                hue = newHue
+                svBox!!.updateColor(Color.getHSBColor(hue, 1f, 1f))
+                GuiPrefs.accentColor = Color.getHSBColor(hue, 1f, 1f)
+                preview.setColor(GuiPrefs.accentColor)
+            }.constrain {
+                x = 0.gpx()
+                y = 18.gpx()
+                width = 100.percent()
+                height = HueBar.HEIGHT.gpx()
+            } childOf this
 
-                var dragging = false
-                track.onMouseClick { dragging = true }
-                track.onMouseRelease { dragging = false }
-                handle.onMouseClick { dragging = true }
-                handle.onMouseRelease { dragging = false }
-                track.onMouseDrag { mouseX, _, _ ->
-                    if (!dragging) return@onMouseDrag
-                    val w = track.getWidth()
-                    val clampedMouseX = mouseX.coerceIn(0f, w)
-                    val pct = clampedMouseX / w
-                    set((pct * 255).roundToInt().coerceIn(0, 255))
-
-                    handle.setX((clampedMouseX - (handleWidth / 2)).pixels())
-                    preview.setColor(GuiPrefs.accentColor)
-                }
-            }
-
-            channel("R", 16f, { GuiPrefs.accentColor.red }) {
-                GuiPrefs.accentColor = Color(it, GuiPrefs.accentColor.green, GuiPrefs.accentColor.blue)
-            }
-            channel("G", 32f, { GuiPrefs.accentColor.green }) {
-                GuiPrefs.accentColor = Color(GuiPrefs.accentColor.red, it, GuiPrefs.accentColor.blue)
-            }
-            channel("B", 48f, { GuiPrefs.accentColor.blue }) {
-                GuiPrefs.accentColor = Color(GuiPrefs.accentColor.red, GuiPrefs.accentColor.green, it)
-            }
+            svBox = SvBox(GuiPrefs.accentColor, onChange = { newColor ->
+                GuiPrefs.accentColor = newColor
+                preview.setColor(newColor)
+            }).constrain {
+                x = 0.gpx()
+                y = (18f + HueBar.HEIGHT + 4).gpx()
+                width = 100.percent()
+                height = SvBox.HEIGHT.gpx()
+            } childOf this
         }
     }
 }
