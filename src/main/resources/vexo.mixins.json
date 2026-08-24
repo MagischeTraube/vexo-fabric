@@ -12,6 +12,7 @@
 		"KeyboardHandlerMixin",
 		"MainMixin",
 		"ModelManagerAccessor",
+		"MultiPlayerGameModeMixin",
 		"ParticleEngineMixin",
 		"SoundManagerMixin"
 	],

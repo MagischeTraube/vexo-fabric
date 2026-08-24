@@ -86,6 +86,43 @@ fun renderSlotHighlights(
 }
 
 /**
+ * Draws a straight line between two points in GUI (screen) space.
+ *
+ * @param context The GUI graphics context
+ * @param x1 Start X
+ * @param y1 Start Y
+ * @param x2 End X
+ * @param y2 End Y
+ * @param color The line color (ARGB, e.g. from [xyz.vexo.config.impl.ColorSetting.getRGBA])
+ * @param width The line thickness in pixels
+ */
+fun drawLine2D(
+    context: GuiGraphicsExtractor,
+    x1: Float,
+    y1: Float,
+    x2: Float,
+    y2: Float,
+    color: Int,
+    width: Float
+) {
+    val dx = x2 - x1
+    val dy = y2 - y1
+    val length = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+    if (length <= 0f) return
+
+    val angle = Math.atan2(dy.toDouble(), dx.toDouble()).toFloat()
+    val half = (width / 2f).coerceAtLeast(0.5f)
+
+    context.pose().pushMatrix()
+    context.pose().translate(x1, y1)
+    context.pose().rotate(angle)
+
+    context.fill(0, -half.toInt(), length.toInt(), half.toInt().coerceAtLeast(1), color)
+
+    context.pose().popMatrix()
+}
+
+/**
  * Creates an AABB from two BlockPos coordinates
  *
  * @param fromBlock The starting block position
@@ -266,7 +303,7 @@ fun LevelRenderContext.drawCircle(
  * @param nz The normal z value
  * @param width The line width
  */
-private fun VertexConsumer.lineVertex(
+internal fun VertexConsumer.lineVertex(
     pose: PoseStack.Pose,
     x: Float,
     y: Float,

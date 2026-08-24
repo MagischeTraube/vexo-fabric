@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xyz.vexo.config.impl.KeybindSetting;
 import xyz.vexo.events.impl.KeybindEvent;
+import xyz.vexo.events.impl.KeybindReleaseEvent;
 
 @Mixin(KeyboardHandler.class)
 public class KeyboardHandlerMixin {
@@ -21,16 +22,16 @@ public class KeyboardHandlerMixin {
                             net.minecraft.client.input.KeyEvent keyEvent,
                             CallbackInfo ci) {
 
-        if (action != GLFW.GLFW_PRESS) {
-            return;
-        }
-
         if (KeybindSetting.isListeningForKeybinds()) {
             return;
         }
 
         InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(keyEvent.key());
 
-        new KeybindEvent(key).postAndCatch();
+        if (action == GLFW.GLFW_PRESS) {
+            new KeybindEvent(key).postAndCatch();
+        } else if (action == GLFW.GLFW_RELEASE) {
+            new KeybindReleaseEvent(key).postAndCatch();
+        }
     }
 }
