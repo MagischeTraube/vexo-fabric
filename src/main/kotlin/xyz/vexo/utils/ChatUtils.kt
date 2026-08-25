@@ -1,7 +1,9 @@
 package xyz.vexo.utils
 
 import java.util.UUID
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.Style
 import xyz.vexo.utils.chatbuttons.ChatButton
 import xyz.vexo.Vexo.mc
 
@@ -22,6 +24,19 @@ fun sendCommand(command: String) {
  */
 fun modMessage(message: Any?, prefix: String = "§b[Vexo]§r ") {
     val text = Component.literal("$prefix$message")
+    mc.execute { mc.gui.chat.addClientSystemMessage(text) }
+}
+
+/**
+ * Sends a message to the chat that runs a client command when the whole line is clicked.
+ *
+ * @param message The message to send.
+ * @param command The command to run when the message is clicked (including the leading "/").
+ * @param prefix The prefix to add to the message.
+ */
+fun modClickableMessage(message: String, command: String, prefix: String = "§b[Vexo]§r ") {
+    val style = Style.EMPTY.withClickEvent(ClickEvent.RunCommand(command))
+    val text = Component.literal("$prefix$message").setStyle(style)
     mc.execute { mc.gui.chat.addClientSystemMessage(text) }
 }
 
