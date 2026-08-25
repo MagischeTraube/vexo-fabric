@@ -51,6 +51,11 @@ object ChatCleaner : Module(
         default = false
     )
 
+    private val torrhusMessages by BooleanSetting(
+        name = "Torrhus Messages",
+        default = false
+    )
+
     private val safariMessages by BooleanSetting(
         name = "Safari Messages",
         default = false
@@ -58,6 +63,21 @@ object ChatCleaner : Module(
 
     private val kuudraSpam by BooleanSetting(
         name = "Kuudra Elle messages",
+        default = false
+    )
+
+    private val separatorLines by BooleanSetting(
+        name = "Hide Separator Lines",
+        default = false
+    )
+
+    private val ringReminders by BooleanSetting(
+        name = "Hide Repeated Call Reminders",
+        default = false
+    )
+
+    private val bazaarSpam by BooleanSetting(
+        name = "Bazaar Messages",
         default = false
     )
 
@@ -71,8 +91,12 @@ object ChatCleaner : Module(
             ringOfLove to ringOfLoveRegex,
             farmingFeast to farmingFeastRegex,
             muteMessages to muteMessagesRegex,
+            torrhusMessages to torrhusRegex,
             safariMessages to safariMessagesRegex,
-            kuudraSpam to kuudraRegex
+            kuudraSpam to kuudraRegex,
+            separatorLines to separatorLinesRegex,
+            ringReminders to ringRemindersRegex,
+            bazaarSpam to bazaarRegex
         )
 
     @EventHandler
@@ -153,6 +177,8 @@ object ChatCleaner : Module(
         Regex("""⚠ Storm is enraged! ⚠"""),
         Regex("""Giga Lightning.+"""),
         Regex("""Necron's Nuclear Frenzy hit you for .+ damage\."""),
+        Regex("""Maxor's Frenzy hit you for .+ damage\."""),
+        Regex("""Goldor's Frenzy hit you for .+ damage\."""),
         Regex("""Someone has already activated this lever!"""),
         Regex("""Goldor's Greatsword hit you for .+ damage\."""),
         Regex("""A mystical force in this room prevents you from using that ability!"""),
@@ -238,6 +264,10 @@ object ChatCleaner : Module(
         Regex("""^Mute ID: #.+""")
     )
 
+    val torrhusRegex = listOf(
+        Regex("""You stick your hand into the honeyhive and feel around...""")
+    )
+
     val safariMessagesRegex = listOf(
         Regex("""^FLOOR DROP! You found .+ on the ground!$"""),
         Regex("""Your Critter Capsule doesn't seem to work on this creature..."""),
@@ -263,5 +293,20 @@ object ChatCleaner : Module(
         Regex("""Elle has been eaten by Kuudra!"""),
         Regex("""You do not have enough tokens to upgrade this perk!"""),
         Regex("""The Supply Chest is too heavy to use abilities while carrying it!""")
+    )
+
+    val separatorLinesRegex = listOf(
+        Regex("""▬{5,}"""),
+        Regex("""-{5,}"""),
+        Regex("""^\s*$"""),
+        Regex("""^\[hypixel]""")
+    )
+
+    val ringRemindersRegex = listOf(
+        Regex("""(RING\.\.\. ){2,}""")
+    )
+
+    val bazaarRegex = listOf(
+        Regex("""^\[Bazaar] Executing instant (sell|buy)\.\.\.""")
     )
 }
