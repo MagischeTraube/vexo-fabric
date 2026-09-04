@@ -18,10 +18,10 @@ import xyz.vexo.events.EventDispatcher
 import xyz.vexo.events.EventBus
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.features.ModuleManager
-import xyz.vexo.features.impl.misc.*
-import xyz.vexo.features.impl.kuudra.*
-import xyz.vexo.features.impl.dungeons.*
 import xyz.vexo.features.impl.chat.*
+import xyz.vexo.features.impl.dungeons.*
+import xyz.vexo.features.impl.kuudra.*
+import xyz.vexo.features.impl.misc.*
 import xyz.vexo.utils.*
 import xyz.vexo.features.impl.misc.recipe.RecipeRepository
 

@@ -3,7 +3,6 @@ package xyz.vexo.features.impl.dungeons
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
-import net.minecraft.world.inventory.Slot
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.SelectorSetting
