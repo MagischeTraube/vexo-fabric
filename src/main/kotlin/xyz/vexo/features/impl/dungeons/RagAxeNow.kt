@@ -1,11 +1,13 @@
 package xyz.vexo.features.impl.dungeons
 
+import net.minecraft.sounds.SoundEvents
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.config.impl.StringSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
+import xyz.vexo.Vexo.mc
 
 
 object RagAxeNow : Module (
@@ -36,6 +38,7 @@ object RagAxeNow : Module (
         if (RagAxeTriggers.any { it.containsMatchIn(event.unformattedMessage) }) {
             modMessage("Rag Axe Now!")
             ragAxeNowTitle.showForXServerTicks(40)
+            mc.player?.playSound(SoundEvents.NOTE_BLOCK_PLING.value(), 1.0f, 2.0f)
         }
     }
 
