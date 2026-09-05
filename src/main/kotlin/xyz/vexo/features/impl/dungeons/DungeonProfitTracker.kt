@@ -3,16 +3,17 @@ package xyz.vexo.features.impl.dungeons
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
+import net.minecraft.world.inventory.Slot
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
 import xyz.vexo.events.impl.PriceDataUpdateEvent
+import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 import xyz.vexo.utils.PriceUtils
-import xyz.vexo.utils.renderSlotHighlights
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
 import xyz.vexo.utils.removeFormatting
@@ -106,6 +107,7 @@ object DungeonProfitTracker : Module(
     )
 
     private val engine = ChestProfitEngine(this)
+    private val slotHighlights = mutableMapOf<Slot, Int>()
 
     override fun onDisable() {
         super.onDisable()
@@ -116,29 +118,32 @@ object DungeonProfitTracker : Module(
     fun onPriceUpdate(event: PriceDataUpdateEvent) = engine.invalidate()
 
     @EventHandler
+    fun onSlotGuiRender(event: SlotGuiRenderEvent) {
+        val color = slotHighlights[event.slot] ?: return
+        event.context.fill(event.slot.x, event.slot.y, event.slot.x + 16, event.slot.y + 16, color)
+    }
+
+    @EventHandler
     fun onGuiRender(event: GuiRenderEvent) {
         val screen = event.screen as? AbstractContainerScreen<*> ?: return
         val title = screen.title.string.removeFormatting().trim()
         val accessor = screen as AbstractContainerScreenAccessor
 
+        slotHighlights.clear()
+
         if (title.endsWith("Croesus")) {
             if (highlightCroesus) {
-                val highlights = buildMap {
-                    for (slot in screen.menu.slots) {
-                        if (!slot.hasItem()) continue
-                        val lore = slot.item.get(DataComponents.LORE)?.styledLines()
-                            ?.map { it.string.removeFormatting() } ?: continue
-                        val color = when {
-                            lore.any { "No chests opened yet!" in it } -> unopenedColor.getRGBA()
-                            lore.any { "Chests expire in" in it } -> openableColor.getRGBA()
-                            lore.any { "No more chests to open" in it } -> doneColor.getRGBA()
-                            else -> continue
-                        }
-                        put(slot, color)
+                for (slot in screen.menu.slots) {
+                    if (!slot.hasItem()) continue
+                    val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                        ?.map { it.string.removeFormatting() } ?: continue
+                    val color = when {
+                        lore.any { "No chests opened yet!" in it } -> unopenedColor.getRGBA()
+                        lore.any { "Chests expire in" in it } -> openableColor.getRGBA()
+                        lore.any { "No more chests to open" in it } -> doneColor.getRGBA()
+                        else -> continue
                     }
-                }
-                if (highlights.isNotEmpty()) {
-                    renderSlotHighlights(event.context, screen, highlights)
+                    slotHighlights[slot] = color
                 }
             }
             return
@@ -154,6 +159,12 @@ object DungeonProfitTracker : Module(
 
         if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
 
+        slotHighlights[slot] = if (breakdown.hasApiError) {
+            ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
+        } else {
+            highlightColor.getRGBA()
+        }
+
         engine.renderHighlight(
             ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
             slot, breakdown.total, breakdown.hasApiError, highlightColor.getRGBA()
@@ -168,10 +179,11 @@ object DungeonProfitTracker : Module(
 
         if (showSecondChest) {
             val (slot2, breakdown2) = chests.drop(1).firstOrNull() ?: return
-            engine.renderHighlight(
-                ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-                slot2, breakdown2.total, breakdown2.hasApiError, secondChestColor.getRGBA()
-            )
+            slotHighlights[slot2] = if (breakdown2.hasApiError) {
+                ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
+            } else {
+                secondChestColor.getRGBA()
+            }
         }
     }
 

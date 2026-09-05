@@ -3,6 +3,7 @@ package xyz.vexo.features.impl.kuudra
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
+import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
@@ -10,10 +11,10 @@ import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
 import xyz.vexo.events.impl.PriceDataUpdateEvent
+import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 import xyz.vexo.utils.PriceUtils
-import xyz.vexo.utils.renderSlotHighlights
 import xyz.vexo.utils.chestprofit.Breakdown
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
@@ -235,6 +236,7 @@ object KuudraProfitTracker : Module(
     )
 
     private val engine = ChestProfitEngine(this)
+    private val slotHighlights = mutableMapOf<Slot, Int>()
 
     override fun onDisable() {
         super.onDisable()
@@ -245,26 +247,29 @@ object KuudraProfitTracker : Module(
     fun onPriceUpdate(event: PriceDataUpdateEvent) = engine.invalidate()
 
     @EventHandler
+    fun onSlotGuiRender(event: SlotGuiRenderEvent) {
+        val color = slotHighlights[event.slot] ?: return
+        event.context.fill(event.slot.x, event.slot.y, event.slot.x + 16, event.slot.y + 16, color)
+    }
+
+    @EventHandler
     fun onGuiRender(event: GuiRenderEvent) {
         val screen = event.screen as? AbstractContainerScreen<*> ?: return
         val title = screen.title.string.removeFormatting()
         val accessor = screen as AbstractContainerScreenAccessor
 
+        slotHighlights.clear()
+
         if (title.endsWith("Croesus")) {
             if (highlightCroesus) {
-                val highlights = buildMap {
-                    for (slot in screen.menu.slots) {
-                        if (!slot.hasItem()) continue
-                        val lore = slot.item.get(DataComponents.LORE)?.styledLines()
-                            ?.map { it.string.removeFormatting() } ?: continue
-                        when {
-                            lore.any { "No more chests to open" in it } -> put(slot, doneColor.getRGBA())
-                            lore.any { "Chests expire in" in it } -> put(slot, openableColor.getRGBA())
-                        }
+                for (slot in screen.menu.slots) {
+                    if (!slot.hasItem()) continue
+                    val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                        ?.map { it.string.removeFormatting() } ?: continue
+                    when {
+                        lore.any { "No more chests to open" in it } -> slotHighlights[slot] = doneColor.getRGBA()
+                        lore.any { "Chests expire in" in it } -> slotHighlights[slot] = openableColor.getRGBA()
                     }
-                }
-                if (highlights.isNotEmpty()) {
-                    renderSlotHighlights(event.context, screen, highlights)
                 }
             }
             return
@@ -278,6 +283,12 @@ object KuudraProfitTracker : Module(
         val ctx = event.context
 
         if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
+
+        slotHighlights[slot] = if (breakdown.hasApiError) {
+            ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
+        } else {
+            highlightColor.getRGBA()
+        }
 
         engine.renderHighlight(
             ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),

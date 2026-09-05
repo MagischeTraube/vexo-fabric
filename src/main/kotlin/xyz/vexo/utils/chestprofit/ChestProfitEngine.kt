@@ -56,7 +56,7 @@ class ChestProfitEngine(private val valuer: Valuer) {
     companion object {
         private val QTY_REGEX = Regex("""[x×]\s*([\d,]+)\s*$""")
 
-        private val ERROR_HIGHLIGHT_COLOR = java.awt.Color(250, 18, 0, 120).rgb
+        val ERROR_HIGHLIGHT_COLOR = java.awt.Color(250, 18, 0, 120).rgb
 
         /**
          * Shortens a coin amount with a k/M/B suffix, e.g. `1500` becomes `1.5k`.
@@ -221,9 +221,6 @@ class ChestProfitEngine(private val valuer: Valuer) {
     ) {
         val x = leftPos + slot.x
         val y = topPos + slot.y
-
-        // Translucent tint over the chest item — red when the value is incomplete (missing API price).
-        ctx.fill(x, y, x + 16, y + 16, if (hasError) ERROR_HIGHLIGHT_COLOR else highlightColor)
 
         // Coin label centred just below the slot, scaled to fit the 16px cell.
         val color = if (profit >= 0) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
