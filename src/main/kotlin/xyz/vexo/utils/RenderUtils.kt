@@ -17,6 +17,8 @@ import net.minecraft.world.inventory.Slot
 import xyz.vexo.Vexo.mc
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
 
+enum class LabelPosition { ABOVE, BELOW, LEFT, RIGHT, ON_ITEM }
+
 /**
  * Renders a string with transformation support
  * @param context The GUI graphics context
@@ -82,6 +84,94 @@ fun renderSlotHighlights(
         val x = leftPos + slot.x
         val y = topPos + slot.y
         context.fill(x, y, x + 16, y + 16, color)
+    }
+}
+
+/**
+ * Renders a short text label anchored to a container slot.
+ *
+ * @param context The GUI graphics context
+ * @param leftPos The left position of the container GUI
+ * @param topPos The top position of the container GUI
+ * @param slot The slot the label is anchored to
+ * @param text The text to render
+ * @param position The position of the label relative to the slot
+ * @param color The text color
+ * @param scale The scale factor of the label
+ */
+fun renderSlotLabel(
+    context: GuiGraphicsExtractor,
+    leftPos: Int,
+    topPos: Int,
+    slot: Slot,
+    text: String,
+    position: LabelPosition,
+    color: Int,
+    scale: Float = 0.8f
+) {
+    val x = leftPos + slot.x
+    val y = topPos + slot.y
+    val comp = Component.literal(text)
+    val halfW = (mc.font.width(comp) * scale / 2f).toInt()
+
+    val (tx, ty) = when (position) {
+        LabelPosition.BELOW -> (x + 8) to (y + 18)
+        LabelPosition.ABOVE -> (x + 8) to (y - 10)
+        LabelPosition.ON_ITEM -> (x + 8) to (y + 8)
+        LabelPosition.LEFT -> (x - 3 - halfW) to (y + 8)
+        LabelPosition.RIGHT -> (x + 19 + halfW) to (y + 8)
+    }
+
+    val pose = context.pose()
+    pose.pushMatrix()
+    pose.translate(tx.toFloat(), ty.toFloat())
+    pose.scale(scale, scale)
+    context.text(mc.font, comp, -mc.font.width(comp) / 2, 0, color)
+    pose.popMatrix()
+}
+
+/**
+ * Renders a semi-transparent side panel containing multiple lines of text.
+ *
+ * The panel is positioned next to the container GUI. When no side is explicitly
+ * specified, it is placed on the side with enough space to remain within the screen.
+ *
+ * @param context The GUI graphics context
+ * @param leftPos The left position of the container GUI
+ * @param topPos The top position of the container GUI
+ * @param imageWidth The width of the container GUI
+ * @param screenWidth The width of the screen
+ * @param lines The text lines to display in the panel
+ * @param side The preferred side of the panel ("Left" or "Right")
+ */
+fun renderSidePanel(
+    context: GuiGraphicsExtractor,
+    leftPos: Int,
+    topPos: Int,
+    imageWidth: Int,
+    screenWidth: Int,
+    lines: List<Component>,
+    side: String
+) {
+    if (lines.isEmpty()) return
+    val width = lines.maxOf { mc.font.width(it) } + 8
+    val lineH = mc.font.lineHeight + 2
+    val height = lines.size * lineH + 4
+
+    val rightX = leftPos + imageWidth + 4
+    val leftX = leftPos - width - 4
+    val x = when (side) {
+        "Left" -> leftX
+        "Right" -> rightX
+        else -> if (rightX + width > screenWidth) leftX else rightX
+    }
+    val y = topPos
+
+    context.fill(x, y, x + width, y + height, 0xD0000000.toInt())
+    var ty = y + 3
+    for (line in lines) {
+        context.text(mc.font, line, x + 4, ty, 0xFFFFFFFF.toInt())
+        ty += lineH
     }
 }
 
@@ -245,8 +335,6 @@ fun LevelRenderContext.drawCircle(
     segments: Int = 72,
     width: Double = 1.0
 ) {
-    // The level renderer's own buffer source: its batch is drawn while the camera transform is
-    // still active, so vertices must be camera-relative.
     val buffer = bufferSource()
 
     val cam = mc.gameRenderer.mainCamera.position()
@@ -273,7 +361,6 @@ fun LevelRenderContext.drawCircle(
         val x1 = (cx + Math.cos(a1) * radius).toFloat()
         val z1 = (cz + Math.sin(a1) * radius).toFloat()
 
-        // Normal points along the segment so the line shader keeps a constant screen-space width.
         val nx = x1 - x0
         val nz = z1 - z0
         val len = Math.sqrt((nx * nx + nz * nz).toDouble()).toFloat().coerceAtLeast(1e-5f)
