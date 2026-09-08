@@ -3,6 +3,7 @@ package xyz.vexo.utils
 import java.util.UUID
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket
 import net.minecraft.network.chat.Style
 import xyz.vexo.utils.chatbuttons.ChatButton
 import xyz.vexo.Vexo.mc
@@ -14,6 +15,16 @@ import xyz.vexo.Vexo.mc
  */
 fun sendCommand(command: String) {
     mc.player?.connection?.sendCommand(command)
+}
+
+/**
+ * Sends a raw command to the server without local checks.
+ *
+ * @param command The command to send.
+ */
+fun sendRawCommandToServer(command: String) {
+    val handler = mc.player?.connection ?: return
+    handler.connection.send(ServerboundChatCommandPacket(command))
 }
 
 /**
