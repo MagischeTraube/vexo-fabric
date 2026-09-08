@@ -5,11 +5,14 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
+import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
-import xyz.vexo.Vexo.mc
+import xyz.vexo.utils.LabelPosition
 import xyz.vexo.utils.modMessage
 import xyz.vexo.utils.removeFormatting
+import xyz.vexo.utils.renderSidePanel
+import xyz.vexo.utils.renderSlotLabel
 
 /**
  * A single priced row of the profit GUI; [parts] are the sub-rows (e.g. a key's recipe).
@@ -22,6 +25,13 @@ data class Entry(
     val error: Boolean = false
 )
 
+/**
+ * A priced breakdown of a chest's loot and costs, including the net profit total.
+ *
+ * @param loot the priced loot rows
+ * @param costs the priced cost rows
+ * @param total the net profit (loot minus costs)
+ */
 data class Breakdown(val loot: List<Entry>, val costs: List<Entry>, val total: Long) {
     val hasApiError: Boolean get() = loot.any { it.error } || costs.any { it.error }
 
@@ -75,9 +85,11 @@ class ChestProfitEngine(private val valuer: Valuer) {
         }
     }
 
-    // Cache the computed chest ranking per GUI content snapshot so we only re-parse when slots change.
     private var cacheHash = 0
     private var cacheResult: List<Pair<Slot, Breakdown>> = emptyList()
+
+    private var croesusCacheHash = 0
+    private var croesusCacheResult: Map<Slot, Int> = emptyMap()
 
     private val reportedErrors = HashSet<String>()
 
@@ -100,6 +112,7 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @return the priceable slots paired with their breakdown, sorted by descending profit
      */
     fun cachedChests(screen: AbstractContainerScreen<*>): List<Pair<Slot, Breakdown>> {
+        if (!screen.menu.carried.isEmpty) return cacheResult
         val hash = contentHash(screen)
         if (hash != cacheHash) {
             cacheHash = hash
@@ -114,6 +127,8 @@ class ChestProfitEngine(private val valuer: Valuer) {
     fun invalidate() {
         cacheHash = 0
         cacheResult = emptyList()
+        croesusCacheHash = 0
+        croesusCacheResult = emptyMap()
         reportedErrors.clear()
     }
 
@@ -137,13 +152,62 @@ class ChestProfitEngine(private val valuer: Valuer) {
     }
 
     /**
-     * Ranks every priceable chest in the current GUI by profit, most profitable first.
+     * Returns a map of reward slots to highlight colors for Croesus, re-scanning only when slot
+     * contents change. Each slot's lore is matched against the provided keyword rules to assign
+     * a color.
      *
-     * @param screen the chest GUI whose slots are scanned
-     * @return the priceable slots paired with their breakdown, sorted by descending profit
+     * @param screen the Croesus GUI whose slots are scanned
+     * @param rules pairs of lore keyword and the RGBA color to assign when matched
+     * @return a map of slots to their highlight colors, empty when no slot matches any rule
+     */
+    fun croesusHighlights(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Map<Slot, Int> {
+        if (!screen.menu.carried.isEmpty) return croesusCacheResult
+        val hash = croesusHash(screen, rules)
+        if (hash != croesusCacheHash) {
+            croesusCacheHash = hash
+            croesusCacheResult = scanCroesus(screen, rules)
+        }
+        return croesusCacheResult
+    }
+
+    /**
+     * Scans every reward slot in the given GUI and assigns a highlight color based on lore keywords.
+     *
+     * @param screen the GUI whose slots are scanned
+     * @param rules pairs of lore keyword and the RGBA color to assign when matched
+     * @return a map of matched slots to their highlight colors
+     */
+    private fun scanCroesus(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Map<Slot, Int> {
+        val result = mutableMapOf<Slot, Int>()
+        for (slot in screen.rewardSlots()) {
+            if (!slot.hasItem()) continue
+            val lore = slot.item.get(DataComponents.LORE)?.styledLines()
+                ?.map { it.string.removeFormatting() } ?: continue
+            for ((keyword, color) in rules) {
+                if (lore.any { keyword in it }) {
+                    result[slot] = color
+                    break
+                }
+            }
+        }
+        return result
+    }
+
+    /**
+     * Returns only the reward slots of the GUI, excluding the player's inventory and hotbar.
+     */
+    private fun AbstractContainerScreen<*>.rewardSlots(): List<Slot> =
+        menu.slots.filterNot { it.container is Inventory }
+
+    /**
+     * Ranks every priceable chest in the current GUI by total profit, most profitable first.
+     * Skips empty slots and items whose lore cannot be parsed into a breakdown.
+     *
+     * @param screen the chest GUI to rank
+     * @return the slots paired with their breakdown, sorted by descending profit
      */
     private fun rankedChests(screen: AbstractContainerScreen<*>): List<Pair<Slot, Breakdown>> =
-        screen.menu.slots
+        screen.rewardSlots()
             .filter { it.hasItem() }
             .mapNotNull { slot -> chestBreakdown(slot.item)?.let { slot to it } }
             .sortedByDescending { it.second.total }
@@ -160,7 +224,6 @@ class ChestProfitEngine(private val valuer: Valuer) {
             ?.map { it.string.removeFormatting().trim() }
             ?: return null
 
-        // Already-claimed chests still list Contents/Cost lore but have nothing left to value.
         if (lore.contains("Already opened!")) return null
 
         val contentsIdx = lore.indexOf("Contents")
@@ -171,7 +234,6 @@ class ChestProfitEngine(private val valuer: Valuer) {
 
         val costIdx = lore.indexOf("Cost")
         val costLines = if (costIdx >= 0) lore.drop(costIdx + 1).takeWhile { it.isNotBlank() } else emptyList()
-
         val costs = costLines.map { valuer.costEntry(it) }
 
         valuer.overrideBreakdown(costLines, costs)?.let { return it }
@@ -192,50 +254,35 @@ class ChestProfitEngine(private val valuer: Valuer) {
         val qtyMatch = QTY_REGEX.find(line)
         val qty = qtyMatch?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
         val name = (if (qtyMatch != null) line.substring(0, qtyMatch.range.first) else line).trim()
-
-        val value = valuer.lootValueOrNull(name, qty)
-            ?: return Entry(line, 0L, error = true)
+        val value = valuer.lootValueOrNull(name, qty) ?: return Entry(line, 0L, error = true)
         return Entry("$line${valuer.lootTag(name)}", value)
     }
 
     /**
-     * Tints the best chest's slot and draws its profit as a coin label just below it. The tint is red
-     * and the value incomplete when a price is missing.
+     * Draws a profit label anchored to a slot using the given [position]. Green for positive
+     * profit, red for negative. Delegates to [renderSlotLabel].
      *
      * @param ctx draw context
      * @param leftPos left pixel edge of the GUI
      * @param topPos top pixel edge of the GUI
-     * @param slot the chest slot to highlight
-     * @param profit the profit to render as the label
-     * @param hasError true when some content item had no API price
-     * @param highlightColor RGBA tint for the highlight when the value is complete
+     * @param slot the chest slot to label
+     * @param profit the profit to display
+     * @param position where to place the label relative to the slot
      */
-    fun renderHighlight(
+    fun renderProfitLabel(
         ctx: GuiGraphicsExtractor,
         leftPos: Int,
         topPos: Int,
         slot: Slot,
         profit: Long,
-        hasError: Boolean,
-        highlightColor: Int
+        position: LabelPosition
     ) {
-        val x = leftPos + slot.x
-        val y = topPos + slot.y
-
-        // Coin label centred just below the slot, scaled to fit the 16px cell.
         val color = if (profit >= 0) 0xFF55FF55.toInt() else 0xFFFF5555.toInt()
-        val text = Component.literal(formatCoins(profit))
-        val pose = ctx.pose()
-        pose.pushMatrix()
-        pose.translate((x + 8).toFloat(), (y + 18).toFloat())
-        pose.scale(0.8f, 0.8f)
-        ctx.text(mc.font, text, -mc.font.width(text) / 2, 0, color)
-        pose.popMatrix()
+        renderSlotLabel(ctx, leftPos, topPos, slot, formatCoins(profit), position, color)
     }
 
     /**
-     * Draws the breakdown panel beside the GUI, flipping to the left side if it would clip off-screen
-     * (in "Auto" mode) or following the configured side otherwise.
+     * Draws the breakdown panel beside the GUI using the shared [renderSidePanel] helper.
      *
      * @param ctx draw context
      * @param leftPos left pixel edge of the GUI
@@ -254,26 +301,7 @@ class ChestProfitEngine(private val valuer: Valuer) {
         breakdown: Breakdown,
         side: String
     ) {
-        val lines = breakdownLines(breakdown)
-        val width = (lines.maxOf { mc.font.width(it) }) + 8
-        val lineH = mc.font.lineHeight + 2
-        val height = lines.size * lineH + 4
-
-        val rightX = leftPos + imageWidth + 4
-        val leftX = leftPos - width - 4
-        val x = when (side) {
-            "Left" -> leftX
-            "Right" -> rightX
-            else -> if (rightX + width > screenWidth) leftX else rightX // Auto
-        }
-        val y = topPos
-
-        ctx.fill(x, y, x + width, y + height, 0xD0000000.toInt())
-        var ty = y + 3
-        for (line in lines) {
-            ctx.text(mc.font, line, x + 4, ty, 0xFFFFFFFF.toInt())
-            ty += lineH
-        }
+        renderSidePanel(ctx, leftPos, topPos, imageWidth, screenWidth, breakdownLines(breakdown), side)
     }
 
     /**
@@ -317,17 +345,31 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @return a hash identifying this content-and-settings snapshot
      */
     private fun contentHash(screen: AbstractContainerScreen<*>): Int {
-        val slots = screen.menu.slots.joinToString("|") {
+        val slots = screen.rewardSlots().joinToString("|") {
             if (!it.hasItem()) return@joinToString "e"
             val stack = it.item
-            // Hypixel sends chest items with their name first and fills in the Contents/Cost lore a
-            // few ticks later. Hash the lore too, otherwise a name-stable item whose lore just loaded
-            // in wouldn't invalidate the cache and the profit would stay stale until the GUI reopens.
             val loreHash = stack.get(DataComponents.LORE)?.styledLines()?.hashCode() ?: 0
             "${stack.hoverName.string}:${stack.count}:$loreHash"
         }
-        // Fold in the pricing settings so toggling them re-computes while a GUI stays open.
         return "$slots|${valuer.settingsFingerprint()}".hashCode()
+    }
+
+    /**
+     * Builds a cache key from the GUI's reward slot items (name and lore) and the highlight rules,
+     * so the Croesus slot colors are only recomputed when contents or rules actually change.
+     *
+     * @param screen the GUI to fingerprint
+     * @param rules the highlight keyword rules included in the hash
+     * @return a hash identifying this content-and-rules snapshot
+     */
+    private fun croesusHash(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Int {
+        val slots = screen.rewardSlots().joinToString("|") {
+            if (!it.hasItem()) return@joinToString "e"
+            val stack = it.item
+            val loreHash = stack.get(DataComponents.LORE)?.styledLines()?.hashCode() ?: 0
+            "${stack.hoverName.string}:$loreHash"
+        }
+        return "$slots|${rules.hashCode()}".hashCode()
     }
 
     /**

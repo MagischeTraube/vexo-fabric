@@ -2,7 +2,6 @@ package xyz.vexo.features.impl.kuudra
 
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import xyz.vexo.config.impl.BooleanSetting
@@ -14,6 +13,7 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
+import xyz.vexo.utils.LabelPosition
 import xyz.vexo.utils.PriceUtils
 import xyz.vexo.utils.chestprofit.Breakdown
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
@@ -157,7 +157,6 @@ object KuudraProfitTracker : Module(
 
     private val KEY_TIER_REGEX = Regex("(Basic|Hot|Burning|Fiery|Infernal) Kuudra Key")
 
-
     private val INFERNAL_GUARANTEED_DROPS = listOf(
         "Crimson Essence" to 2000,
         "Kuudra Teeth" to 3,
@@ -262,15 +261,13 @@ object KuudraProfitTracker : Module(
 
         if (title.endsWith("Croesus")) {
             if (highlightCroesus) {
-                for (slot in screen.menu.slots) {
-                    if (!slot.hasItem()) continue
-                    val lore = slot.item.get(DataComponents.LORE)?.styledLines()
-                        ?.map { it.string.removeFormatting() } ?: continue
-                    when {
-                        lore.any { "No more chests to open" in it } -> slotHighlights[slot] = doneColor.getRGBA()
-                        lore.any { "Chests expire in" in it } -> slotHighlights[slot] = openableColor.getRGBA()
-                    }
-                }
+                slotHighlights += engine.croesusHighlights(
+                    screen,
+                    listOf(
+                        "No more chests to open" to doneColor.getRGBA(),
+                        "Chests expire in" to openableColor.getRGBA(),
+                    )
+                )
             }
             return
         }
@@ -290,9 +287,9 @@ object KuudraProfitTracker : Module(
             highlightColor.getRGBA()
         }
 
-        engine.renderHighlight(
+        engine.renderProfitLabel(
             ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-            slot, breakdown.total, breakdown.hasApiError, highlightColor.getRGBA()
+            slot, breakdown.total, LabelPosition.BELOW
         )
 
         if (showBreakdown) {

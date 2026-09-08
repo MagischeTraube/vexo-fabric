@@ -2,7 +2,6 @@ package xyz.vexo.features.impl.dungeons
 
 import java.awt.Color
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
-import net.minecraft.core.component.DataComponents
 import net.minecraft.world.inventory.Slot
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
@@ -13,6 +12,7 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
+import xyz.vexo.utils.LabelPosition
 import xyz.vexo.utils.PriceUtils
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
@@ -133,18 +133,14 @@ object DungeonProfitTracker : Module(
 
         if (title.endsWith("Croesus")) {
             if (highlightCroesus) {
-                for (slot in screen.menu.slots) {
-                    if (!slot.hasItem()) continue
-                    val lore = slot.item.get(DataComponents.LORE)?.styledLines()
-                        ?.map { it.string.removeFormatting() } ?: continue
-                    val color = when {
-                        lore.any { "No chests opened yet!" in it } -> unopenedColor.getRGBA()
-                        lore.any { "Chests expire in" in it } -> openableColor.getRGBA()
-                        lore.any { "No more chests to open" in it } -> doneColor.getRGBA()
-                        else -> continue
-                    }
-                    slotHighlights[slot] = color
-                }
+                slotHighlights += engine.croesusHighlights(
+                    screen,
+                    listOf(
+                        "No chests opened yet!" to unopenedColor.getRGBA(),
+                        "Chests expire in" to openableColor.getRGBA(),
+                        "No more chests to open" to doneColor.getRGBA(),
+                    )
+                )
             }
             return
         }
@@ -165,25 +161,26 @@ object DungeonProfitTracker : Module(
             highlightColor.getRGBA()
         }
 
-        engine.renderHighlight(
+        engine.renderProfitLabel(
             ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-            slot, breakdown.total, breakdown.hasApiError, highlightColor.getRGBA()
+            slot, breakdown.total, LabelPosition.BELOW
         )
 
         if (showBreakdown) {
-            engine.renderBreakdown(
-                ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-                accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide
-            )
+            engine.renderBreakdown(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide)
         }
 
         if (showSecondChest) {
             val (slot2, breakdown2) = chests.drop(1).firstOrNull() ?: return
+            if (breakdown2.hasApiError) engine.reportMissing(breakdown2.missingInfo)
+
             slotHighlights[slot2] = if (breakdown2.hasApiError) {
                 ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
             } else {
                 secondChestColor.getRGBA()
             }
+
+            engine.renderProfitLabel(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), slot2, breakdown2.total, LabelPosition.ABOVE)
         }
     }
 
