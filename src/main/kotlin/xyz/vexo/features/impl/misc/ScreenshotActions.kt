@@ -2,6 +2,7 @@ package xyz.vexo.features.impl.misc
 
 import xyz.vexo.features.Module
 import xyz.vexo.config.impl.BooleanSetting
+import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.KeybindEvent
 import org.lwjgl.glfw.GLFW
@@ -15,10 +16,11 @@ object ScreenshotActions : Module(
     description = "Adds actions to screenshot messages in the chat",
     toggled = false
 ) {
-    val onlySaveEditedScreenshot by BooleanSetting(
-        "Only Save Edited Screenshot",
-        description = "Only save the edited screenshot, not the original",
-        default = true
+    val saveMode = SelectorSetting(
+        "Save Mode",
+        description = "Whether to save screenshots at all",
+        default = "Always",
+        options = listOf("Always", "Only Edited", "Never")
     )
 
     val autoCopyToClipboard by BooleanSetting(

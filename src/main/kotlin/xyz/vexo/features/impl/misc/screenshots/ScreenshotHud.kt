@@ -125,6 +125,7 @@ object ScreenshotHud {
      * @param cropToSelection Whether to crop the screenshot to the current selection.
      */
     internal fun saveScreenshot(screen: Screen, cropToSelection: Boolean) {
+        if (ScreenshotActions.saveMode.getCurrentValue() == "Never") return
         val originalImage = image ?: return
         val guiScale = mc.window.guiScale
         val gameDirectory = mc.gameDirectory
@@ -135,7 +136,7 @@ object ScreenshotHud {
         val rectsToDraw = ArrayList(drawnRectangles)
         val currentSelection = selection
         val outputFile = ScreenshotFileUtil.createScreenshotFile(gameDirectory)
-        val shouldSaveUnedited = !ScreenshotActions.onlySaveEditedScreenshot && cropToSelection
+        val shouldSaveUnedited = ScreenshotActions.saveMode.getCurrentValue() == "Always" && cropToSelection
 
         if (screen is ScreenshotScreen) screen.onClose()
         ScreenshotActions.displayScreenshotHud = false
