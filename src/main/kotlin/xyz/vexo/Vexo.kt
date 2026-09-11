@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import xyz.vexo.commands.*
+import xyz.vexo.clickgui.GuiPrefs
 import xyz.vexo.events.EventDispatcher
 import xyz.vexo.events.EventBus
 import xyz.vexo.config.ConfigManager
@@ -91,7 +92,7 @@ object Vexo : ClientModInitializer {
 			ChatCleaner, CompactChat
 		).forEach { ModuleManager.register(it) }
 
-		xyz.vexo.clickgui.GuiPrefs.load()
+		GuiPrefs.load()
 		SlotBinding.loadBinds()
 		ConfigManager.load()
 	}

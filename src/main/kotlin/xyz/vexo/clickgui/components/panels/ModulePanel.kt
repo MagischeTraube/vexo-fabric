@@ -37,6 +37,9 @@ class ModulePanel(
         setupBackground()
     }
 
+    /**
+     * Sets up the background of the module panel.
+     */
     private fun setupBackground() {
         UIRoundedRectangle(5f).constrain {
             width = 100.percent()
@@ -44,7 +47,12 @@ class ModulePanel(
         }.setColor(Theme.panel()) childOf this
     }
 
-    /** Shows modules from [category], optionally filtered by [searchText]. */
+    /**
+     * Shows modules from [category], optionally filtered by [searchText].
+     *
+     * @param category The category of modules to show.
+     * @param searchText The text to filter modules by.
+     */
     fun showCategoryModules(category: Category, searchText: String) {
         refreshCurrent = { showCategoryModules(category, searchText) }
         val modules = ModuleManager.getModulesByCategory(category).filterMatches(searchText)
@@ -53,7 +61,11 @@ class ModulePanel(
         displayModules(modules, empty, searchText)
     }
 
-    /** Searches all modules across every category for [searchText]. */
+    /**
+     * Searches all modules across every category for [searchText].
+     *
+     * @param searchText The text to search for.
+     */
     fun searchAllModules(searchText: String) {
         refreshCurrent = { searchAllModules(searchText) }
         val modules = ModuleManager.getAllModules().filterMatches(searchText)
@@ -74,6 +86,13 @@ class ModulePanel(
         displayModules(modules, "No modules are currently enabled", "")
     }
 
+    /**
+     * Displays the given list of modules in the module panel.
+     *
+     * @param modules The list of modules to display.
+     * @param emptyMessage The message to display when there are no modules.
+     * @param searchText The text to filter modules by.
+     */
     private fun displayModules(modules: List<Module>, emptyMessage: String, searchText: String) {
         clearChildren()
         setupBackground()
@@ -101,6 +120,12 @@ class ModulePanel(
         }
     }
 
+    /**
+     * Filters modules based on the search text.
+     *
+     * @param searchText The text to filter modules by.
+     * @return The filtered list of modules.
+     */
     private fun List<Module>.filterMatches(searchText: String): List<Module> {
         if (searchText.isEmpty()) return this
         return filter {
@@ -109,10 +134,19 @@ class ModulePanel(
         }
     }
 
+    /**
+     * Creates a UI component for a module button.
+     *
+     * @param module The module to create a button for.
+     * @param searchText The text to filter modules by.
+     * @return The UI component for the module button.
+     */
     private fun createModuleButton(module: Module, searchText: String): UIComponent {
+        val hasDescription = module.description.isNotEmpty()
+
         return UIContainer().constrain {
             width = 100.percent()
-            height = 46.gpx()
+            height = if (hasDescription) 44.gpx() else 34.gpx()
         }.apply {
             UIRoundedRectangle(9f).constrain {
                 x = 6.gpx()
@@ -126,28 +160,35 @@ class ModulePanel(
                 y = 1.gpx()
                 width = 100.percent() - 6.gpx()
                 height = 100.percent()
-            }.setColor(if (module.enabled) Theme.glow(55) else Theme.glow(0)) childOf this
+            }.setColor(
+                if (module.enabled) Theme.glow(55) else Theme.glow(0)
+            ) childOf this
 
             val background = UIRoundedRectangle(8f).constrain {
                 x = 5.gpx()
                 y = 2.gpx()
                 width = 100.percent() - 10.gpx()
                 height = 100.percent() - 4.gpx()
-            }.setColor(if (module.enabled) Theme.cardActive() else Theme.card()) childOf this
+            }.setColor(
+                if (module.enabled) Theme.cardActive() else Theme.card()
+            ) childOf this
 
             val statusDot = UIRoundedRectangle(3f).constrain {
                 x = 16.gpx()
                 y = CenterConstraint()
                 width = 6.gpx()
                 height = 6.gpx()
-            }.setColor(if (module.enabled) Theme.success() else Theme.toggleOff()) childOf this
+            }.setColor(
+                if (module.enabled) Theme.success() else Theme.toggleOff()
+            ) childOf this
 
             addNameWithHighlight(module.name, searchText, this)
 
-            if (module.description.isNotEmpty()) {
-                UIText(module.description).constrain {
+            if (hasDescription) {
+                UIWrappedText(module.description).constrain {
                     x = 28.gpx()
-                    y = 27.gpx()
+                    y = 23.gpx()
+                    width = 100.percent() - 52.gpx()
                     textScale = 0.8.gpx()
                 }.setColor(Theme.textMuted().brighter()) childOf this
             }
@@ -155,8 +196,16 @@ class ModulePanel(
             createStar(module, this)
 
             onMouseEnter {
-                if (!module.enabled) background.colorTo(Theme.cardHover())
-                Tooltip.show(module.description.ifEmpty { "Left-click: toggle · Right-click: settings" }, this)
+                if (!module.enabled) {
+                    background.colorTo(Theme.cardHover())
+                }
+
+                Tooltip.show(
+                    module.description.ifEmpty {
+                        "Left-click: toggle · Right-click: settings"
+                    },
+                    this
+                )
             }
             onMouseLeave {
                 if (!module.enabled) background.colorTo(Theme.card())
@@ -177,7 +226,14 @@ class ModulePanel(
         }
     }
 
-    /** Renders the name, accent-coloring the matched search substring. */
+
+    /**
+     * Renders the name, accent-coloring the matched search substring.
+     *
+     * @param name The name to render.
+     * @param search The search string to highlight.
+     * @param parent The parent component to add the name to.
+     */
     private fun addNameWithHighlight(name: String, search: String, parent: UIComponent) {
         val row = UIContainer().constrain {
             x = 28.gpx()
@@ -209,6 +265,12 @@ class ModulePanel(
             }
     }
 
+    /**
+     * Creates a star button for favoriting modules.
+     *
+     * @param module The module to create the star for.
+     * @param parent The parent component to add the star to.
+     */
     private fun createStar(module: Module, parent: UIComponent) {
         val star = UIText(if (GuiPrefs.isFavorite(module.name)) "★" else "☆").constrain {
             x = 12.gpx(true)
