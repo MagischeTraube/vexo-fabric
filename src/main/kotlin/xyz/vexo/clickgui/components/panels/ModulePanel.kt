@@ -146,7 +146,7 @@ class ModulePanel(
 
         return UIContainer().constrain {
             width = 100.percent()
-            height = if (hasDescription) 44.gpx() else 34.gpx()
+            height = 34.gpx()
         }.apply {
             UIRoundedRectangle(9f).constrain {
                 x = 6.gpx()
@@ -183,15 +183,6 @@ class ModulePanel(
             ) childOf this
 
             addNameWithHighlight(module.name, searchText, this)
-
-            if (hasDescription) {
-                UIWrappedText(module.description).constrain {
-                    x = 28.gpx()
-                    y = 23.gpx()
-                    width = 100.percent() - 52.gpx()
-                    textScale = 0.8.gpx()
-                }.setColor(Theme.textMuted().brighter()) childOf this
-            }
 
             createStar(module, this)
 
@@ -237,7 +228,7 @@ class ModulePanel(
     private fun addNameWithHighlight(name: String, search: String, parent: UIComponent) {
         val row = UIContainer().constrain {
             x = 28.gpx()
-            y = 9.gpx()
+            y = CenterConstraint()
             width = 100.percent() - 50.gpx()
             height = 12.gpx()
         } childOf parent
