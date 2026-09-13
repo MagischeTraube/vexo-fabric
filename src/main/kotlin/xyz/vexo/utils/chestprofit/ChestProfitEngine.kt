@@ -66,7 +66,7 @@ class ChestProfitEngine(private val valuer: Valuer) {
     companion object {
         private val QTY_REGEX = Regex("""[x×]\s*([\d,]+)\s*$""")
 
-        val ERROR_HIGHLIGHT_COLOR = java.awt.Color(250, 18, 0, 120).rgb
+        val ERROR_HIGHLIGHT_COLOR = java.awt.Color(255, 18, 0, 255).rgb
 
         /**
          * Shortens a coin amount with a k/M/B suffix, e.g. `1500` becomes `1.5k`.
@@ -299,9 +299,10 @@ class ChestProfitEngine(private val valuer: Valuer) {
         imageWidth: Int,
         screenWidth: Int,
         breakdown: Breakdown,
-        side: String
+        side: String,
+        anyApiError: Boolean = breakdown.hasApiError
     ) {
-        renderSidePanel(ctx, leftPos, topPos, imageWidth, screenWidth, breakdownLines(breakdown), side)
+        renderSidePanel(ctx, leftPos, topPos, imageWidth, screenWidth, breakdownLines(breakdown, anyApiError), side)
     }
 
     /**
@@ -311,11 +312,11 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @param breakdown the priced breakdown to format
      * @return the panel's lines as Minecraft [Component]s
      */
-    private fun breakdownLines(breakdown: Breakdown): List<Component> {
+    private fun breakdownLines(breakdown: Breakdown, anyApiError: Boolean = breakdown.hasApiError): List<Component> {
         val lines = ArrayList<Component>()
         fun add(s: String) = lines.add(Component.literal(s))
 
-        add(if (breakdown.hasApiError) "§c§lProfit Breakdown §4(API error)" else "§6§lProfit Breakdown")
+        add(if (anyApiError) "§c§lProfit Breakdown §4(API error)" else "§6§lProfit Breakdown")
         add("§a§lLoot")
         for (e in breakdown.loot) {
             when {
@@ -335,6 +336,67 @@ class ChestProfitEngine(private val valuer: Valuer) {
         val sign = if (breakdown.total >= 0) "§a+" else "§c"
         add("§e§lProfit: $sign${formatCoins(breakdown.total)}")
         return lines
+    }
+
+    /**
+     * Full per-frame render pass for a chest GUI: highlights every API-error slot red, highlights
+     * the best chest, draws its profit label and optional breakdown panel, and — if [secondChestColor]
+     * is given — also highlights and labels the next-best chest. The breakdown header shows the
+     * API-error flag if *any* chest in the GUI has one, not just the displayed one.
+     *
+     * @param screen the chest GUI to process
+     * @param ctx draw context
+     * @param leftPos left pixel edge of the GUI
+     * @param topPos top pixel edge of the GUI
+     * @param imageWidth width of the GUI, used to place the breakdown panel
+     * @param screenWidth full screen width, used for the breakdown's off-screen clip check
+     * @param highlightColor color for the best chest
+     * @param secondChestColor color for the second-best chest, or null to skip it entirely
+     * @param showBreakdown whether to render the breakdown panel
+     * @param breakdownSide "Right", "Left" or "Auto"
+     * @return the slot-to-color map to apply via [onSlotGuiRender]-style highlighting; empty if no chest was found
+     */
+    fun renderChestGui(
+        screen: AbstractContainerScreen<*>,
+        ctx: GuiGraphicsExtractor,
+        leftPos: Int,
+        topPos: Int,
+        imageWidth: Int,
+        screenWidth: Int,
+        highlightColor: Int,
+        secondChestColor: Int?,
+        showBreakdown: Boolean,
+        breakdownSide: String
+    ): Map<Slot, Int> {
+        val chests = cachedChests(screen)
+        if (chests.isEmpty()) return emptyMap()
+
+        val highlights = mutableMapOf<Slot, Int>()
+        val anyApiError = chests.any { it.second.hasApiError }
+
+        for ((errSlot, errBreakdown) in chests) {
+            if (errBreakdown.hasApiError) {
+                reportMissing(errBreakdown.missingInfo)
+                highlights[errSlot] = ERROR_HIGHLIGHT_COLOR
+            }
+        }
+
+        val (slot, breakdown) = chests.first()
+        if (!breakdown.hasApiError) highlights[slot] = highlightColor
+
+        renderProfitLabel(ctx, leftPos, topPos, slot, breakdown.total, LabelPosition.BELOW)
+
+        if (showBreakdown) {
+            renderBreakdown(ctx, leftPos, topPos, imageWidth, screenWidth, breakdown, breakdownSide, anyApiError)
+        }
+
+        if (secondChestColor != null) {
+            val (slot2, breakdown2) = chests.drop(1).firstOrNull() ?: return highlights
+            if (!breakdown2.hasApiError) highlights[slot2] = secondChestColor
+            renderProfitLabel(ctx, leftPos, topPos, slot2, breakdown2.total, LabelPosition.ABOVE)
+        }
+
+        return highlights
     }
 
     /**
