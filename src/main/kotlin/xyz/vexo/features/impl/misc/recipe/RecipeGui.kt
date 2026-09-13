@@ -27,7 +27,8 @@ class RecipeGUI(
     data class RecipeItem(
         val name: String,
         val itemStack: ItemStack,
-        val itemId: String
+        val itemId: String,
+        val weight: Int
     )
 
     private companion object {
@@ -106,7 +107,8 @@ class RecipeGUI(
             RecipeItem(
                 name = r.name,
                 itemStack = RecipeRepository.buildItemStack(r),
-                itemId = r.id
+                itemId = r.id,
+                weight = r.weight
             )
         }
 
@@ -317,14 +319,17 @@ class RecipeGUI(
     }
 
     private fun filterRecipes(query: String): List<RecipeItem> {
-        return if (query.isBlank()) {
+        val filtered = if (query.isBlank()) {
             allRecipes
         } else {
             val lower = query.lowercase()
             allRecipes.filter {
-                it.name.lowercase().contains(lower) || it.itemId.lowercase().contains(lower)
+                it.name.lowercase().contains(lower) ||
+                        it.itemId.lowercase().contains(lower)
             }
         }
+
+        return filtered.sortedByDescending { it.weight }
     }
 
     private inner class RecipeItemRow(

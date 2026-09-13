@@ -38,7 +38,8 @@ object RecipeRepository : IInitializable{
         val itemModel: String?,
         val textureValue: String?,
         val dyedColor: Int?,
-        val hasGlint: Boolean
+        val hasGlint: Boolean,
+        val weight: Int
     )
 
     private var cache: List<RemoteRecipe>? = null
@@ -126,7 +127,8 @@ object RecipeRepository : IInitializable{
                     itemModel = o.get("item_model")?.takeUnless { it.isJsonNull }?.asString,
                     textureValue = o.get("texture_value")?.takeUnless { it.isJsonNull }?.asString,
                     dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt,
-                    hasGlint = o.get("has_glint")?.takeUnless { it.isJsonNull }?.asBoolean ?: false
+                    hasGlint = o.get("has_glint")?.takeUnless { it.isJsonNull }?.asBoolean ?: false,
+                    weight = o.get("weight")?.takeUnless { it.isJsonNull }?.asInt ?: 1
                 )
             } catch (e: Exception) {
                 null
