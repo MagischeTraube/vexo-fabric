@@ -4,8 +4,12 @@ import java.util.UUID
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
+import xyz.vexo.clickgui.GuiPrefs
 import xyz.vexo.utils.chatbuttons.ChatButton
 import xyz.vexo.Vexo.mc
+
+private fun accentColor(): TextColor = TextColor.fromRgb(GuiPrefs.accentColor.rgb and 0xFFFFFF)
 
 /**
  * Sends a command to the server.
@@ -22,8 +26,10 @@ fun sendCommand(command: String) {
  * @param message The message to send.
  * @param prefix The prefix to add to the message.
  */
-fun modMessage(message: Any?, prefix: String = "§b[Vexo]§r ") {
-    val text = Component.literal("$prefix$message")
+fun modMessage(message: Any?, prefix: String = "[Vexo] ") {
+    val text = Component.empty()
+        .append(Component.literal(prefix).withStyle(Style.EMPTY.withColor(accentColor())))
+        .append(Component.literal("$message"))
     mc.execute { mc.gui.chat.addClientSystemMessage(text) }
 }
 
