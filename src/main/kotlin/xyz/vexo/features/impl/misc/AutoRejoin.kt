@@ -14,9 +14,6 @@ object AutoRejoin : Module(
     toggled = false
 ) {
     var rejoining = false
-    private val kickedMessage = listOf(
-        Regex("You were kicked while joining that server!")
-    )
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
@@ -27,7 +24,7 @@ object AutoRejoin : Module(
             return
         }
 
-        if (kickedMessage.any { it.containsMatchIn(event.unformattedMessage) } && !rejoining){
+        if (event.unformattedMessage == "You were kicked while joining that server!" && !rejoining) {
             rejoining = true
 
             modMessage("Kicked from SkyBlock, rejoining automatically in 60 Seconds!")

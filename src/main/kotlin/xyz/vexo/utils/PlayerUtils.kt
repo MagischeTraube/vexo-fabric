@@ -1,19 +1,29 @@
 package xyz.vexo.utils
 
+import net.minecraft.client.CameraType
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.item.ItemStack
 import xyz.vexo.Vexo.mc
-import net.minecraft.client.CameraType
-
 
 object PlayerUtils {
-
+    /**
+     * Returns the item stack in the specified hotbar slot.
+     *
+     * @param i the index of the hotbar slot (0-8)
+     * @return the item stack in the specified hotbar slot, or null if the slot is invalid
+     */
     fun getHotbarSlot(i: Int): ItemStack? {
         if (! Inventory.isHotbarSlot(i)) return null
         val player = mc.player ?: return null
         return player.inventory.getItem(i)
     }
 
+    /**
+     * Returns the first hotbar slot that matches the given predicate.
+     *
+     * @param predicate the predicate to test each hotbar slot
+     * @return the index of the first matching hotbar slot, or null if no match is found
+     */
     fun findHotbarSlot(predicate: (ItemStack) -> Boolean): Int? {
         return (0 .. 8).firstOrNull { idx ->
             val stack = getHotbarSlot(idx) ?: return@firstOrNull false
@@ -29,17 +39,21 @@ object PlayerUtils {
      */
     fun getCameraPerspective(): CameraType = mc.options.cameraType
 
+    /**
+     * Returns whether the current camera perspective is first person.
+     *
+     * @return true if the camera perspective is first person, false otherwise
+     */
     fun isFirstPerson(): Boolean {
-        if (getCameraPerspective().toString() == "FIRST_PERSON"){
-            return true
-        }
-        return false
+        return getCameraPerspective().toString() == "FIRST_PERSON"
     }
 
+    /**
+     * Returns whether the current camera perspective is third person.
+     *
+     * @return true if the camera perspective is third person, false otherwise
+     */
     fun isThirdPerson(): Boolean {
-        if (getCameraPerspective().toString() == "THIRD_PERSON_BACK"){
-            return true
-        }
-        return false
+        return getCameraPerspective().toString() == "THIRD_PERSON_BACK"
     }
 }

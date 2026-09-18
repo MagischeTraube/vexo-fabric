@@ -22,7 +22,7 @@ private fun rewarp(name: String) {
     warpName = name
 }
 
-object RewarpCommandQue {
+object RewarpCommandQueue {
     @EventHandler
     fun worldJoin(@Suppress("UNUSED_PARAMETER") event: WorldJoinEvent) {
         if (!rewarping) return

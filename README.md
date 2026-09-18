@@ -52,14 +52,18 @@ A Hypixel SkyBlock mod for Minecraft 26.1.2 built on Fabric, focused on Dungeons
 <details>
 <summary>Quality of Life</summary>
 
-| Feature | Description |
-|---|---|
-| **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level |
-| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.) |
-| **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked |
-| **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard |
-| **Wardrobe** | Quickly switch armor sets in the Wardrobe using keybinds |
-| **Loadouts** | Equip loadouts in the new Loadouts GUI with keybinds |
+| Feature | Description                                                                                                    |
+|---|----------------------------------------------------------------------------------------------------------------|
+| **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level                                       |
+| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.)                              |
+| **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked                                                      |
+| **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard                            |
+| **Wardrobe** | Quickly switch armor sets in the Wardrobe using keybinds                                                       |
+| **Loadouts** | Equip loadouts in the new Loadouts GUI with keybinds                                                           |
+| **Custom Recipe Gui** | Replaces the hypixel /recipe command with a custom GUI for browsing recipes                        |
+| **Slot Binding** | Pairs inventory slots with hotbar slots and swaps them on shift-click; supports named preset sets              |
+| **Time Control** | Change the ingame time with presets or a custom slider                                                         |
+| **Compact Chat** | Shortens long and repetitive chat messages (Loot Share, Capture, Torrhus, Hoppity, Autopet, and Stash) |
 
 </details>
 

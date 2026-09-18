@@ -16,26 +16,49 @@ object GuiPrefs {
     var glow: Boolean = true
     var tooltips: Boolean = true
 
-    /** Accent / brand color used across the GUI. Defaults to the Vexo indigo. */
+    /**
+     * Accent / brand color used across the GUI.
+     * Defaults to the Vexo indigo.
+     */
     var accentColor: Color = Color(99, 102, 241)
 
-    /** GUI scale level 1..5 (3 = default). Maps to a width/height multiplier in ClickGui. */
+    /**
+     * GUI scale level 1..5 (3 = default).
+     * Maps to a width/height multiplier in ClickGui.
+     */
     var scale: Int = 3
         set(value) {
             field = value.coerceIn(1, 5)
         }
 
-    /** Module names the user starred. */
+    /**
+     * Module names the user starred/favorited.
+     */
     val favorites: MutableSet<String> = linkedSetOf()
 
+    /**
+     * Returns whether the given module name is in the favorites list
+     *
+     * @param name The module name to check
+     * @return true if the module is favorited
+     */
     fun isFavorite(name: String): Boolean = name in favorites
 
+    /**
+     * Toggles the given module name in the favorites list and persists to disk
+     *
+     * @param name The module name to toggle
+     */
     fun toggleFavorite(name: String) {
         if (!favorites.add(name)) favorites.remove(name)
         save()
     }
 
-    /** Multiplier applied to the base GUI size, derived from [scale]. */
+    /**
+     * Returns the size multiplier applied to the base GUI dimensions, derived from [scale]
+     *
+     * @return The scale factor (0.75f to 1.2f)
+     */
     fun sizeMultiplier(): Float = when (scale) {
         1 -> 0.75f
         2 -> 0.88f
@@ -44,6 +67,10 @@ object GuiPrefs {
         else -> 1.2f
     }
 
+    /**
+     * Loads GUI preferences from the [file]
+     * If the file does not exist, default values are kept
+     */
     fun load() {
         try {
             if (!file.exists()) return
@@ -67,6 +94,9 @@ object GuiPrefs {
         }
     }
 
+    /**
+     * Saves all GUI preferences to the [file]
+     */
     fun save() {
         try {
             val root = JsonObject()

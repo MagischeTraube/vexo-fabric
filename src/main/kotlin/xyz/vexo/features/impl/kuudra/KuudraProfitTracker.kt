@@ -276,28 +276,13 @@ object KuudraProfitTracker : Module(
             return
         }
 
-        val (slot, breakdown) = engine.cachedBestChest(screen) ?: return
-        val ctx = event.context
-
-        if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
-
-        slotHighlights[slot] = if (breakdown.hasApiError) {
-            ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
-        } else {
-            highlightColor.getRGBA()
-        }
-
-        engine.renderProfitLabel(
-            ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-            slot, breakdown.total, LabelPosition.BELOW
+        slotHighlights += engine.renderChestGui(
+            screen, event.context,
+            accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width,
+            highlightColor.getRGBA(),
+            null,
+            showBreakdown, breakdownSide
         )
-
-        if (showBreakdown) {
-            engine.renderBreakdown(
-                ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-                accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide
-            )
-        }
     }
 
     fun priceOf(name: String): Long? = lootValueOrNull(name, 1L)
@@ -396,11 +381,12 @@ object KuudraProfitTracker : Module(
             val parts = buildList {
                 if (recipe.coins > 0) add(Entry("${ChestProfitEngine.formatCoins(recipe.coins)} Coins", recipe.coins))
                 recipe.components.forEach { (id, qty) ->
-                    val value = qty.toLong() * PriceUtils.getPrice(id, sellOffer, includeTaxes).toLong()
-                    add(Entry("${qty}x ${prettyName(id)}", value))
+                    val price = PriceUtils.getPrice(id, sellOffer, includeTaxes)
+                    val value = qty.toLong() * price.toLong()
+                    add(Entry("${qty}x ${prettyName(id)}", value, error = price < 0))
                 }
             }
-            return Entry(line, parts.sumOf { it.value }, parts)
+            return Entry(line, parts.sumOf { it.value }, parts, error = parts.any { it.error })
         }
 
         val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()

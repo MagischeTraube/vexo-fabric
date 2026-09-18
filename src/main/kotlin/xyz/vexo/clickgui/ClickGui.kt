@@ -51,9 +51,9 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
     }
 
     private fun setupUI() {
-        val mult = GuiPrefs.sizeMultiplier()
-        val w = (86f * mult).coerceIn(50f, 97f)
-        val h = (86f * mult).coerceIn(50f, 95f)
+        val scaleFactor = GuiPrefs.sizeMultiplier()
+        val guiWidth = (86f * scaleFactor).coerceIn(50f, 97f)
+        val guiHeight = (86f * scaleFactor).coerceIn(50f, 95f)
 
         val scrim = UIBlock(Theme.overlayScrim()).constrain {
             width = 100.percent()
@@ -63,22 +63,22 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
         UIRoundedRectangle(7f).constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-            width = w.percent() + 2.gpx()
-            height = h.percent() + 2.gpx()
+            width = guiWidth.percent() + 2.gpx()
+            height = guiHeight.percent() + 2.gpx()
         }.setColor(Theme.glow(150)) childOf window
 
         UIRoundedRectangle(6f).constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-            width = w.percent()
-            height = h.percent()
+            width = guiWidth.percent()
+            height = guiHeight.percent()
         }.setColor(Theme.panelDark()) childOf window
 
         val mainContainer = UIContainer().constrain {
             x = CenterConstraint()
             y = CenterConstraint()
-            width = w.percent()
-            height = h.percent()
+            width = guiWidth.percent()
+            height = guiHeight.percent()
         } childOf window
         mainContainer.onMouseClick { releaseWindowFocus() }
 
@@ -106,10 +106,10 @@ class ClickGui : WindowScreen(ElementaVersion.V10) {
         if (GuiPrefs.animations) {
             scrim.setColor(Theme.overlayScrim().let { java.awt.Color(it.red, it.green, it.blue, 0) })
             scrim.colorTo(Theme.overlayScrim(), 0.25f)
-            mainContainer.setWidth((w * 0.95f).percent())
-            mainContainer.setHeight((h * 0.95f).percent())
-            mainContainer.widthTo(w.percent(), 0.22f)
-            mainContainer.heightTo(h.percent(), 0.22f)
+            mainContainer.setWidth((guiWidth * 0.95f).percent())
+            mainContainer.setHeight((guiHeight * 0.95f).percent())
+            mainContainer.widthTo(guiWidth.percent(), 0.22f)
+            mainContainer.heightTo(guiHeight.percent(), 0.22f)
         }
     }
 

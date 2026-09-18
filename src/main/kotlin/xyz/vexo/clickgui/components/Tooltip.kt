@@ -12,6 +12,7 @@ import xyz.vexo.clickgui.GuiPrefs
 import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.guiScale
 import xyz.vexo.clickgui.theme.Theme
+import xyz.vexo.clickgui.theme.Theme.withAlpha
 
 object Tooltip {
     private var holder: UIContainer? = null
@@ -22,20 +23,23 @@ object Tooltip {
         detach()
         val h = UIContainer().constrain {
             width = 20.gpx()
-            height = 20.gpx()
+            height = 24.gpx()
         } childOf window
 
-        val bg = UIRoundedRectangle(5f).constrain {
+        val bg = UIRoundedRectangle(6f).constrain {
             width = 100.percent()
             height = 100.percent()
-        }.setColor(Theme.panelDark()) childOf h
+        }.setColor(Theme.panelDark().withAlpha(255)) childOf h
+
         bg.enableEffect(OutlineEffect(Theme.glow(120), 1f))
 
         val text = UIText("").constrain {
-            x = 7.gpx()
+            x = 9.gpx()
             y = CenterConstraint()
-            textScale = 1.gpx()
-        }.apply { setColor(Theme.textPrimary()) } childOf h
+            textScale = 1.15.gpx()
+        }.apply {
+            setColor(Theme.textPrimary())
+        } childOf h
 
         h.hide(instantly = true)
         holder = h
@@ -49,16 +53,33 @@ object Tooltip {
         label?.setText(text)
 
         val win = Window.of(h)
-        val width = (text.width() + 14f) * guiScale
-        val height = 20f * guiScale
+
+        val width = (text.width() + 20f) * guiScale
+        val height = 26f * guiScale
+
         h.setWidth(width.pixels())
-        var x = anchor.getLeft()
-        if (x + width > win.getWidth()) x = (win.getWidth() - width - 4f).coerceAtLeast(4f)
-        var y = anchor.getBottom() + 4f * guiScale
-        if (y + height > win.getHeight()) y = (anchor.getTop() - height - 4f * guiScale).coerceAtLeast(4f)
+        h.setHeight(height.pixels())
+
+        val gapX = 8f * guiScale
+        val gapY = 5f * guiScale
+
+        var x = anchor.getLeft() + gapX
+        var y = anchor.getBottom() + gapY
+
+        if (x + width > win.getWidth()) {
+            x = (win.getWidth() - width - 4f).coerceAtLeast(4f)
+        }
+
+        if (y + height > win.getHeight()) {
+            y = (anchor.getTop() - height - gapY).coerceAtLeast(4f)
+        }
+
+        x = x.coerceIn(4f, (win.getWidth() - width - 4f).coerceAtLeast(4f))
+        y = y.coerceIn(4f, (win.getHeight() - height - 4f).coerceAtLeast(4f))
 
         h.setX(x.pixels())
         h.setY(y.pixels())
+
         Window.enqueueRenderOperation {
             h.unhide()
         }
@@ -66,6 +87,7 @@ object Tooltip {
 
     fun hide() {
         val h = holder ?: return
+
         Window.enqueueRenderOperation {
             h.hide(instantly = true)
         }
@@ -73,9 +95,11 @@ object Tooltip {
 
     fun detach() {
         val h = holder ?: return
+
         Window.enqueueRenderOperation {
             h.parent.removeChild(h)
         }
+
         holder = null
         background = null
         label = null

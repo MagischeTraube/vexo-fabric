@@ -1,9 +1,9 @@
 package xyz.vexo.utils
 
 import com.google.gson.reflect.TypeToken
-import com.google.gson.annotations.SerializedName
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import xyz.vexo.Vexo
@@ -47,7 +47,7 @@ object PriceUtils : IInitializable {
         Vexo.scope.launch {
             safeFetchPrices()
             while (isActive) {
-                delay(FETCH_INTERVAL_MS)
+                delay(FETCH_INTERVAL_MS.milliseconds)
                 safeFetchPrices()
             }
         }

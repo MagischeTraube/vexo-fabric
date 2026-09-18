@@ -120,7 +120,13 @@ object DungeonProfitTracker : Module(
     @EventHandler
     fun onSlotGuiRender(event: SlotGuiRenderEvent) {
         val color = slotHighlights[event.slot] ?: return
-        event.context.fill(event.slot.x, event.slot.y, event.slot.x + 16, event.slot.y + 16, color)
+        event.context.fill(
+            event.slot.x,
+            event.slot.y,
+            event.slot.x + 16,
+            event.slot.y + 16,
+            color
+        )
     }
 
     @EventHandler
@@ -149,39 +155,13 @@ object DungeonProfitTracker : Module(
             return
         }
 
-        val chests = engine.cachedChests(screen)
-        val (slot, breakdown) = chests.firstOrNull() ?: return
-        val ctx = event.context
-
-        if (breakdown.hasApiError) engine.reportMissing(breakdown.missingInfo)
-
-        slotHighlights[slot] = if (breakdown.hasApiError) {
-            ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
-        } else {
-            highlightColor.getRGBA()
-        }
-
-        engine.renderProfitLabel(
-            ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(),
-            slot, breakdown.total, LabelPosition.BELOW
+        slotHighlights += engine.renderChestGui(
+            screen, event.context,
+            accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width,
+            highlightColor.getRGBA(),
+            if (showSecondChest) secondChestColor.getRGBA() else null,
+            showBreakdown, breakdownSide
         )
-
-        if (showBreakdown) {
-            engine.renderBreakdown(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), accessor.vexoImageWidth(), screen.width, breakdown, breakdownSide)
-        }
-
-        if (showSecondChest) {
-            val (slot2, breakdown2) = chests.drop(1).firstOrNull() ?: return
-            if (breakdown2.hasApiError) engine.reportMissing(breakdown2.missingInfo)
-
-            slotHighlights[slot2] = if (breakdown2.hasApiError) {
-                ChestProfitEngine.ERROR_HIGHLIGHT_COLOR
-            } else {
-                secondChestColor.getRGBA()
-            }
-
-            engine.renderProfitLabel(ctx, accessor.vexoLeftPos(), accessor.vexoTopPos(), slot2, breakdown2.total, LabelPosition.ABOVE)
-        }
     }
 
     override fun lootValueOrNull(name: String, qty: Long): Long? {

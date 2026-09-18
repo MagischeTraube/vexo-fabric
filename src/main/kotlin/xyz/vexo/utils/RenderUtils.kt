@@ -21,6 +21,7 @@ enum class LabelPosition { ABOVE, BELOW, LEFT, RIGHT, ON_ITEM }
 
 /**
  * Renders a string with transformation support
+ *
  * @param context The GUI graphics context
  * @param text The text to render
  * @param x The x position

@@ -4,24 +4,26 @@ import gg.essential.elementa.constraints.PixelConstraint
 import gg.essential.elementa.constraints.SiblingConstraint
 import gg.essential.elementa.dsl.pixels
 
-/**
- * Content-scale helpers for the ClickGui. Everything fixed-size in the GUI (text, icons, padding,
- * card heights …) is expressed through [gpx] / [gsib] so it all resizes proportionally with the
- * UI-scale slider in [GuiPrefs], instead of only the outer window scaling while the contents stay a
- * fixed pixel size.
- */
 
-/** Current ClickGui content-scale factor, driven by the UI-scale slider in [GuiPrefs]. */
+/**
+ * Returns the current GUI scale multiplier from [GuiPrefs.scale].
+ */
 val guiScale: Float get() = GuiPrefs.sizeMultiplier()
 
 /**
- * A pixel constraint scaled by the current UI-scale slider, mirroring Elementa's [pixels]. Use this
- * for every fixed design dimension (sizes, offsets, text scales). Do NOT wrap runtime values coming
- * from `getLeft()` / `getWidth()` / `mouseX` — those are already in real (scaled) pixels.
+ * Scales a pixel value by the current GUI scale and returns a [PixelConstraint].
+ *
+ * @param alignOpposite Whether to align the constraint to the opposite edge
+ * @param alignOutside Whether to align the constraint outside the parent
  */
 fun Number.gpx(alignOpposite: Boolean = false, alignOutside: Boolean = false): PixelConstraint =
     (toFloat() * guiScale).pixels(alignOpposite, alignOutside)
 
-/** A sibling-spacing constraint whose padding scales with the UI-scale slider. */
+/**
+ * Creates a scaled [SiblingConstraint] based on the current GUI scale.
+ *
+ * @param padding The base padding value to scale
+ * @param alignOpposite Whether to align the constraint to the opposite edge
+ */
 fun gsib(padding: Float = 0f, alignOpposite: Boolean = false): SiblingConstraint =
     SiblingConstraint(padding * guiScale, alignOpposite)

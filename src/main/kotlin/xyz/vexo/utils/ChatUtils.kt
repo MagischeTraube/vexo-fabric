@@ -3,6 +3,7 @@ package xyz.vexo.utils
 import java.util.UUID
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ServerboundChatCommandPacket
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import xyz.vexo.clickgui.GuiPrefs
@@ -18,6 +19,16 @@ private fun accentColor(): TextColor = TextColor.fromRgb(GuiPrefs.accentColor.rg
  */
 fun sendCommand(command: String) {
     mc.player?.connection?.sendCommand(command)
+}
+
+/**
+ * Sends a raw command to the server without local checks.
+ *
+ * @param command The command to send.
+ */
+fun sendRawCommandToServer(command: String) {
+    val handler = mc.player?.connection ?: return
+    handler.connection.send(ServerboundChatCommandPacket(command))
 }
 
 /**
