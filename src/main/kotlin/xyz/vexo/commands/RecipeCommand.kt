@@ -3,7 +3,7 @@ package xyz.vexo.commands
 import com.github.stivais.commodore.Commodore
 import gg.essential.universal.UScreen
 import xyz.vexo.features.impl.misc.CustomRecipeGui
-import xyz.vexo.features.impl.misc.recipe.RecipeGUI
+import xyz.vexo.features.impl.misc.recipe.RecipeGui
 import xyz.vexo.utils.runAfterClientTicks
 import xyz.vexo.utils.sendRawCommandToServer
 
@@ -14,7 +14,7 @@ val RecipeCommand = Commodore("recipe") {
             return@runs
         }
         runAfterClientTicks(1) {
-            UScreen.displayScreen(RecipeGUI())
+            UScreen.displayScreen(RecipeGui())
         }
     }
 
@@ -24,7 +24,7 @@ val RecipeCommand = Commodore("recipe") {
             return@runs
         }
         runAfterClientTicks(1) {
-            UScreen.displayScreen(RecipeGUI(itemName))
+            UScreen.displayScreen(RecipeGui(itemName))
         }
     }
 }
