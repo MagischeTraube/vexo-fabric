@@ -57,6 +57,7 @@ object AutoKuudraRequeue : Module(
             if (downtime) {
                 sendCommand("pchat downtime request -> canceled auto-requeue after this run")
                 title.showForXServerTicks((titleTime*20).toInt())
+                downtime = false
             }
 
             runAfterServerTicks((sleepTime * 20.0).toInt()) {
