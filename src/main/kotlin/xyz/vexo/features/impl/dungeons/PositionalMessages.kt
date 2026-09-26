@@ -129,4 +129,3 @@ object PositionalMessages : Module(
         sentSpot.fill(false)
     }
 }
-
