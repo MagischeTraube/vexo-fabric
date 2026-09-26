@@ -24,7 +24,9 @@ public class ChatScreenMixin {
 
     @Inject(method = "handleComponentClicked", at = @At("HEAD"), cancellable = true)
     private void vexo$handleClick(Style style, boolean bl, CallbackInfoReturnable<Boolean> cir) {
-        if (style == null || style.getClickEvent() == null) return;
+        if (style == null) return;
+
+        if (style.getClickEvent() == null) return;
 
         ClickEvent click = style.getClickEvent();
 
