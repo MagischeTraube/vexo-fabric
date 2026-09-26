@@ -15,6 +15,7 @@ import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.Theme.withAlpha
 
 object Tooltip {
+    private const val TEXT_SCALE = 1.15f
     private var holder: UIContainer? = null
     private var background: UIComponent? = null
     private var label: UIText? = null
@@ -36,7 +37,7 @@ object Tooltip {
         val text = UIText("").constrain {
             x = 9.gpx()
             y = CenterConstraint()
-            textScale = 1.15.gpx()
+            textScale = TEXT_SCALE.gpx()
         }.apply {
             setColor(Theme.textPrimary())
         } childOf h
@@ -54,7 +55,7 @@ object Tooltip {
 
         val win = Window.of(h)
 
-        val width = (text.width() + 20f) * guiScale
+        val width = (text.width(TEXT_SCALE) + 18f) * guiScale
         val height = 26f * guiScale
 
         h.setWidth(width.pixels())
