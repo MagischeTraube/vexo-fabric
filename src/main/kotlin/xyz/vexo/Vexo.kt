@@ -85,13 +85,14 @@ object Vexo : ClientModInitializer {
 			SoloDetector,
 
 			// misc
-			AutoRejoin, FireVeilOverlay, Loadouts, CustomRecipeGui, RecolorLava, ScreenshotActions, SlayerHelper,
-			SlotBinding, TimeControl, Wardrobe,
+			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions, SlayerHelper, TimeControl,
 
 			// chat
 			ChatCleaner, CompactChat
 		).forEach { ModuleManager.register(it) }
 
+		xyz.vexo.clickgui.GuiPrefs.load()
+		InventoryPresets.load()
 		GuiPrefs.load()
 		SlotBinding.loadBinds()
 		ConfigManager.load()

@@ -52,6 +52,13 @@ A Hypixel SkyBlock mod for Minecraft 26.1.2 built on Fabric, focused on Dungeons
 <details>
 <summary>Quality of Life</summary>
 
+| Feature | Description |
+|---|---|
+| **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level |
+| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.) |
+| **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked |
+| **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard |
+| **Inventory Presets** | Slot Binding, Wardrobe and Loadouts in one module — each sub-feature has switchable named keybind/binding presets and its own on/off toggle |
 | Feature | Description                                                                                                    |
 |---|----------------------------------------------------------------------------------------------------------------|
 | **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level                                       |

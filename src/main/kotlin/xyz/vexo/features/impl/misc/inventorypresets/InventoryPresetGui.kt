@@ -1,4 +1,4 @@
-package xyz.vexo.features.impl.misc.slotbinding
+package xyz.vexo.features.impl.misc.inventorypresets
 
 import gg.essential.elementa.ElementaVersion
 import gg.essential.elementa.UIComponent
@@ -16,16 +16,25 @@ import gg.essential.elementa.effects.OutlineEffect
 import gg.essential.universal.UScreen
 import net.minecraft.client.gui.screens.Screen
 import xyz.vexo.clickgui.gpx
-import xyz.vexo.features.impl.misc.SlotBinding
 import xyz.vexo.clickgui.gsib
 import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.Theme.withAlpha
 import xyz.vexo.clickgui.theme.colorTo
+import xyz.vexo.features.impl.misc.InventoryPresets
+import xyz.vexo.features.impl.misc.InventoryPresets.Section
 import java.awt.Color
 
-class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(ElementaVersion.V10) {
+class InventoryPresetGui(
+    private val previousScreen: Screen?,
+    private val section: Section
+) : WindowScreen(ElementaVersion.V10) {
 
     private val presetList: ScrollComponent
+
+    private val titleText: String = when (section) {
+        Section.SLOT_BINDING -> "Slot Binding Presets"
+        Section.LOADOUTS -> "Loadout Presets"
+    }
 
     init {
         val scrim = UIBlock(Theme.overlayScrim()).constrain {
@@ -44,7 +53,7 @@ class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(Elementa
         card.enableEffect(OutlineEffect(Theme.glow(140), 1f))
         card.onMouseClick { it.stopPropagation() }
 
-        UIText("Slot Binding Presets").constrain {
+        UIText(titleText).constrain {
             x = 22.gpx()
             y = 19.gpx()
             textScale = 1.68.gpx()
@@ -121,7 +130,7 @@ class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(Elementa
         saveButton.onMouseClick {
             val name = nameInput.getText().trim()
             if (name.isEmpty()) return@onMouseClick
-            SlotBinding.savePreset(name)
+            InventoryPresets.savePreset(section, name)
             nameInput.setText("")
             refreshPresetList()
         }
@@ -149,7 +158,7 @@ class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(Elementa
 
     private fun refreshPresetList() {
         presetList.clearChildren()
-        SlotBinding.presetNames().forEachIndexed { index, name ->
+        InventoryPresets.presetNames(section).forEachIndexed { index, name ->
             buildPresetRow(name).constrain {
                 y = if (index == 0) 5.gpx() else gsib(4.8f)
             } childOf presetList
@@ -164,16 +173,16 @@ class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(Elementa
             buildNameField(name) childOf this
 
             buildRowButton("Delete", Theme.toggleOff(), 22.gpx(true)) {
-                SlotBinding.deletePreset(name)
+                InventoryPresets.deletePreset(section, name)
                 refreshPresetList()
             } childOf this
 
             buildRowButton("Load", Theme.accent(), 84.gpx(true)) {
-                SlotBinding.loadPreset(name)
+                InventoryPresets.loadPreset(section, name)
             } childOf this
 
             buildRowButton("Save", Theme.success(), 146.gpx(true)) {
-                SlotBinding.savePreset(name)
+                InventoryPresets.savePreset(section, name)
             } childOf this
         }
     }
@@ -214,7 +223,7 @@ class SlotPresetGui(private val previousScreen: Screen?) : WindowScreen(Elementa
 
         fun commitRename() {
             val newName = nameInput.getText().trim()
-            if (newName.isNotEmpty() && newName != name && SlotBinding.renamePreset(name, newName)) {
+            if (newName.isNotEmpty() && newName != name && InventoryPresets.renamePreset(section, name, newName)) {
                 refreshPresetList()
                 return
             }
