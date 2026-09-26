@@ -209,6 +209,7 @@ object ChatCleaner : Module(
         Regex("""\[SKULL] .+"""),
         Regex("""\[BOMB] Creeper:.+"""),
         Regex("""\[BOSS].+"""),
+        Regex("""\[CROWD] .+"""),
         Regex("""\[Sacks] .+ item.+"""),
         Regex("""The .+ Trap hit you for .+ damage!"""),
         Regex("""(Healer|Archer|Mage|Tank|Berserk) Milestone.+"""),
