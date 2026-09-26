@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents
-import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import xyz.vexo.Vexo
 import xyz.vexo.utils.IInitializable
@@ -21,7 +20,6 @@ import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.events.impl.WorldRenderEvent
-import xyz.vexo.events.impl.ChatMessageEvent
 import xyz.vexo.events.impl.ServerConnectEvent
 import xyz.vexo.events.impl.ServerLeaveEvent
 import xyz.vexo.events.impl.ParticleReceiveEvent
@@ -64,14 +62,6 @@ object EventDispatcher : IInitializable {
 
         LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register { context ->
             WorldRenderEvent(context).postAndCatch()
-        }
-
-        ClientReceiveMessageEvents.ALLOW_GAME.register { text, overlay ->
-            if (overlay) return@register true
-
-            val event = ChatMessageEvent(text.string, text.string.removeFormatting())
-            event.postAndCatch()
-            !event.isCancelled()
         }
 
         ItemTooltipCallback.EVENT.register { stack, _, _, lines ->
