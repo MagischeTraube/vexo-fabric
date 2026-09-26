@@ -59,7 +59,22 @@ object CompactChat : Module(
     private val stashRegex = Regex("""^You have (\d+) (materials?|items?) stashed away!$""")
 
     private var pendingHoppityRabbit: String? = null
-    private var pendingHoppityRaw: String? = null
+    private var pendingHoppityRarity: String? = null
+
+    private val rarityColors = mapOf(
+        "COMMON" to "§7",
+        "UNCOMMON" to "§a",
+        "RARE" to "§9",
+        "EPIC" to "§5",
+        "LEGENDARY" to "§6",
+        "MYTHIC" to "§d",
+        "DIVINE" to "§b"
+    )
+
+    private fun formatRarity(rarity: String): String {
+        val color = rarityColors[rarity.uppercase()] ?: "§7"
+        return "§7($color$rarity§7)"
+    }
 
     private fun abbreviateNumber(raw: String): String {
         val value = raw.replace(",", "").toLongOrNull() ?: return raw
@@ -78,24 +93,25 @@ object CompactChat : Module(
             val rabbit = pendingHoppityRabbit
             if (rabbit != null) {
                 pendingHoppityRabbit = null
-                val raw = pendingHoppityRaw
-                pendingHoppityRaw = null
+                val rarity = pendingHoppityRarity
+                pendingHoppityRarity = null
+                val rarityText = rarity?.let { formatRarity(it) } ?: ""
 
                 val duplicate = hoppityDuplicateRegex.find(message)
                 if (duplicate != null) {
                     event.cancel()
                     val chocolate = abbreviateNumber(duplicate.groupValues[1])
-                    modMessage("§d§lHOPPITY! §f$rabbit §7Duplicate §8· §6$chocolate §7Chocolate", prefix = "")
+                    modMessage("§d§lHOPPITY! §f$rabbit $rarityText §7Duplicate §8· §6$chocolate §7Chocolate", prefix = "")
                     return
                 }
 
-                raw?.let { modMessage(it, prefix = "") }
+                modMessage("§d§lHOPPITY! §f$rabbit $rarityText", prefix = "")
             }
 
             hoppityFindRegex.find(message)?.let { match ->
                 event.cancel()
                 pendingHoppityRabbit = match.groupValues[1]
-                pendingHoppityRaw = event.message
+                pendingHoppityRarity = match.groupValues[2]
                 return
             }
         }
