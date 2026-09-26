@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.SelectorSetting
+import xyz.vexo.config.impl.SliderSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
 import xyz.vexo.events.impl.PriceDataUpdateEvent
@@ -40,6 +41,21 @@ object KuudraProfitTracker : Module(
         "Lvl 100 Kuudra",
         "Kuudra Collection Lvl 100: +20% essence",
         default = false
+    )
+    private val essenceOfCrimson by SliderSetting(
+        "Essence of Crimson",
+        "Perk level: +1% Crimson Essence per level (max +10%)",
+        default = 0.0, min = 0.0, max = 10.0, increment = 1.0
+    )
+    private val echoOfEssence by SliderSetting(
+        "Echo of Essence",
+        "Perk level: increases the Essence of Crimson bonus (does nothing on its own)",
+        default = 0.0, min = 0.0, max = 10.0, increment = 1.0
+    )
+    private val echoOfEchoes by SliderSetting(
+        "Echo of Echoes",
+        "Perk level: increases the Essence of Crimson bonus more strongly (does nothing on its own)",
+        default = 0.0, min = 0.0, max = 10.0, increment = 1.0
     )
     private val armorSalvage by BooleanSetting(
         "Armor Salvage",
@@ -303,7 +319,7 @@ object KuudraProfitTracker : Module(
     }
 
     override fun settingsFingerprint(): String =
-        "$sellOffer|$includeTaxes|$lvl100Kuudra|$armorSalvage|$salvagePerk|$valueMode"
+        "$sellOffer|$includeTaxes|$lvl100Kuudra|$essenceOfCrimson|$echoOfEssence|$echoOfEchoes|$armorSalvage|$salvagePerk|$valueMode"
 
     private fun expectedBreakdown(table: TierTable, costs: List<Entry>): Breakdown {
         var guaranteedError = false
@@ -332,10 +348,34 @@ object KuudraProfitTracker : Module(
         return sum.toLong() to error
     }
 
-    override fun lootTag(name: String): String = when {
-        armorSalvage && isSalvageable(name) -> " §8(Salvage ${salvageEssence(name)} Ess)"
-        lvl100Kuudra && lootIdFor(name)?.startsWith("ESSENCE_") == true -> " §d(+20%)"
-        else -> ""
+    override fun lootTag(name: String): String {
+        if (armorSalvage && isSalvageable(name)) return " §8(Salvage ${salvageEssence(name)} Ess)"
+        val id = lootIdFor(name) ?: return ""
+        if (!id.startsWith("ESSENCE_")) return ""
+        val pct = essenceBonusPct(id)
+        if (pct <= 0.0) return ""
+        val text = if (pct % 1.0 == 0.0) pct.toInt().toString() else "%.1f".format(pct)
+        return " §d(+$text%)"
+    }
+
+    private const val LVL_100_KUUDRA_BONUS = 0.20
+    private const val ESSENCE_OF_CRIMSON_PER_LEVEL = 0.01
+    private const val ECHO_OF_ESSENCE_BUFF_PER_LEVEL = 0.0067
+    private const val ECHO_OF_ECHOES_BUFF_PER_LEVEL = 0.0167
+
+    private fun crimsonPerkBonus(): Double {
+        if (essenceOfCrimson <= 0.0) return 0.0
+        val echoBuff = 1.0 +
+            echoOfEssence * ECHO_OF_ESSENCE_BUFF_PER_LEVEL +
+            echoOfEchoes * ECHO_OF_ECHOES_BUFF_PER_LEVEL
+        return essenceOfCrimson * ESSENCE_OF_CRIMSON_PER_LEVEL * echoBuff
+    }
+
+    private fun essenceBonusPct(id: String): Double {
+        var bonus = 0.0
+        if (lvl100Kuudra) bonus += LVL_100_KUUDRA_BONUS
+        if (id == "ESSENCE_CRIMSON") bonus += crimsonPerkBonus()
+        return bonus * 100.0
     }
 
     override fun lootValueOrNull(name: String, qty: Long): Long? {
@@ -350,7 +390,10 @@ object KuudraProfitTracker : Module(
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
         if (unit < 0) return null
         var value = qty * unit.toLong()
-        if (lvl100Kuudra && id.startsWith("ESSENCE_")) value = value * 12 / 10
+        if (id.startsWith("ESSENCE_")) {
+            val pct = essenceBonusPct(id)
+            if (pct != 0.0) value = (value * (1.0 + pct / 100.0)).toLong()
+        }
         return value
     }
 
