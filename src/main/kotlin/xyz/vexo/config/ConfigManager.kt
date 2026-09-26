@@ -84,9 +84,6 @@ object ConfigManager {
             val modulesJson = root.getAsJsonObject("modules") ?: return
 
             ModuleManager.getAllModules().forEach { module ->
-                // Isolate each module so one module's malformed entry can't abort loading of the
-                // rest (modules registered later — e.g. Wardrobe — would otherwise silently keep
-                // their defaults and get overwritten on the next save).
                 runCatching {
                     val moduleJson = modulesJson.getAsJsonObject(module.name) ?: return@runCatching
 
