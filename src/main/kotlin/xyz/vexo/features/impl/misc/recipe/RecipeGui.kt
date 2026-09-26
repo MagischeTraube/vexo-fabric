@@ -8,11 +8,9 @@ import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.input.UITextInput
 import gg.essential.elementa.constraints.CenterConstraint
 import gg.essential.elementa.dsl.*
+import java.io.File
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.minecraft.world.item.ItemStack
-import java.io.File
-import xyz.vexo.Vexo
-import xyz.vexo.Vexo.mc
 import xyz.vexo.clickgui.components.UIItem
 import xyz.vexo.clickgui.components.UIItemRenderer
 import xyz.vexo.clickgui.gpx
@@ -20,14 +18,18 @@ import xyz.vexo.clickgui.gsib
 import xyz.vexo.clickgui.theme.Theme
 import xyz.vexo.clickgui.theme.colorTo
 import xyz.vexo.utils.sendCommand
+import xyz.vexo.utils.rarityColor
+import xyz.vexo.Vexo
+import xyz.vexo.Vexo.mc
 
-class RecipeGUI(
+class RecipeGui(
     initialSearch: String = ""
 ) : WindowScreen(ElementaVersion.V10) {
     data class RecipeItem(
         val name: String,
         val itemStack: ItemStack,
         val itemId: String,
+        val rarity: String?,
         val weight: Int
     )
 
@@ -108,6 +110,7 @@ class RecipeGUI(
                 name = r.name,
                 itemStack = RecipeRepository.buildItemStack(r),
                 itemId = r.id,
+                rarity = r.rarity,
                 weight = r.weight
             )
         }
@@ -348,7 +351,7 @@ class RecipeGUI(
                 x = 32.gpx()
                 y = CenterConstraint()
                 textScale = 1.25f.gpx()
-            }.setColor(Theme.textPrimary()) childOf this
+            }.setColor(rarityColor(recipe.rarity)) childOf this
 
             UIItem(recipe.itemStack).constrain {
                 x = 8.gpx()
@@ -362,8 +365,8 @@ class RecipeGUI(
                 bg.colorTo(Theme.card())
             }
             onMouseClick {
-                if (this@RecipeGUI.searchQuery.isNotBlank()) {
-                    addSearchToHistory(this@RecipeGUI.searchQuery)
+                if (this@RecipeGui.searchQuery.isNotBlank()) {
+                    addSearchToHistory(this@RecipeGui.searchQuery)
                 }
                 sendCommand("viewrecipe ${recipe.itemId}")
                 mc.execute { mc.setScreen(null) }

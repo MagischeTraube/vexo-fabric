@@ -57,4 +57,3 @@ object HealerP5LeapAlert : Module(
         notifiedAll = false
     }
 }
-

@@ -41,5 +41,4 @@ object ParticleHider : Module (
         inP5 = false
         inP4 = false
     }
-
 }

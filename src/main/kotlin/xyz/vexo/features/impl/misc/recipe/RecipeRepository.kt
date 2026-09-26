@@ -39,6 +39,7 @@ object RecipeRepository : IInitializable{
         val textureValue: String?,
         val dyedColor: Int?,
         val hasGlint: Boolean,
+        val rarity: String?,
         val weight: Int
     )
 
@@ -128,7 +129,8 @@ object RecipeRepository : IInitializable{
                     textureValue = o.get("texture_value")?.takeUnless { it.isJsonNull }?.asString,
                     dyedColor = o.get("dyed_color")?.takeUnless { it.isJsonNull }?.asInt,
                     hasGlint = o.get("has_glint")?.takeUnless { it.isJsonNull }?.asBoolean ?: false,
-                    weight = o.get("weight")?.takeUnless { it.isJsonNull }?.asInt ?: 1
+                    rarity = o.get("rarity")?.takeUnless { it.isJsonNull }?.asString,
+                    weight = o.get("weight")?.takeUnless { it.isJsonNull }?.asInt ?: 10
                 )
             } catch (e: Exception) {
                 null
