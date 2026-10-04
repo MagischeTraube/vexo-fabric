@@ -35,4 +35,15 @@ object ScoreboardUtils {
      */
     fun findAll(pattern: Regex): List<String> =
         getEntries().filter { pattern.containsMatchIn(it) }
+
+    /**
+     * Returns the title of the sidebar scoreboard.
+     *
+     * @return The title of the sidebar scoreboard, or null if the scoreboard is not available.
+     */
+    fun getTitle(): String? {
+        val scoreboard = mc.level?.scoreboard ?: return null
+        val objective = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR) ?: return null
+        return objective.name.removeFormatting()
+    }
 }
