@@ -32,31 +32,37 @@ object KuudraProfitTracker : Module(
         "Use Bazaar sell-offer prices instead of insta-sell",
         default = false
     )
+
     private val includeTaxes by BooleanSetting(
         "Include Taxes",
         "Subtract AH taxes from the item value",
         default = true
     )
+
     private val lvl100Kuudra by BooleanSetting(
         "Lvl 100 Kuudra",
         "Kuudra Collection Lvl 100: +20% essence",
         default = false
     )
+
     private val essenceOfCrimson by SliderSetting(
         "Essence of Crimson",
         "Perk level: +1% Crimson Essence per level (max +10%)",
         default = 0.0, min = 0.0, max = 10.0, increment = 1.0
     )
+
     private val echoOfEssence by SliderSetting(
         "Echo of Essence",
         "Perk level: increases the Essence of Crimson bonus (does nothing on its own)",
         default = 0.0, min = 0.0, max = 10.0, increment = 1.0
-    )
+    ).apply { dependsOn { essenceOfCrimson > 0 } }
+
     private val echoOfEchoes by SliderSetting(
         "Echo of Echoes",
         "Perk level: increases the Essence of Crimson bonus more strongly (does nothing on its own)",
         default = 0.0, min = 0.0, max = 10.0, increment = 1.0
-    )
+    ).apply { dependsOn { essenceOfCrimson > 0 && echoOfEssence > 0} }
+
     private val armorSalvage by BooleanSetting(
         "Armor Salvage",
         "Value Kuudra armor by its Crimson Essence salvage value",
@@ -67,38 +73,45 @@ object KuudraProfitTracker : Module(
         "Account for the +20% salvage essence perk",
         default = true
     ).apply { dependsOn { armorSalvage } }
+
     private val valueMode by SelectorSetting(
         "Value Mode",
         "Actual = this chest's contents; Expected = average value from drop chances",
         default = "Actual",
         options = listOf("Actual", "Expected")
     )
+
     private val showBreakdown by BooleanSetting(
         "Show Breakdown",
         "Panel next to the GUI showing how the profit is calculated",
         default = true
     )
+
     private val breakdownSide by SelectorSetting(
         "Breakdown Side",
         "Which side of the GUI the breakdown panel appears on",
         default = "Right",
         options = listOf("Right", "Left", "Auto")
     ).apply { dependsOn { showBreakdown } }
+
     private val highlightColor = ColorSetting(
         "Highlight",
         "Color of the best chest highlight",
         default = Color(18, 250, 0, 120)
     )
+
     private val highlightCroesus by BooleanSetting(
         "Highlight Croesus",
         "Tints runs in the Croesus menu by chest status",
         default = true
     )
+
     private val openableColor = ColorSetting(
         "Color: Openable",
         "Run with chests left to open (\"Chests expire in ...\")",
         default = Color(18, 250, 0, 130)
     ).apply { dependsOn { highlightCroesus } }
+
     private val doneColor = ColorSetting(
         "Color: Done",
         "Run with no chests left (\"No more chests to open!\")",
