@@ -251,7 +251,9 @@ class SettingsPanel : UIContainer() {
                 currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
             }
 
-            is SliderSetting -> SliderSettingComponent(setting)
+            is SliderSetting -> SliderSettingComponent(setting) {
+                currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
+            }
 
             is StringSetting -> StringSettingComponent(setting)
 

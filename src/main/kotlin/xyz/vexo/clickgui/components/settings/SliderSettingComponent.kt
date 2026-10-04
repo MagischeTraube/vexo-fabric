@@ -14,7 +14,8 @@ import xyz.vexo.config.impl.SliderSetting
  * Slider setting component — accent fill with a soft glow handle and a live value readout.
  */
 class SliderSettingComponent(
-    private val setting: SliderSetting
+    private val setting: SliderSetting,
+    private val onUpdate: (() -> Unit)? = null
 ) : UIContainer() {
 
     init {
@@ -74,8 +75,14 @@ class SliderSettingComponent(
         var dragging = false
         sliderHandle.onMouseClick { dragging = true }
         sliderTrack.onMouseClick { dragging = true }
-        sliderHandle.onMouseRelease { dragging = false }
-        sliderTrack.onMouseRelease { dragging = false }
+        sliderHandle.onMouseRelease {
+            dragging = false
+            onUpdate?.invoke()
+        }
+        sliderTrack.onMouseRelease {
+            dragging = false
+            onUpdate?.invoke()
+        }
 
         sliderTrack.onMouseDrag { mouseX, _, _ ->
             if (!dragging) return@onMouseDrag
