@@ -91,10 +91,9 @@ object Vexo : ClientModInitializer {
 			ChatCleaner, CompactChat
 		).forEach { ModuleManager.register(it) }
 
-		xyz.vexo.clickgui.GuiPrefs.load()
+		GuiPrefs.load()
 		InventoryPresets.load()
 		GuiPrefs.load()
-		SlotBinding.loadBinds()
 		ConfigManager.load()
 	}
 }
