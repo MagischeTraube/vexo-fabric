@@ -1,7 +1,12 @@
 package xyz.vexo.utils
 
+import net.minecraft.core.component.DataComponents
+import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import xyz.vexo.events.EventHandler
+import xyz.vexo.events.impl.GuiRenderEvent
 import xyz.vexo.events.impl.ServerTickEvent
+import xyz.vexo.events.impl.WorldJoinEvent
 
 object DungeonUtils {
 
@@ -11,7 +16,6 @@ object DungeonUtils {
         private set
 
     private var tickCounter = 0
-
 
     private val dungeonIndicator = Regex("""Time Elapsed:""")
 
@@ -74,5 +78,71 @@ object DungeonUtils {
     fun getDeaths(): Int {
         val line = TablistUtils.find(deathsPattern) ?: return 0
         return deathsPattern.find(line)?.groupValues?.get(1)?.toInt() ?: 0
+    }
+
+
+    enum class DungeonClass(val displayName: String) {
+        HEALER("Healer"),
+        MAGE("Mage"),
+        BERSERK("Berserk"),
+        ARCHER("Archer"),
+        TANK("Tank");
+
+        companion object {
+            fun fromDisplayName(name: String): DungeonClass? {
+                val normalized = name.trim()
+                entries.firstOrNull { it.displayName.equals(normalized, ignoreCase = true) }?.let { return it }
+                return null
+            }
+        }
+    }
+
+    var selectedClass: DungeonClass? = null
+        private set
+
+    private const val GATE_TITLE = "Catacombs Gate"
+    private const val CLASSES_ITEM_NAME = "Dungeon Classes"
+    private val SELECTED_REGEX = Regex("""Currently Selected:\s*(\w+)""", RegexOption.IGNORE_CASE)
+
+    private var lastGateScreen: Screen? = null
+
+    @EventHandler
+    fun onWorldJoin(event: WorldJoinEvent) {
+        lastGateScreen = null
+    }
+
+    @EventHandler
+    fun onGuiRender(event: GuiRenderEvent) {
+        val screen = event.screen as? AbstractContainerScreen<*> ?: return
+        val title = screen.title.string.removeFormatting().trim()
+
+        if (title != GATE_TITLE) {
+            if (screen !== lastGateScreen) lastGateScreen = null
+            return
+        }
+
+        if (screen === lastGateScreen) return
+        lastGateScreen = screen
+
+        for (slot in screen.menu.slots) {
+            if (!slot.hasItem()) continue
+            val item = slot.item
+
+            val name = item.hoverName.string.removeFormatting().trim()
+            if (name != CLASSES_ITEM_NAME) continue
+
+            val lore = item.get(DataComponents.LORE)?.styledLines()
+                ?.map { it.string.removeFormatting().trim() }
+                ?: continue
+
+            for (line in lore) {
+                val match = SELECTED_REGEX.find(line) ?: continue
+                DungeonClass.fromDisplayName(match.groupValues[1])?.let {
+                    selectedClass = it
+                }
+                break
+            }
+            break
+        }
     }
 }
