@@ -9,7 +9,6 @@
 		"ChatScreenMixin",
 		"ClientClockManagerMixin",
 		"ConnectionMixin",
-		"EntityRenderDispatcherMixin",
 		"FluidStateModelSetMixin",
 		"KeyboardHandlerMixin",
 		"MainMixin",
