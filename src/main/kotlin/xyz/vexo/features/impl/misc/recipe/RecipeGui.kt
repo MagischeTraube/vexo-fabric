@@ -369,7 +369,7 @@ class RecipeGui(
                     addSearchToHistory(this@RecipeGui.searchQuery)
                 }
                 sendCommand("viewrecipe ${recipe.itemId}")
-                mc.execute { mc.setScreen(null) }
+                mc.execute { mc.gui.setScreen(null) }
             }
         }
     }

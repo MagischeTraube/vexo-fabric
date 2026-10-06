@@ -53,7 +53,14 @@ object RecolorLava : Module(
 
     /** Forces a chunk-mesh rebuild so a changed setting takes effect. */
     private fun refreshChunks() {
-        runCatching { mc.levelRenderer.allChanged() }
+        runCatching {
+            mc.levelRenderer.invalidateCompiledGeometry(
+                mc.level!!,
+                mc.options,
+                mc.gameRenderer.mainCamera(),
+                mc.blockColors
+            )
+        }
     }
 
     /**

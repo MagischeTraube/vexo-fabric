@@ -45,7 +45,7 @@ object HudManager {
      */
     @EventHandler
     fun onRender(event: HudRenderEvent) {
-        if (mc.screen is MoveActiveHudsGui) return
+        if (mc.gui.screen() is MoveActiveHudsGui) return
         renderHuds(event.context)
     }
 

@@ -72,7 +72,7 @@ object ScreenshotHud {
         ScreenEvents.AFTER_INIT.register { _, screen: Screen, _, _ ->
             if (screen !is ScreenshotScreen) destroy()
             ScreenEvents.afterExtract(screen).register { _, graphics: GuiGraphicsExtractor, mouseX, mouseY, _ ->
-                if (mc.screen !is ScreenshotScreen) return@register
+                if (mc.gui.screen() !is ScreenshotScreen) return@register
                 ScreenshotHudRenderer.renderOverlay(
                     graphics,
                     mouseX.toDouble(),

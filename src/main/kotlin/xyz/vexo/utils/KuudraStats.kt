@@ -51,7 +51,7 @@ private const val DIVIDER = "§6§m                                            �
 
 
 private fun statLine(component: Component) {
-    Vexo.mc.execute { Vexo.mc.gui.chat.addClientSystemMessage(component) }
+    Vexo.mc.gui.hud.chat.addClientSystemMessage(component)
 }
 
 

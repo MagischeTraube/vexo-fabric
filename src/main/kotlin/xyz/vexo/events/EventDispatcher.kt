@@ -65,7 +65,7 @@ object EventDispatcher : IInitializable {
         }
 
         ItemTooltipCallback.EVENT.register { stack, _, _, lines ->
-            val screen = Vexo.mc.screen ?: return@register
+            val screen = Vexo.mc.gui.screen() ?: return@register
             TooltipEvent(screen, stack, lines).postAndCatch()
         }
 

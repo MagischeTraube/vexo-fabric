@@ -20,7 +20,7 @@ class KeybindSetting(
     companion object {
         @JvmStatic
         fun isListeningForKeybinds(): Boolean {
-            val screen = mc.screen
+            val screen = mc.gui.screen()
             return screen is ClickGui &&
                     screen.activeKeybindSettings.any { it.listening }
         }

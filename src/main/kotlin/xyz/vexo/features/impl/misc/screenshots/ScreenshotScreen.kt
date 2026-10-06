@@ -18,6 +18,6 @@ class ScreenshotScreen(private val previousScreen: Screen?) : Screen(Component.l
     override fun isPauseScreen() = false
 
     override fun onClose() {
-        mc.setScreen(previousScreen)
+        mc.gui.setScreen(previousScreen)
     }
 }

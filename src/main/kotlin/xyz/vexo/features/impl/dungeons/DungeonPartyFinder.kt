@@ -83,7 +83,7 @@ object DungeonPartyFinder : Module(
      */
     @EventHandler
     fun onTick(event: ClientTickEvent) {
-        val screen = Vexo.mc.screen
+        val screen = Vexo.mc.gui.screen()
         if (screen !is AbstractContainerScreen<*> || screen.title.string.removeFormatting() != "Party Finder") {
             lastScreen = null
             slotHighlights.clear()

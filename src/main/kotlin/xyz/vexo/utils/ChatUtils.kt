@@ -18,7 +18,7 @@ private fun accentColor(): TextColor = TextColor.fromRgb(GuiPrefs.accentColor.rg
  * @param command The command to send.
  */
 fun sendCommand(command: String) {
-    mc.player?.connection?.sendCommand(command)
+    mc.connection?.sendCommand(command)
 }
 
 /**
@@ -27,7 +27,7 @@ fun sendCommand(command: String) {
  * @param command The command to send.
  */
 fun sendRawCommandToServer(command: String) {
-    val handler = mc.player?.connection ?: return
+    val handler = mc.connection ?: return
     handler.connection.send(ServerboundChatCommandPacket(command))
 }
 
@@ -41,7 +41,7 @@ fun modMessage(message: Any?, prefix: String = "[Vexo] ") {
     val text = Component.empty()
         .append(Component.literal(prefix).withStyle(Style.EMPTY.withColor(accentColor())))
         .append(Component.literal("$message"))
-    mc.execute { mc.gui.chat.addClientSystemMessage(text) }
+    mc.execute { mc.gui.hud.chat.addClientSystemMessage(text) }
 }
 
 /**
@@ -54,7 +54,7 @@ fun modMessage(message: Any?, prefix: String = "[Vexo] ") {
 fun modClickableMessage(message: String, command: String, prefix: String = "§b[Vexo]§r ") {
     val style = Style.EMPTY.withClickEvent(ClickEvent.RunCommand(command))
     val text = Component.literal("$prefix$message").setStyle(style)
-    mc.execute { mc.gui.chat.addClientSystemMessage(text) }
+    mc.execute { mc.gui.hud.chat.addClientSystemMessage(text) }
 }
 
 /**
@@ -80,5 +80,5 @@ fun modButtonsMessage(
         }
     }
 
-    mc.execute { mc.gui.chat.addClientSystemMessage(messageText) }
+    mc.execute { mc.gui.hud.chat.addClientSystemMessage(messageText) }
 }

@@ -47,15 +47,15 @@ object ScreenshotActions : Module(
     @EventHandler
     fun onKeyPress(event: KeybindEvent) {
         if (event.key.value == screenshotKeybind) {
-            if (mc.screen is ScreenshotScreen) return
-            val previousScreen = mc.screen
-            val renderTarget   = mc.mainRenderTarget
+            if (mc.gui.screen() is ScreenshotScreen) return
+            val previousScreen = mc.gui.screen()
+            val renderTarget   = mc.gameRenderer.mainRenderTarget()
             displayScreenshotHud = true
             ScreenshotHud.reset()
 
             ScreenshotHud.updateBackgroundImage(renderTarget) {
-                if (mc.screen == null || mc.screen !is ScreenshotScreen) {
-                    mc.setScreen(ScreenshotScreen(previousScreen))
+                if (mc.gui.screen() == null || mc.gui.screen() !is ScreenshotScreen) {
+                    mc.gui.setScreen(ScreenshotScreen(previousScreen))
                 }
             }
         }

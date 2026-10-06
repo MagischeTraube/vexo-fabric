@@ -35,8 +35,8 @@ dependencies {
 	}
 
 	property("uc_version").let {
-		implementation("gg.essential:universalcraft-26.1-fabric:$it")
-		include("gg.essential:universalcraft-26.1-fabric:$it")
+		implementation("gg.essential:universalcraft-26.2-fabric:$it")
+		include("gg.essential:universalcraft-26.2-fabric:$it")
 	}
 
 	property("commodore_version").let {

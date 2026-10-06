@@ -47,7 +47,7 @@ object EatenTimer : Module(
 
     @EventHandler
     fun onRender(event: HudRenderEvent) {
-        if (mc.screen is MoveActiveHudsGui || !timerActive || countdown <= 0) return
+        if (mc.gui.screen() is MoveActiveHudsGui || !timerActive || countdown <= 0) return
 
         val label = countdown.toString()
         val color = if (countdown <= 20) 0xFFFF5555.toInt() else 0xFFFFFFFF.toInt()

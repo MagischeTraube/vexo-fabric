@@ -69,7 +69,7 @@ object BackboneAlert : Module(
 
     @EventHandler
     fun onRender(event: HudRenderEvent) {
-        if (mc.screen is MoveActiveHudsGui || !BonemerangRendTracker.isTracking()) return
+        if (mc.gui.screen() is MoveActiveHudsGui || !BonemerangRendTracker.isTracking()) return
 
         val ctx = event.context
         val pose = ctx.pose()

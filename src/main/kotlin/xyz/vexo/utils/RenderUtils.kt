@@ -253,69 +253,67 @@ fun LevelRenderContext.drawBoxOutline(
 ) {
     val expanded = box.inflate(0.002)
 
-    val buffer = bufferSource()
+    val poseStack = poseStack()
+    val collector = submitNodeCollector()
 
-    val cam = mc.gameRenderer.mainCamera.position()
+    val cam = gameRenderer().mainCamera().position()
 
-    val matrices = PoseStack()
-    matrices.translate(-cam.x, -cam.y, -cam.z)
+    poseStack.pushPose()
+    poseStack.translate(
+        -cam.x,
+        -cam.y,
+        -cam.z
+    )
 
-    val pose = matrices.last()
+    collector.submitCustomGeometry(
+        poseStack,
+        RenderTypes.lines()
+    ) { pose, buffer ->
 
-    val buf = buffer.getBuffer(RenderTypes.lines())
+        val r = color.red
+        val g = color.green
+        val b = color.blue
 
-    val r = color.red
-    val g = color.green
-    val b = color.blue
+        val x0 = expanded.minX.toFloat()
+        val y0 = expanded.minY.toFloat()
+        val z0 = expanded.minZ.toFloat()
 
-    val x0 = expanded.minX.toFloat()
-    val y0 = expanded.minY.toFloat()
-    val z0 = expanded.minZ.toFloat()
+        val x1 = expanded.maxX.toFloat()
+        val y1 = expanded.maxY.toFloat()
+        val z1 = expanded.maxZ.toFloat()
 
-    val x1 = expanded.maxX.toFloat()
-    val y1 = expanded.maxY.toFloat()
-    val z1 = expanded.maxZ.toFloat()
+        // Bottom
+        buffer.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 1f, 0f, 0f)
+        buffer.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 1f, 0f, 0f)
+        buffer.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 0f, 0f, 1f)
+        buffer.lineVertex(pose, x1, y0, z1, r, g, b, alpha, 0f, 0f, 1f)
+        buffer.lineVertex(pose, x1, y0, z1, r, g, b, alpha, -1f, 0f, 0f)
+        buffer.lineVertex(pose, x0, y0, z1, r, g, b, alpha, -1f, 0f, 0f)
+        buffer.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 0f, -1f)
+        buffer.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 0f, 0f, -1f)
 
-    // Bottom
-    buf.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 1f, 0f, 0f)
-    buf.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 1f, 0f, 0f)
+        // Top
+        buffer.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 1f, 0f, 0f)
+        buffer.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 1f, 0f, 0f)
+        buffer.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 0f, 0f, 1f)
+        buffer.lineVertex(pose, x1, y1, z1, r, g, b, alpha, 0f, 0f, 1f)
+        buffer.lineVertex(pose, x1, y1, z1, r, g, b, alpha, -1f, 0f, 0f)
+        buffer.lineVertex(pose, x0, y1, z1, r, g, b, alpha, -1f, 0f, 0f)
+        buffer.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 0f, -1f)
+        buffer.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 0f, 0f, -1f)
 
-    buf.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 0f, 0f, 1f)
-    buf.lineVertex(pose, x1, y0, z1, r, g, b, alpha, 0f, 0f, 1f)
+        // Verticals
+        buffer.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x1, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x1, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
+        buffer.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
+    }
 
-    buf.lineVertex(pose, x1, y0, z1, r, g, b, alpha, -1f, 0f, 0f)
-    buf.lineVertex(pose, x0, y0, z1, r, g, b, alpha, -1f, 0f, 0f)
-
-    buf.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 0f, -1f)
-    buf.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 0f, 0f, -1f)
-
-    // Top
-    buf.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 1f, 0f, 0f)
-    buf.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 1f, 0f, 0f)
-
-    buf.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 0f, 0f, 1f)
-    buf.lineVertex(pose, x1, y1, z1, r, g, b, alpha, 0f, 0f, 1f)
-
-    buf.lineVertex(pose, x1, y1, z1, r, g, b, alpha, -1f, 0f, 0f)
-    buf.lineVertex(pose, x0, y1, z1, r, g, b, alpha, -1f, 0f, 0f)
-
-    buf.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 0f, -1f)
-    buf.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 0f, 0f, -1f)
-
-    // Verticals
-    buf.lineVertex(pose, x0, y0, z0, r, g, b, alpha, 0f, 1f, 0f)
-    buf.lineVertex(pose, x0, y1, z0, r, g, b, alpha, 0f, 1f, 0f)
-
-    buf.lineVertex(pose, x1, y0, z0, r, g, b, alpha, 0f, 1f, 0f)
-    buf.lineVertex(pose, x1, y1, z0, r, g, b, alpha, 0f, 1f, 0f)
-
-    buf.lineVertex(pose, x1, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
-    buf.lineVertex(pose, x1, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
-
-    buf.lineVertex(pose, x0, y0, z1, r, g, b, alpha, 0f, 1f, 0f)
-    buf.lineVertex(pose, x0, y1, z1, r, g, b, alpha, 0f, 1f, 0f)
-
-    buffer.endBatch(RenderTypes.lines())
+    poseStack.popPose()
 }
 
 /**
@@ -336,43 +334,55 @@ fun LevelRenderContext.drawCircle(
     segments: Int = 72,
     width: Double = 1.0
 ) {
-    val buffer = bufferSource()
+    if (segments < 3 || radius <= 0.0) return
 
-    val cam = mc.gameRenderer.mainCamera.position()
+    val poseStack = poseStack()
+    val collector = submitNodeCollector()
 
-    val pose = PoseStack().last()
-
-    val buf = buffer.getBuffer(RenderTypes.lines())
-
-    val r = color.red
-    val g = color.green
-    val b = color.blue
+    val cam = gameRenderer().mainCamera().position()
 
     val cx = center.x - cam.x
+    val cy = center.y - cam.y
     val cz = center.z - cam.z
-    val y = (center.y - cam.y).toFloat()
-    val step = (Math.PI * 2.0) / segments
 
-    for (i in 0 until segments) {
-        val a0 = step * i
-        val a1 = step * (i + 1)
+    val step = Math.PI * 2.0 / segments
 
-        val x0 = (cx + Math.cos(a0) * radius).toFloat()
-        val z0 = (cz + Math.sin(a0) * radius).toFloat()
-        val x1 = (cx + Math.cos(a1) * radius).toFloat()
-        val z1 = (cz + Math.sin(a1) * radius).toFloat()
+    poseStack.pushPose()
 
-        val nx = x1 - x0
-        val nz = z1 - z0
-        val len = Math.sqrt((nx * nx + nz * nz).toDouble()).toFloat().coerceAtLeast(1e-5f)
+    collector.submitCustomGeometry(
+        poseStack,
+        RenderTypes.lines()
+    ) { pose, buffer ->
 
-        val width = (width*2).toFloat()
+        val r = color.red
+        val g = color.green
+        val b = color.blue
 
-        buf.lineVertex(pose, x0, y, z0, r, g, b, alpha, nx / len, 0f, nz / len, width)
-        buf.lineVertex(pose, x1, y, z1, r, g, b, alpha, nx / len, 0f, nz / len, width)
+        val lineWidth = (width * 2.0).toFloat()
+
+        for (i in 0 until segments) {
+            val a0 = step * i
+            val a1 = step * (i + 1)
+
+            val x0 = (cx + Math.cos(a0) * radius).toFloat()
+            val z0 = (cz + Math.sin(a0) * radius).toFloat()
+
+            val x1 = (cx + Math.cos(a1) * radius).toFloat()
+            val z1 = (cz + Math.sin(a1) * radius).toFloat()
+
+            val nx = x1 - x0
+            val nz = z1 - z0
+
+            val len = Math.sqrt(
+                (nx * nx + nz * nz).toDouble()
+            ).toFloat().coerceAtLeast(1e-5f)
+
+            buffer.lineVertex(pose, x0, cy.toFloat(), z0, r, g, b, alpha, nx / len, 0f, nz / len, lineWidth)
+            buffer.lineVertex(pose, x1, cy.toFloat(), z1, r, g, b, alpha, nx / len, 0f, nz / len, lineWidth)
+        }
     }
 
-    buffer.endBatch(RenderTypes.lines())
+    poseStack.popPose()
 }
 
 /**

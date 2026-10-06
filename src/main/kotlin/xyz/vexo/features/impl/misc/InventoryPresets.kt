@@ -46,10 +46,10 @@ object InventoryPresets : Module(
     private val loadoutsEnabled = BooleanSetting("Loadouts", "Enable the Loadouts keybind sub-feature", true)
 
     private val slotPresetsButton = ButtonSetting("Slot Binding Presets", "Save and switch between named binding sets", "Manage") {
-        UScreen.displayScreen(InventoryPresetGui(mc.screen, Section.SLOT_BINDING))
+        UScreen.displayScreen(InventoryPresetGui(mc.gui.screen(), Section.SLOT_BINDING))
     }
     private val loadoutPresetsButton = ButtonSetting("Loadout Presets", "Save and switch between named Loadout keybind sets", "Manage") {
-        UScreen.displayScreen(InventoryPresetGui(mc.screen, Section.LOADOUTS))
+        UScreen.displayScreen(InventoryPresetGui(mc.gui.screen(), Section.LOADOUTS))
     }
 
     private val bindKey = KeybindSetting("Bind", "Hold over a slot, release over a hotbar slot to pair them")
@@ -214,7 +214,7 @@ object InventoryPresets : Module(
         if (!slotBindingEnabled.getCurrentValue()) return
         if (event.input != ContainerInput.QUICK_MOVE) return
 
-        val menu = (mc.screen as? InventoryScreen)?.menu ?: return
+        val menu = (mc.gui.screen() as? InventoryScreen)?.menu ?: return
 
         binds[event.slotId]?.let { hotbarIndex ->
             event.cancel()
@@ -264,7 +264,7 @@ object InventoryPresets : Module(
     }
 
     private fun handleLoadoutKey(event: KeybindEvent) {
-        val screen = mc.screen as? AbstractContainerScreen<*> ?: return
+        val screen = mc.gui.screen() as? AbstractContainerScreen<*> ?: return
         if (!screen.title.string.removeFormatting().contains("Loadouts")) return
 
         val now = System.currentTimeMillis()
@@ -344,7 +344,7 @@ object InventoryPresets : Module(
         (accessor.vexoTopPos() + slot.y + SLOT_SIZE / 2).toFloat()
 
     private fun hoveredSlot(): Slot? =
-        (mc.screen as? InventoryScreen as? AbstractContainerScreenAccessor)?.vexoHoveredSlot()
+        (mc.gui.screen() as? InventoryScreen as? AbstractContainerScreenAccessor)?.vexoHoveredSlot()
 
     private fun shiftDown(): Boolean =
         InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) ||

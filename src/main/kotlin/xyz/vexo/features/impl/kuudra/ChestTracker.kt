@@ -70,7 +70,7 @@ object ChestTracker : Module(
 
     @EventHandler
     fun onRender(event: HudRenderEvent) {
-        if (mc.screen is MoveActiveHudsGui || !shouldShowHud()) return
+        if (mc.gui.screen() is MoveActiveHudsGui || !shouldShowHud()) return
 
         val t = total.toInt()
         val s = success.toInt()
