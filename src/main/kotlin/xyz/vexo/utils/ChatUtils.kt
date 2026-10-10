@@ -51,9 +51,11 @@ fun modMessage(message: Any?, prefix: String = "[Vexo] ") {
  * @param command The command to run when the message is clicked (including the leading "/").
  * @param prefix The prefix to add to the message.
  */
-fun modClickableMessage(message: String, command: String, prefix: String = "§b[Vexo]§r ") {
+fun modClickableMessage(message: String, command: String, prefix: String = "[Vexo] ") {
     val style = Style.EMPTY.withClickEvent(ClickEvent.RunCommand(command))
-    val text = Component.literal("$prefix$message").setStyle(style)
+    val text = Component.empty()
+        .append(Component.literal(prefix).withStyle(style.withColor(accentColor())))
+        .append(Component.literal(message).withStyle(style))
     mc.execute { mc.gui.hud.chat.addClientSystemMessage(text) }
 }
 
@@ -62,15 +64,17 @@ fun modClickableMessage(message: String, command: String, prefix: String = "§b[
  *
  * @param message The message to send.
  * @param buttons The buttons to display.
- * @param prefix The prefix to add to the message. Defaults to "§b[Vexo]§r ".
+ * @param prefix The prefix to add to the message. Defaults to "[Vexo] ".
  */
 fun modButtonsMessage(
     message: String,
     buttons: List<ChatButton>,
-    prefix: String = "§b[Vexo]§r "
+    prefix: String = "[Vexo] "
 ) {
     val groupId = UUID.randomUUID().toString()
-    val messageText = Component.literal("$prefix$message ")
+    val messageText = Component.empty()
+        .append(Component.literal(prefix).withStyle { it.withColor(accentColor()) })
+        .append(Component.literal("$message "))
 
     buttons.forEachIndexed { i, button ->
         messageText.append(button.toComponent(groupId))
