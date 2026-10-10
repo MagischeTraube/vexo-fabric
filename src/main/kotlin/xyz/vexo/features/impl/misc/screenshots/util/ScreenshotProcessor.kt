@@ -25,9 +25,9 @@ object ScreenshotProcessor {
 
             for (i in 0 until thickness.toInt()) {
                 if (yTop + i < image.height)  for (x in xLeft..xRight) image.setPixelABGR(x, yTop + i, colorInt)
-                if (yBottom - i >= 0)             for (x in xLeft..xRight) image.setPixelABGR(x, yBottom - i, colorInt)
+                if (yBottom - i >= 0)         for (x in xLeft..xRight) image.setPixelABGR(x, yBottom - i, colorInt)
                 if (xLeft + i < image.width)  for (y in yTop..yBottom) image.setPixelABGR(xLeft + i, y, colorInt)
-                if (xRight - i >= 0)              for (y in yTop..yBottom) image.setPixelABGR(xRight - i, y, colorInt)
+                if (xRight - i >= 0)          for (y in yTop..yBottom) image.setPixelABGR(xRight - i, y, colorInt)
             }
         }
     }
