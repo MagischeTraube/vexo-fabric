@@ -7,6 +7,7 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.features.Module
 import xyz.vexo.Vexo.mc
+import xyz.vexo.config.impl.SliderSetting
 
 object CrystalPickupAlert : Module(
     name = "Crystal Pickup Alert",
@@ -23,6 +24,13 @@ object CrystalPickupAlert : Module(
     private val crystalPickupHud by HudSetting(
         name = "Move HUD",
         defaultText = crystalPickupText
+    )
+
+    private val soundVolume by SliderSetting(
+        name = "Sound Volume",
+        default = 1.0,
+        min = 0.0,
+        max = 10.0
     )
 
     init {
@@ -45,10 +53,12 @@ object CrystalPickupAlert : Module(
         if (playerName != ownName) return
 
         crystalPickupHud.showForXServerTicks(20)
-        mc.player?.playSound(
-            SoundEvents.NOTE_BLOCK_PLING.value(),
-            1.0f,
-            2.0f
-        )
+        repeat(soundVolume.toInt()) {
+            mc.player?.playSound(
+                SoundEvents.NOTE_BLOCK_PLING.value(),
+                1.0f,
+                2.0f
+            )
+        }
     }
 }
