@@ -19,9 +19,9 @@ internal fun showKuudraStats(name: String) {
         }
 
         val json = try {
-            ApiUtils.fetchJsonWithRetry("$KUUDRA_API?uuid=$uuid")
+            RequestUtils.fetchJsonWithRetry("$KUUDRA_API?uuid=$uuid")
         } catch (e: Exception) {
-            logError(e, ApiUtils)
+            logError(e, RequestUtils)
             modMessage("§cFailed to fetch Kuudra stats.")
             return@launch
         }

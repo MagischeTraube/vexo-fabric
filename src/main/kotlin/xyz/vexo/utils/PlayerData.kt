@@ -240,7 +240,7 @@ object PlayerData {
         }
 
         return try {
-            val json = ApiUtils.fetchJson("$MOJANG_API/$username")
+            val json = RequestUtils.fetchJson("$MOJANG_API/$username")
             json.get("id")?.asString?.also { uuid ->
                 if (uuidCache.size >= MAX_UUID_CACHE_SIZE) {
                     evictOldestUuids()
@@ -262,7 +262,7 @@ object PlayerData {
      */
     private suspend fun fetchFromApi(uuid: String, ign: String): PlayerDataObject? {
         return try {
-            val json = ApiUtils.fetchJsonWithRetry("$PLAYER_API?uuid=$uuid", maxRetries = 2)
+            val json = RequestUtils.fetchJsonWithRetry("$PLAYER_API?uuid=$uuid", maxRetries = 2)
                 ?: return null
 
             if (json.get("success")?.asBoolean != true) {

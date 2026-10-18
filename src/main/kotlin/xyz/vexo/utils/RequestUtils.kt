@@ -7,14 +7,11 @@ import java.net.URI
 import java.net.HttpURLConnection
 import xyz.vexo.Vexo
 
-/**
- * Utility for making HTTP requests to APIs using Coroutines
- */
-object ApiUtils {
+object RequestUtils {
     private val gson = Gson()
 
     private const val DEFAULT_CONNECT_TIMEOUT = 5000
-    private const val DEFAULT_READ_TIMEOUT = 5000
+    private const val DEFAULT_READ_TIMEOUT = 10000
     private val USER_AGENT by lazy { "Vexo/${Vexo.version}" }
 
     /**

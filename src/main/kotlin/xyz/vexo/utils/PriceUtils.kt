@@ -87,7 +87,7 @@ object PriceUtils : IInitializable {
      * Fetches the prices from the API.
      */
     private suspend fun fetchPrices() {
-        val rootJson = ApiUtils.fetchJsonWithRetry(API_URL, maxRetries = 3)
+        val rootJson = RequestUtils.fetchJsonWithRetry(API_URL, maxRetries = 3)
             ?: return
 
         if (!rootJson["success"].asBoolean) return

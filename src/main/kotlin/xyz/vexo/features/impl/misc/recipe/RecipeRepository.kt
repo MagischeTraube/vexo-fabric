@@ -17,7 +17,7 @@ import net.minecraft.world.item.Items
 import net.minecraft.world.item.component.CustomData
 import net.minecraft.world.item.component.ResolvableProfile
 import xyz.vexo.Vexo
-import xyz.vexo.utils.ApiUtils
+import xyz.vexo.utils.RequestUtils
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.launch
@@ -54,7 +54,7 @@ object RecipeRepository : IInitializable{
 
     private suspend fun syncRecipes() {
         try {
-            val remote = ApiUtils.fetchJsonWithRetry(RECIPES_API)
+            val remote = RequestUtils.fetchJsonWithRetry(RECIPES_API)
 
             if (remote == null) {
                 loadFromDisk()
