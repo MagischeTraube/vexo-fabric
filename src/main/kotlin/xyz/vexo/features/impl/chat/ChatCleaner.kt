@@ -17,7 +17,7 @@ object ChatCleaner : Module(
     )
 
     private val dungeonSpam by BooleanSetting(
-        name = "Dungeon Spam ",
+        name = "Dungeon Spam",
         default = false
     )
 
@@ -37,12 +37,12 @@ object ChatCleaner : Module(
     )
 
     private val ringOfLove by BooleanSetting(
-        name = "Ring of Love messages",
+        name = "Ring of Love Messages",
         default = false
     )
 
     private val farmingFeast by BooleanSetting(
-        name = "Ted Kernel message",
+        name = "Ted Kernel Message",
         default = false
     )
 
@@ -62,7 +62,7 @@ object ChatCleaner : Module(
     )
 
     private val kuudraSpam by BooleanSetting(
-        name = "Kuudra Elle messages",
+        name = "Kuudra Elle Messages",
         default = false
     )
 
