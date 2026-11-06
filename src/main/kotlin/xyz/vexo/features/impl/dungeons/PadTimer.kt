@@ -1,9 +1,9 @@
 package xyz.vexo.features.impl.dungeons
 
-import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.ServerTickEvent
+import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.modMessage
 
@@ -12,12 +12,7 @@ object PadTimer : Module(
     description = "Timer for when to crush Storm",
     toggled = false
 ) {
-    private val crushOrder by SelectorSetting(
-        name = "Crush Order",
-        description = "In what order you crush storm",
-        default = "Green-Yellow",
-        options = listOf("Green-Yellow", "Purple-Yellow")
-    )
+    private var padTimerTriggered = false
     private var serverTicks = 0
 
     private val padTimer = listOf(
@@ -27,11 +22,10 @@ object PadTimer : Module(
 
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
-        if (padTimer.any { it.containsMatchIn(event.message) })
-            when (crushOrder) {
-                "Green-Yellow" -> serverTicks = 181
-                "Purple-Yellow" -> serverTicks = 106
-            }
+        if (!padTimerTriggered && padTimer.any { it.containsMatchIn(event.message) }) {
+            padTimerTriggered = true
+            serverTicks = 55
+        }
     }
 
     private val alerts = mapOf(
@@ -49,5 +43,11 @@ object PadTimer : Module(
             serverTicks--
 
         alerts[serverTicks]?.let { modMessage(it) }
+    }
+
+    @EventHandler
+    fun onWorldJoin(event: WorldJoinEvent) {
+        padTimerTriggered = false
+        serverTicks = 0
     }
 }
