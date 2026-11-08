@@ -24,7 +24,7 @@ object EatenTimer : Module(
     fun onTick(event: ClientTickEvent) {
         val player = mc.player ?: return reset()
 
-        val riding = player.vehicle?.type?.toString()?.contains("armor_stand") == true
+        val riding = player.vehicle?.type?.toString()?.contains("armor_stand")?: false
 
         if (riding && !wasRiding && !timerActive) {
             countdown = 96

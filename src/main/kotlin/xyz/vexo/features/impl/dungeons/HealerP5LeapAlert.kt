@@ -8,7 +8,6 @@ import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
 import xyz.vexo.utils.getAllPlayerCoords
-import xyz.vexo.utils.runAfterServerTicks
 
 object HealerP5LeapAlert : Module(
     name = "Healer P5 Leap Alert",
