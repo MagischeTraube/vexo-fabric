@@ -5,7 +5,7 @@
 ![license](https://img.shields.io/github/license/MagischeTraube/vexo-fabric?color=blue&label=License)
 [![discord](https://img.shields.io/discord/1385629270352859296?color=blue&label=Discord)](https://discord.gg/wfW3aEEpVA)
 
-A Hypixel SkyBlock mod for Minecraft 26.1.2 built on Fabric, focused on Dungeons, Kuudra, and Quality of Life improvements.
+A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, Kuudra, and Quality of Life improvements.
 
 > [!NOTE]
 > If you have a GitHub account, **please consider leaving a ⭐ Star** and forking the repo! It helps us get more feedback and deliver better features.
@@ -100,7 +100,7 @@ A Hypixel SkyBlock mod for Minecraft 26.1.2 built on Fabric, focused on Dungeons
 
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.1.x.
+1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.2.
 2. Download and install the required dependencies (see below).
 3. Download the latest release of Vexo from the [Releases page](https://github.com/MagischeTraube/vexo-fabric/releases).
 4. Place the `.jar` file in your `.minecraft/mods` folder.
