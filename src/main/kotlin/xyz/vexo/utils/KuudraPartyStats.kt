@@ -45,7 +45,7 @@ object KuudraPartyStats {
         if (!pending.add(key)) return
         Vexo.scope.launch {
             try {
-                val uuid = PlayerData.getUuidFromUsername(name) ?: run { put(key, ERROR); return@launch }
+                val uuid = UuidResolver.resolve(name) ?: run { put(key, ERROR); return@launch }
                 val json = RequestUtils.fetchJsonWithRetry("$KUUDRA_API?uuid=$uuid", maxRetries = 2)
                 val data = json?.getAsJsonObject("data")
                 if (json?.get("success")?.asBoolean != true || data == null) {

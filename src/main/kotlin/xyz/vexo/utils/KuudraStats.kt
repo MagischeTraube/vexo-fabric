@@ -13,7 +13,7 @@ private const val KUUDRA_API = "${Vexo.VEXO_API}/kuudra"
 internal fun showKuudraStats(name: String) {
     modMessage("§7Loading Kuudra stats for §f$name§7 ...")
     Vexo.scope.launch {
-        val uuid = PlayerData.getUuidFromUsername(name) ?: run {
+        val uuid = UuidResolver.resolve(name) ?: run {
             modMessage("§cPlayer §f$name §cnot found.")
             return@launch
         }

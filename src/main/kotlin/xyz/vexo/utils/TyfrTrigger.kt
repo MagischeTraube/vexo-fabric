@@ -10,6 +10,7 @@ object TyfrTrigger {
     @EventHandler
     fun onRunEnd(event: RunEndEvent) {
         if (!tyfrToggle) return
+        tyfrToggle = false
         sendCommand("p leave")
         runAfterServerTicks(4) {
             sendCommand("ac tyfr o/")
