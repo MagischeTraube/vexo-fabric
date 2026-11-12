@@ -5,11 +5,13 @@
 	"mixins": [
 		"AbstractContainerScreenAccessor",
 		"AbstractContainerScreenMixin",
+		"ChatComponentAccessor",
 		"ChatComponentMixin",
 		"ChatScreenMixin",
 		"ClientClockManagerMixin",
 		"ConnectionMixin",
 		"FluidStateModelSetMixin",
+		"HudMixin",
 		"KeyboardHandlerMixin",
 		"MainMixin",
 		"ModelManagerAccessor",
