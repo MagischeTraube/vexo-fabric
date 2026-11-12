@@ -70,6 +70,7 @@ object ContinuousChatLog : Module(
                 }
                 entry.addProperty("text", message.content().string)
                 entry.addProperty("source", message.source().name)
+                ChatCopy.timeOf(message)?.let { entry.addProperty("time", it) }
                 array.add(entry)
             }
 
@@ -113,7 +114,9 @@ object ContinuousChatLog : Module(
             ?: return null
         val source = runCatching { GuiMessageSource.valueOf(entry.get("source").asString) }
             .getOrDefault(GuiMessageSource.SYSTEM_SERVER)
-        return message(component, source)
+        return message(component, source).also { restored ->
+            entry.get("time")?.asLong?.let { ChatCopy.recordTime(restored, it) }
+        }
     }
 
     private fun message(component: Component, source: GuiMessageSource) =

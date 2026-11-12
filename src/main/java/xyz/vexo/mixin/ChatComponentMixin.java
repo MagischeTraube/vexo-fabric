@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xyz.vexo.events.impl.ChatMessageEvent;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
+import xyz.vexo.features.impl.chat.ChatCopy;
 import xyz.vexo.features.impl.chat.ChatStacking;
 import xyz.vexo.utils.UtilsKt;
 
@@ -52,5 +54,10 @@ public abstract class ChatComponentMixin {
             }
         });
         if (handled) ci.cancel();
+    }
+
+    @Inject(method = "addMessageToQueue", at = @At("HEAD"))
+    private void vexo$recordTimestamp(GuiMessage message, CallbackInfo ci) {
+        ChatCopy.recordTime(message, System.currentTimeMillis());
     }
 }

@@ -88,7 +88,7 @@ object Vexo : ClientModInitializer {
 			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions, SlayerHelper, TimeControl,
 
 			// chat
-			ChatCleaner, ChatStacking, CompactChat, ContinuousChatLog
+			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog
 		).forEach { ModuleManager.register(it) }
 
 		GuiPrefs.load()

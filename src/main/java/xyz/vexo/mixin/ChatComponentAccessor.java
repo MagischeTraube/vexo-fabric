@@ -13,6 +13,21 @@ public interface ChatComponentAccessor {
     @Accessor("allMessages")
     List<GuiMessage> vexoAllMessages();
 
+    @Accessor("trimmedMessages")
+    List<GuiMessage.Line> vexoTrimmedMessages();
+
+    @Accessor("chatScrollbarPos")
+    int vexoScrollPos();
+
     @Invoker("refreshTrimmedMessages")
     void vexoRefreshTrimmedMessages();
+
+    @Invoker("getScale")
+    double vexoGetScale();
+
+    @Invoker("getWidth")
+    int vexoGetWidth();
+
+    @Invoker("getLineHeight")
+    int vexoGetLineHeight();
 }

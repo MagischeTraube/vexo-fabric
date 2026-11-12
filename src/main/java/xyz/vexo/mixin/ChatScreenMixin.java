@@ -1,6 +1,10 @@
 package xyz.vexo.mixin;
 
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import xyz.vexo.features.impl.chat.ChatCopy;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Style;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +24,30 @@ public class ChatScreenMixin {
         if (event.isCancelled()) {
             ci.cancel();
         }
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
+    private void vexo$onMouseClicked(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
+        if (ChatCopy.onMouseClicked(event.x(), event.y(), event.button())) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+    private void vexo$onKeyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+        if (ChatCopy.onKeyPressed(event.key())) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    private void vexo$renderCopyMenu(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        ChatCopy.render(graphics, mouseX, mouseY);
+    }
+
+    @Inject(method = "removed", at = @At("HEAD"))
+    private void vexo$onRemoved(CallbackInfo ci) {
+        ChatCopy.close();
     }
 
     @Inject(method = "handleComponentClicked", at = @At("HEAD"), cancellable = true)
