@@ -4,8 +4,8 @@ import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.config.impl.SliderSetting
 import xyz.vexo.features.Module
 
-object TimeControl : Module(
-    name = "Time Control",
+object TimeChanger : Module(
+    name = "Time Changer",
     description = "Change the ingame time",
     toggled = false
 ) {

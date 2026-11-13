@@ -85,7 +85,8 @@ object Vexo : ClientModInitializer {
 			SoloDetector,
 
 			// misc
-			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions, SlayerHelper, TimeControl,
+			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions,
+			SlayerHelper, TimeChanger,
 
 			// chat
 			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog
