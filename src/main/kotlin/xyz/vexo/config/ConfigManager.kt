@@ -51,8 +51,6 @@ object ConfigManager {
 
                 val settingsJson = JsonObject()
                 getSettingsFromModule(module).forEach { setting ->
-                    // Isolate each setting so a single bad toJson() can't abort the whole save
-                    // (which would otherwise leave the file un-updated).
                     runCatching { settingsJson.add(setting.name, setting.toJson()) }
                         .onFailure { logError(Exception("Failed to serialize setting '${module.name}/${setting.name}'", it), this) }
                 }
@@ -94,7 +92,6 @@ object ConfigManager {
 
                     val settingsJson = moduleJson.getAsJsonObject("settings") ?: return@runCatching
                     getSettingsFromModule(module).forEach { setting ->
-                        // Isolate each setting too, for the same reason within a module.
                         runCatching {
                             settingsJson.get(setting.name)?.let { json -> setting.fromJson(json) }
                         }.onFailure { logError(Exception("Failed to load setting '${module.name}/${setting.name}'", it), this) }
