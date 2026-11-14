@@ -160,12 +160,16 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @param rules pairs of lore keyword and the RGBA color to assign when matched
      * @return a map of slots to their highlight colors, empty when no slot matches any rule
      */
-    fun croesusHighlights(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Map<Slot, Int> {
+    fun croesusHighlights(
+        screen: AbstractContainerScreen<*>,
+        rules: List<Pair<String, Int>>,
+        nameFilter: String? = null
+    ): Map<Slot, Int> {
         if (!screen.menu.carried.isEmpty) return croesusCacheResult
-        val hash = croesusHash(screen, rules)
+        val hash = croesusHash(screen, rules, nameFilter)
         if (hash != croesusCacheHash) {
             croesusCacheHash = hash
-            croesusCacheResult = scanCroesus(screen, rules)
+            croesusCacheResult = scanCroesus(screen, rules, nameFilter)
         }
         return croesusCacheResult
     }
@@ -177,10 +181,17 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @param rules pairs of lore keyword and the RGBA color to assign when matched
      * @return a map of matched slots to their highlight colors
      */
-    private fun scanCroesus(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Map<Slot, Int> {
+    private fun scanCroesus(
+        screen: AbstractContainerScreen<*>,
+        rules: List<Pair<String, Int>>,
+        nameFilter: String?
+    ): Map<Slot, Int> {
         val result = mutableMapOf<Slot, Int>()
         for (slot in screen.rewardSlots()) {
             if (!slot.hasItem()) continue
+            if (nameFilter != null &&
+                nameFilter !in slot.item.hoverName.string.removeFormatting()
+            ) continue
             val lore = slot.item.get(DataComponents.LORE)?.styledLines()
                 ?.map { it.string.removeFormatting() } ?: continue
             for ((keyword, color) in rules) {
@@ -424,14 +435,18 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @param rules the highlight keyword rules included in the hash
      * @return a hash identifying this content-and-rules snapshot
      */
-    private fun croesusHash(screen: AbstractContainerScreen<*>, rules: List<Pair<String, Int>>): Int {
+    private fun croesusHash(
+        screen: AbstractContainerScreen<*>,
+        rules: List<Pair<String, Int>>,
+        nameFilter: String?
+    ): Int {
         val slots = screen.rewardSlots().joinToString("|") {
             if (!it.hasItem()) return@joinToString "e"
             val stack = it.item
             val loreHash = stack.get(DataComponents.LORE)?.styledLines()?.hashCode() ?: 0
             "${stack.hoverName.string}:$loreHash"
         }
-        return "$slots|${rules.hashCode()}".hashCode()
+        return "$slots|${rules.hashCode()}|$nameFilter".hashCode()
     }
 
     /**

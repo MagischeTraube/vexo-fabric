@@ -12,7 +12,6 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
-import xyz.vexo.utils.LabelPosition
 import xyz.vexo.utils.PriceUtils
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
 import xyz.vexo.utils.chestprofit.Entry
@@ -145,7 +144,8 @@ object DungeonProfitTracker : Module(
                         "No chests opened yet!" to unopenedColor.getRGBA(),
                         "Chests expire in" to openableColor.getRGBA(),
                         "No more chests to open" to doneColor.getRGBA(),
-                    )
+                    ),
+                    nameFilter = "The Catacombs"
                 )
             }
             return

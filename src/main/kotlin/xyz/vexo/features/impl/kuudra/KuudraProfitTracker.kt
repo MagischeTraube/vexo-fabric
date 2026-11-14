@@ -14,7 +14,6 @@ import xyz.vexo.events.impl.PriceDataUpdateEvent
 import xyz.vexo.events.impl.SlotGuiRenderEvent
 import xyz.vexo.features.Module
 import xyz.vexo.mixin.AbstractContainerScreenAccessor
-import xyz.vexo.utils.LabelPosition
 import xyz.vexo.utils.PriceUtils
 import xyz.vexo.utils.chestprofit.Breakdown
 import xyz.vexo.utils.chestprofit.ChestProfitEngine
@@ -295,7 +294,8 @@ object KuudraProfitTracker : Module(
                     listOf(
                         "No more chests to open" to doneColor.getRGBA(),
                         "Chests expire in" to openableColor.getRGBA(),
-                    )
+                    ),
+                    nameFilter = "Kuudra's Hollow"
                 )
             }
             return
