@@ -148,8 +148,10 @@ object DungeonProfitTracker : Module(
         )
     }
 
-    override fun lootValueOrNull(name: String, qty: Long): Long? {
-        val id = ChestProfitEngine.lootIdFor(name) ?: return null
+    override fun lootValueOrNull(name: String, qty: Long): Long? = lootValueOrNull(name, qty, null)
+
+    override fun lootValueOrNull(name: String, qty: Long, petTier: Int?): Long? {
+        val id = ChestProfitEngine.lootIdFor(name, petTier) ?: return null
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
         if (unit < 0) return null
         return qty * unit.toLong()

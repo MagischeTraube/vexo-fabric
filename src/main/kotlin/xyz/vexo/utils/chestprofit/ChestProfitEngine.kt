@@ -49,6 +49,12 @@ class ChestProfitEngine(private val valuer: Valuer) {
         /** Total coin value of [qty] of the loot named [name], or null when it has no usable price. */
         fun lootValueOrNull(name: String, qty: Long): Long?
 
+        /**
+         * Like [lootValueOrNull], but with the pet tier (0=Common ... 5=Mythic) when the line is a pet
+         * (`[Lvl 1] Name`). [petTier] is null for non-pets or when the rarity colour is unknown.
+         */
+        fun lootValueOrNull(name: String, qty: Long, petTier: Int?): Long? = lootValueOrNull(name, qty)
+
         /** Suffix appended to a loot row's label (e.g. a salvage note); empty for none. */
         fun lootTag(name: String): String = ""
 
@@ -86,11 +92,53 @@ class ChestProfitEngine(private val valuer: Valuer) {
         private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
         private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
 
+        /** Matches a pet line such as `[Lvl 1] Spirit`. */
+        private val PET_REGEX = Regex("""^\[Lvl \d+]\s+(.+)$""")
+
+        /** Rarity colour (RGB) to pet tier: COMMON=0 ... MYTHIC=5. */
+        private val PET_TIER_BY_COLOR = mapOf(
+            0xFFFFFF to 0, // COMMON
+            0x55FF55 to 1, // UNCOMMON
+            0x5555FF to 2, // RARE
+            0xAA00AA to 3, // EPIC
+            0xFFAA00 to 4, // LEGENDARY
+            0xFF55FF to 5, // MYTHIC
+        )
+
+        /** Last explicitly set colour in the component tree (RGB), searched from the back. */
+        private fun lastColor(c: Component): Int? =
+            c.siblings.asReversed().firstNotNullOfOrNull { lastColor(it) } ?: c.style.color?.value
+
         /**
-         * Derives the API item id from a loot display name (books, shards, essences, everything else
-         * by upper-casing and replacing non-alphanumerics with underscores).
+         * Reads a pet's tier from the rarity colour of a lore line. Must be given the RAW line
+         * (`ItemLore.lines()`), not the styled one, because the styled variant adds a dark-purple
+         * parent style that would otherwise read as Epic. The last colour on the line is used,
+         * which is the pet name.
+         *
+         * @param c the raw (unstripped) lore line
+         * @return 0 (Common) to 5 (Mythic), or null if the last colour is not a known pet rarity
          */
-        fun lootIdFor(name: String): String? {
+        fun petTierOf(c: Component): Int? =
+            lastColor(c)?.let { PET_TIER_BY_COLOR[it and 0xFFFFFF] }
+
+        /**
+         * Derives the API item id from a loot display name (pets, books, shards, essences, everything
+         * else by upper-casing and replacing non-alphanumerics with underscores).
+         *
+         * Pets (`[Lvl 1] Spirit`) become `SPIRIT;tier`; without a known [petTier] the
+         * result is null so the row is flagged as an API error instead of getting a wrong price.
+         */
+        fun lootIdFor(name: String, petTier: Int? = null): String? {
+            PET_REGEX.matchEntire(name)?.let { m ->
+                val tier = petTier ?: return null
+                val base = m.groupValues[1]
+                    .replace("'", "")
+                    .trim()
+                    .uppercase()
+                    .replace(Regex("[^A-Z0-9]+"), "_")
+                    .trim('_')
+                return "$base;$tier"
+            }
             ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
                 return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
             }
@@ -261,16 +309,17 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * @return the priced breakdown, or null if the item has no `Contents` lore to value
      */
     fun chestBreakdown(stack: ItemStack): Breakdown? {
-        val lore = stack.get(DataComponents.LORE)?.styledLines()
-            ?.map { it.string.removeFormatting().trim() }
-            ?: return null
+        val loreData = stack.get(DataComponents.LORE) ?: return null
+        val comps = loreData.lines()
+        val lore = loreData.styledLines().map { it.string.removeFormatting().trim() }
 
         if (lore.contains("Already opened!")) return null
 
         val contentsIdx = lore.indexOf("Contents")
         if (contentsIdx == -1) return null
 
-        val lootLines = lore.drop(contentsIdx + 1).takeWhile { it.isNotBlank() && it != "Cost" }
+        val lootStart = contentsIdx + 1
+        val lootLines = lore.drop(lootStart).takeWhile { it.isNotBlank() && it != "Cost" }
         if (lootLines.isEmpty()) return null
 
         val costIdx = lore.indexOf("Cost")
@@ -279,7 +328,7 @@ class ChestProfitEngine(private val valuer: Valuer) {
 
         valuer.overrideBreakdown(costLines, costs)?.let { return it }
 
-        val loot = lootLines.map { lootEntry(it) }
+        val loot = lootLines.mapIndexed { i, line -> lootEntry(line, petTierOf(comps[lootStart + i])) }
         val total = loot.sumOf { it.value } - costs.sumOf { it.value }
         return Breakdown(loot, costs, total)
     }
@@ -289,13 +338,14 @@ class ChestProfitEngine(private val valuer: Valuer) {
      * applies.
      *
      * @param line a single Contents lore line, e.g. `Aurora Helmet` or `Crimson Essence x2,500`
+     * @param petTier pet tier derived from the line's rarity colour, or null
      * @return the priced entry, flagged as an error if the item has no API price
      */
-    private fun lootEntry(line: String): Entry {
+    private fun lootEntry(line: String, petTier: Int?): Entry {
         val qtyMatch = QTY_REGEX.find(line)
         val qty = qtyMatch?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
         val name = (if (qtyMatch != null) line.substring(0, qtyMatch.range.first) else line).trim()
-        val value = valuer.lootValueOrNull(name, qty) ?: return Entry(line, 0L, error = true)
+        val value = valuer.lootValueOrNull(name, qty, petTier) ?: return Entry(line, 0L, error = true)
         return Entry("$line${valuer.lootTag(name)}", value)
     }
 
