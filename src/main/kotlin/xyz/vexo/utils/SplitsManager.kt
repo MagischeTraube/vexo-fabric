@@ -7,7 +7,8 @@ import xyz.vexo.events.impl.ChatMessagePacketEvent
 import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
-import xyz.vexo.features.impl.misc.Splits
+import xyz.vexo.features.impl.dungeons.DungeonSplits
+import xyz.vexo.features.impl.kuudra.KuudraSplits
 
 /**
  * @param requiresPrevious Only match once the previous split has started, for regexes shared by several
@@ -146,7 +147,7 @@ object SplitsManager {
      * @param floor The floor as shown on the scoreboard, e.g. "E", "F7" or "M7".
      */
     private fun buildDungeonSplits(floor: String): SplitsGroup =
-        SplitsGroup(dungeonSplitList(floor), Splits.dungeonPBs[floor], SplitArea.DUNGEON)
+        SplitsGroup(dungeonSplitList(floor), DungeonSplits.dungeonPBs[floor], SplitArea.DUNGEON)
 
     /** Fresh split list for a floor ("E", "F1" … "M7"), the last entry being the total. */
     private fun dungeonSplitList(floor: String): List<Split> {
@@ -166,8 +167,11 @@ object SplitsManager {
 
     private fun buildKuudraSplits(tier: Int): SplitsGroup {
         val group = if (tier == 5) kuudraT5SplitsGroup else kuudraSplitsGroup
-        return SplitsGroup(group.map { it.copy() }, Splits.kuudraPBs[tier], SplitArea.KUUDRA)
+        return SplitsGroup(group.map { it.copy() }, KuudraSplits.kuudraPBs[tier], SplitArea.KUUDRA)
     }
+
+    /** Split names (the PB keys) of a Kuudra tier, the last one being the total. */
+    fun kuudraSplitNames(tier: Int): List<String> = (if (tier == 5) kuudraT5SplitsGroup else kuudraSplitsGroup).map { it.name }
 
     private fun onSplitMessage(message: String) {
         if (currentSplits.splits.isEmpty()) startRunLate(message)
@@ -187,31 +191,32 @@ object SplitsManager {
         val previous = splits[index - 1]
         val segmentTime = (split.time - previous.time) / 1000f
 
-        if (!displayAllowed()) return
         if (index == splits.lastIndex) finishRun(index, segmentTime)
-        else currentSplits.personalBest?.time(previous.name, segmentTime, "§6${previous.name} §7took §6", Splits.enabled)
+        else currentSplits.personalBest?.time(previous.name, segmentTime, "§6${previous.name} §7took §6", messagesEnabled())
     }
 
     private fun finishRun(totalIndex: Int, lastSegmentTime: Float) {
         val rows = currentRows()
         val splits = currentSplits.splits
         val personalBest = currentSplits.personalBest
+        val sendMessages = messagesEnabled()
 
         runAfterServerTicks(10) {
             if (rows.isEmpty()) return@runAfterServerTicks
-            personalBest?.time(splits[totalIndex - 1].name, lastSegmentTime, "§6${splits[totalIndex - 1].name} §7took §6", Splits.enabled)
-            personalBest?.time(splits[totalIndex].name, rows.last().time / 1000f, "§6Total time §7took §6", Splits.enabled)
-            if (!Splits.enabled) return@runAfterServerTicks
+            personalBest?.time(splits[totalIndex - 1].name, lastSegmentTime, "§6${splits[totalIndex - 1].name} §7took §6", sendMessages)
+            personalBest?.time(splits[totalIndex].name, rows.last().time / 1000f, "§6Total time §7took §6", sendMessages)
+            if (!sendMessages) return@runAfterServerTicks
             rows.forEachIndexed { i, row ->
                 modMessage("§6${if (i == rows.lastIndex) "Total" else row.name} §7took §6${formatTime(row.time)}§7.")
             }
         }
     }
 
-    private fun displayAllowed(): Boolean = when (currentSplits.area) {
-        SplitArea.DUNGEON -> Splits.splitLocation != "Kuudra Only"
-        SplitArea.KUUDRA -> Splits.splitLocation != "Dungeons Only"
-        null -> true
+    /** Whether the splits module of the tracked run is on; PBs are still saved silently when it is off. */
+    private fun messagesEnabled(): Boolean = when (currentSplits.area) {
+        SplitArea.DUNGEON -> DungeonSplits.enabled
+        SplitArea.KUUDRA -> KuudraSplits.enabled
+        null -> false
     }
 
     /** Personal bests of the current run's floor / tier, or null if no run is tracked. */
@@ -222,7 +227,7 @@ object SplitsManager {
 
     fun currentRows(): List<SplitRow> {
         val splits = currentSplits.splits
-        if (splits.isEmpty() || !displayAllowed()) return emptyList()
+        if (splits.isEmpty()) return emptyList()
         if (splits[0].time == 0L) return splits.map { SplitRow(it.name, 0L, 0L, isCurrent = false) }
 
         val last = splits.last()

@@ -1,46 +1,39 @@
-package xyz.vexo.features.impl.misc
+package xyz.vexo.features
 
 import kotlin.math.abs
 import xyz.vexo.Vexo.mc
-import xyz.vexo.config.Setting
 import java.awt.Color
 import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.ColorSetting
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.config.impl.SelectorSetting
-import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.HudRenderEvent
-import xyz.vexo.features.Module
 import xyz.vexo.hud.MoveActiveHudsGui
 import xyz.vexo.hud.PreviewSegment
 import xyz.vexo.utils.PersonalBest
-import xyz.vexo.utils.PersonalBestTimeSetting
 import xyz.vexo.utils.SplitArea
 import xyz.vexo.utils.SplitRow
 import xyz.vexo.utils.SplitsManager
-import xyz.vexo.utils.floor7SplitGroup
 import xyz.vexo.utils.formatTime
 import xyz.vexo.utils.removeFormatting
 import xyz.vexo.utils.renderString
-import xyz.vexo.utils.terminalSectionNames
 
 /**
- * Visual split timers for Dungeons and Kuudra with configurable columns and editable personal bests.
+ * Shared HUD of the split timers with configurable columns and color schemes.
+ * Subclasses must forward their [HudRenderEvent] handler to [render], since the event bus only sees declared methods.
+ *
+ * @param area Which runs this module shows.
+ * @param hasTargets Whether the "Dynamic (Target)" color scheme is offered.
  */
-object Splits : Module(
-    name = "Splits",
-    description = "Provides visual timers for Kuudra and Dungeons",
-    toggled = false
-) {
-    private const val LINE_HEIGHT = 9
-    /** Extra space for the line between clear and boss phase; the line sits in the middle of the gap. */
-    private const val SEPARATOR_GAP = 6
-    private const val COLUMN_GAP = 6
-    private const val SEPARATOR_COLOR = 0x40FFFFFF
-    private const val TERMINALS_LABEL = "§6Terminals"
+abstract class SplitsModule(
+    name: String,
+    description: String,
+    private val area: SplitArea,
+    hasTargets: Boolean,
+) : Module(name, description, toggled = false, legacyNames = listOf("Splits")) {
 
     /** What a HUD column shows. [sample] is the widest typical text, used as minimum width so columns don't jitter. */
-    private enum class Column(val label: String, val sample: String) {
+    protected enum class Column(val label: String, val sample: String) {
         NONE("None", ""),
         TIME("Time", "59m 59.99s"),
         TICK_TIME("Tick Time", "99m 59.99s"),
@@ -52,8 +45,6 @@ object Splits : Module(
             fun of(label: String) = entries.firstOrNull { it.label == label } ?: NONE
         }
     }
-
-    private val columnOptions = Column.entries.map { it.label }
 
     private enum class ColorScheme(val label: String) {
         ODIN("Odin"),
@@ -71,7 +62,7 @@ object Splits : Module(
      * Colors as 0xRRGGBB. [label] / [summary] null keeps the built-in § colors of the names.
      * [muted] is used for empty cells ("-") and 0s lag.
      */
-    private data class Palette(
+    protected data class Palette(
         val label: Int?,
         val time: Int,
         val current: Int,
@@ -83,66 +74,68 @@ object Splits : Module(
         val muted: Int,
     )
 
-    private val ODIN = Palette(
-        label = null, time = 0xFFFFFF, current = 0xFFFF55, tick = 0xAAAAAA,
-        ahead = 0x55FF55, behind = 0xFF5555, pb = 0xFFAA00, summary = null, muted = 0x555555
-    )
+    /** One piece of text drawn in a single color (0xRRGGBB); § codes inside [text] still apply. */
+    protected class Cell(val text: String, val color: Int)
 
-    /** Built around the Vexo indigo accent with soft pastel status colors. */
-    private val VEXO = Palette(
-        label = 0xC4B5FD, time = 0xF1F5F9, current = 0x7DD3FC, tick = 0x94A3B8,
-        ahead = 0x6EE7B7, behind = 0xFDA4AF, pb = 0xFCD34D, summary = 0x818CF8, muted = 0x64748B
-    )
+    /** A rendered HUD line: label on the left, one cell per active column. */
+    protected class Line(val label: Cell, val cells: List<Cell>, val separatorBefore: Boolean = false)
 
-    // Vanilla chat colors (§a, §e, §c, §6) for the dynamic schemes.
-    private const val DYN_GREEN = 0x55FF55
-    private const val DYN_YELLOW = 0xFFFF55
-    private const val DYN_RED = 0xFF5555
-    private const val DYN_GOLD = 0xFFAA00
-    /** Share of the reference time at which a running split turns from green to yellow. */
-    private const val DYN_WARN_AT = 0.75f
-    /** How far over the reference (as share) a finished split must be to turn red instead of yellow. */
-    private const val DYN_RED_AT = 0.15f
+    /** A split segment with its PB and target time in ms (null if not set). */
+    protected data class Segment(val row: SplitRow, val pb: Long?, val target: Long?)
 
-    val splitLocation by SelectorSetting(
-        name = "Location",
-        description = "Which areas to show splits in",
-        default = "Both",
-        options = listOf("Both", "Dungeons Only", "Kuudra Only")
-    )
+    /** A segment as shown on the HUD; a separator is drawn wherever [phase] changes between visible rows. */
+    protected class DisplayRow(val segment: Segment, val phase: Int = 0)
+
+    private companion object {
+        const val LINE_HEIGHT = 9
+        /** Extra space for a separator line; the line sits in the middle of the gap. */
+        const val SEPARATOR_GAP = 6
+        const val COLUMN_GAP = 6
+        const val SEPARATOR_COLOR = 0x40FFFFFF
+
+        val ODIN = Palette(
+            label = null, time = 0xFFFFFF, current = 0xFFFF55, tick = 0xAAAAAA,
+            ahead = 0x55FF55, behind = 0xFF5555, pb = 0xFFAA00, summary = null, muted = 0x555555
+        )
+
+        /** Built around the Vexo indigo accent with soft pastel status colors. */
+        val VEXO = Palette(
+            label = 0xC4B5FD, time = 0xF1F5F9, current = 0x7DD3FC, tick = 0x94A3B8,
+            ahead = 0x6EE7B7, behind = 0xFDA4AF, pb = 0xFCD34D, summary = 0x818CF8, muted = 0x64748B
+        )
+
+        // Vanilla chat colors (§a, §e, §c, §6) for the dynamic schemes.
+        const val DYN_GREEN = 0x55FF55
+        const val DYN_YELLOW = 0xFFFF55
+        const val DYN_RED = 0xFF5555
+        const val DYN_GOLD = 0xFFAA00
+        /** Share of the reference time at which a running split turns from green to yellow. */
+        const val DYN_WARN_AT = 0.75f
+        /** How far over the reference (as share) a finished split must be to turn red instead of yellow. */
+        const val DYN_RED_AT = 0.15f
+
+        val EMPTY_CELL = Cell("", 0xFFFFFF)
+        val columnOptions = Column.entries.map { it.label }
+        const val COLUMN_DESCRIPTION =
+            "Time: real time. Tick Time: server ticks, ignores lag. Lag Lost: real time minus tick time. PB Diff: how far above / below your PB"
+    }
 
     private val splitsHud by HudSetting(
         name = "Move Splits HUD",
         description = "Shows timers for each split",
-        defaultText = floor7SplitGroup.joinToString("\n") { it.name }
+        defaultText = name
     )
 
-    private val column1 by SelectorSetting(
-        name = "Column 1",
-        description = "Time: real time. Tick Time: server ticks, ignores lag. Lag Lost: real time minus tick time. PB Diff: how far above / below your PB",
-        default = Column.TIME.label,
-        options = columnOptions
-    )
-
-    private val column2 by SelectorSetting(
-        name = "Column 2",
-        description = "Time: real time. Tick Time: server ticks, ignores lag. Lag Lost: real time minus tick time. PB Diff: how far above / below your PB",
-        default = Column.TICK_TIME.label,
-        options = columnOptions
-    )
-
-    private val column3 by SelectorSetting(
-        name = "Column 3",
-        description = "Time: real time. Tick Time: server ticks, ignores lag. Lag Lost: real time minus tick time. PB Diff: how far above / below your PB",
-        default = Column.PB_DIFF.label,
-        options = columnOptions
-    )
+    private val column1 by SelectorSetting("Column 1", COLUMN_DESCRIPTION, Column.TIME.label, columnOptions)
+    private val column2 by SelectorSetting("Column 2", COLUMN_DESCRIPTION, Column.TICK_TIME.label, columnOptions)
+    private val column3 by SelectorSetting("Column 3", COLUMN_DESCRIPTION, Column.PB_DIFF.label, columnOptions)
 
     private val colorScheme by SelectorSetting(
         name = "Color Scheme",
-        description = "Vexo: default colors. Odin: classic colors. Dynamic: split names and times turn green, yellow or red depending on your PB / target. Custom: pick every color yourself",
+        description = "Vexo: default colors. Odin: classic colors. Dynamic: split names and times turn green, yellow or red depending on your PB" +
+            (if (hasTargets) " / target" else "") + ". Custom: pick every color yourself",
         default = ColorScheme.VEXO.label,
-        options = ColorScheme.entries.map { it.label }
+        options = ColorScheme.entries.filter { hasTargets || it != ColorScheme.DYNAMIC_TARGET }.map { it.label }
     )
 
     private fun customColor(name: String, description: String, default: Int) = ColorSetting(
@@ -160,24 +153,6 @@ object Splits : Module(
     private val customBehind = customColor("Behind", "Slower than your PB and lag lost", VEXO.behind)
     private val customPb = customColor("PB", "PB column", VEXO.pb)
     private val customSummary = customColor("Summary", "Run Pace, Total and the other summary rows", VEXO.summary!!)
-
-    private val separatorLines by BooleanSetting(
-        name = "Separator Lines",
-        description = "Draws a line between the clear phase and the boss phase",
-        default = false
-    )
-
-    private val terminalSections by BooleanSetting(
-        name = "Terminal Sections",
-        description = "Shows S1 - S4 indented below the Terminals row",
-        default = true
-    )
-
-    private val bossEntrySplit by BooleanSetting(
-        name = "Boss Entry Split",
-        description = "Adds a split for boss entry",
-        default = true
-    )
 
     private val show0Time by BooleanSetting(
         name = "Show 0 splits",
@@ -203,12 +178,6 @@ object Splits : Module(
         default = false
     )
 
-    private val showScore300 by BooleanSetting(
-        name = "300 Score Time",
-        description = "Shows when the run reached 300 score (Floor 4 - 7)",
-        default = false
-    )
-
     private val showCurrentSplit by BooleanSetting(
         name = "Current Split HUD",
         description = "Shows only the current split and its tick time",
@@ -220,107 +189,18 @@ object Splits : Module(
         defaultText = "§70.0s"
     ).dependsOn { showCurrentSplit }
 
-    private val kuudraT1PBs = PersonalBest("KuudraT1")
-    private val kuudraT2PBs = PersonalBest("KuudraT2")
-    private val kuudraT3PBs = PersonalBest("KuudraT3")
-    private val kuudraT4PBs = PersonalBest("KuudraT4")
-    private val kuudraT5PBs = PersonalBest("KuudraT5")
+    /** Split names shown on the move-HUD screen, without the summary rows. */
+    protected abstract fun previewNames(): List<String>
 
-    private val dungeonEPBs = PersonalBest("DungeonE")
-    private val dungeonF1PBs = PersonalBest("DungeonF1")
-    private val dungeonF2PBs = PersonalBest("DungeonF2")
-    private val dungeonF3PBs = PersonalBest("DungeonF3")
-    private val dungeonF4PBs = PersonalBest("DungeonF4")
-    private val dungeonF5PBs = PersonalBest("DungeonF5")
-    private val dungeonF6PBs = PersonalBest("DungeonF6")
-    private val dungeonF7PBs = PersonalBest("DungeonF7")
+    /** Target times of the tracked run, used by the "Dynamic (Target)" scheme. */
+    protected open fun currentTargets(): PersonalBest? = null
 
-    private val dungeonM1PBs = PersonalBest("DungeonM1")
-    private val dungeonM2PBs = PersonalBest("DungeonM2")
-    private val dungeonM3PBs = PersonalBest("DungeonM3")
-    private val dungeonM4PBs = PersonalBest("DungeonM4")
-    private val dungeonM5PBs = PersonalBest("DungeonM5")
-    private val dungeonM6PBs = PersonalBest("DungeonM6")
-    private val dungeonM7PBs = PersonalBest("DungeonM7")
+    /** Turns the run's segments (without the total) into the rows shown on the HUD. */
+    protected open fun displayRows(segments: List<Segment>): List<DisplayRow> = segments.map(::DisplayRow)
 
-    /** Kuudra personal bests keyed by tier (1-5). */
-    val kuudraPBs: Map<Int, PersonalBest> = mapOf(
-        1 to kuudraT1PBs, 2 to kuudraT2PBs, 3 to kuudraT3PBs, 4 to kuudraT4PBs, 5 to kuudraT5PBs
-    )
-
-    /** Dungeon personal bests keyed by floor as shown on the scoreboard ("E", "F1" … "M7"). */
-    val dungeonPBs: Map<String, PersonalBest> = mapOf(
-        "E" to dungeonEPBs,
-        "F1" to dungeonF1PBs, "F2" to dungeonF2PBs, "F3" to dungeonF3PBs, "F4" to dungeonF4PBs,
-        "F5" to dungeonF5PBs, "F6" to dungeonF6PBs, "F7" to dungeonF7PBs,
-        "M1" to dungeonM1PBs, "M2" to dungeonM2PBs, "M3" to dungeonM3PBs, "M4" to dungeonM4PBs,
-        "M5" to dungeonM5PBs, "M6" to dungeonM6PBs, "M7" to dungeonM7PBs
-    )
-
-    /** Kept as a list so [Module.initSettings] registers (and saves) every store. */
-    private val targetStores: List<PersonalBest> = dungeonPBs.keys.map { PersonalBest("Target$it") }
-
-    /** Target times for the "Dynamic (Target)" scheme, keyed like [dungeonPBs]. */
-    val dungeonTargets: Map<String, PersonalBest> = dungeonPBs.keys.zip(targetStores).toMap()
-
-    // Time editor, kept last so it sits at the bottom of the settings.
-
-    private val editTimes by SelectorSetting(
-        name = "Edit Times",
-        description = "Whether the fields below edit your personal bests or your target times",
-        default = "Personal Bests",
-        options = listOf("Personal Bests", "Targets")
-    )
-
-    private val pbMode by SelectorSetting(
-        name = "PB Mode",
-        description = "Which mode's times to show below",
-        default = "Normal",
-        options = listOf("Normal", "Master Mode")
-    )
-
-    private val pbFloor by SelectorSetting(
-        name = "PB Floor",
-        description = "Which floor's times to show below",
-        default = "Floor 7",
-        options = (1..7).map { "Floor $it" }
-    )
-
-    private fun selectedPbFloor(): String = (if (pbMode == "Master Mode") "M" else "F") + pbFloor.removePrefix("Floor ")
-
-    /** One text field per split of every floor; only the selected floor's fields are shown. */
-    private fun timeEditors(stores: Map<String, PersonalBest>, mode: String, description: String): List<Setting<*>> =
-        stores.filterKeys { it != "E" }.flatMap { (floor, store) ->
-            SplitsManager.dungeonSplitNames(floor).map { key ->
-                PersonalBestTimeSetting(
-                    name = key.removeFormatting(),
-                    description = description,
-                    pb = store,
-                    key = key
-                ).dependsOn { editTimes == mode && selectedPbFloor() == floor }
-            }
-        }
-
-    private val pbEditors = timeEditors(
-        dungeonPBs, "Personal Bests",
-        "Your personal best for this split, e.g. 1m 23.45s. Leave empty to clear it"
-    )
-
-    private val targetEditors = timeEditors(
-        dungeonTargets, "Targets",
-        "Your target time for this split, used by the Dynamic (Target) color scheme. Leave empty to clear it"
-    )
-
-    /** One piece of text drawn in a single color (0xRRGGBB); § codes inside [text] still apply. */
-    private class Cell(val text: String, val color: Int)
-
-    private val EMPTY_CELL = Cell("", 0xFFFFFF)
-
-    /** A rendered HUD line: label on the left, one cell per active column. */
-    private class Line(val label: Cell, val cells: List<Cell>, val separatorBefore: Boolean = false)
-
-    /** A split segment with its PB and target time in ms (null if not set). */
-    private data class Segment(val row: SplitRow, val pb: Long?, val target: Long?)
+    /** Extra summary rows shown below Run Pace, with their names for the move-HUD preview. */
+    protected open fun extraSummaryLines(columns: List<Column>, p: Palette): List<Line> = emptyList()
+    protected open fun extraSummaryNames(): List<String> = emptyList()
 
     private fun activeColumns(): List<Column> = listOf(column1, column2, column3).map(Column::of).filter { it != Column.NONE }
 
@@ -340,12 +220,12 @@ object Splits : Module(
         ColorScheme.VEXO -> VEXO
     }
 
-    @EventHandler
-    fun onRender(event: HudRenderEvent) {
+    protected fun render(event: HudRenderEvent) {
         val columns = activeColumns()
         val palette = palette()
         updatePreview(columns, palette)
         if (mc.gui.screen() is MoveActiveHudsGui) return
+        if (SplitsManager.currentArea() != area) return
         val rows = SplitsManager.currentRows()
         if (rows.isEmpty()) return
 
@@ -355,9 +235,7 @@ object Splits : Module(
 
     private fun buildLines(rows: List<SplitRow>, columns: List<Column>, p: Palette): List<Line> {
         val pb = SplitsManager.currentPersonalBest()
-        val targets = SplitsManager.currentDungeonFloor()
-            ?.takeIf { SplitsManager.currentArea() == SplitArea.DUNGEON }
-            ?.let { dungeonTargets[it] }
+        val targets = currentTargets()
         fun millis(store: PersonalBest?, name: String): Long? = store?.get(name)?.let { (it * 1000).toLong() }
         fun segmentOf(row: SplitRow) = Segment(row, millis(pb, row.name), millis(targets, row.name))
 
@@ -368,44 +246,19 @@ object Splits : Module(
             ColorScheme.DYNAMIC_TARGET -> dynamicColor(segment.row, segment.target, DYN_GREEN)
             else -> null
         }
-        fun summaryLabel(name: String): Cell = summaryLabel(name, p)
 
         val total = segmentOf(rows.last())
-        val segments = rows.dropLast(1).map(::segmentOf).let { if (terminalSections) it else mergeTerminals(it) }
+        val segments = rows.dropLast(1).map(::segmentOf)
 
-        val isDungeon = SplitsManager.currentArea() == SplitArea.DUNGEON
-        // The first three dungeon segments (Blood Open, Blood Clear, Portal Entry) are the clear phase.
-        val displayRows = segments.mapIndexed { i, segment -> segment to (isDungeon && i >= 3) }.toMutableList()
-        if (bossEntrySplit && isDungeon && segments.size > 3) {
-            val entry = segments.take(3)
-            val entryRow = SplitRow(
-                "§9Boss Entry",
-                entry.sumOf { it.row.time },
-                entry.sumOf { it.row.tickTime },
-                isCurrent = false,
-                completed = entry.last().row.completed,
-                lag = entry.sumOf { it.row.lag }
-            )
-            val entrySegment = Segment(entryRow, entry.map { it.pb }.sumOrNull(), entry.map { it.target }.sumOrNull())
-            displayRows.add(3, entrySegment to false)
-        }
-        if (terminalSections) {
-            val firstSection = displayRows.indexOfFirst { it.first.row.name in terminalSectionNames }
-            if (firstSection >= 0) {
-                val sections = displayRows.map { it.first }.filter { it.row.name in terminalSectionNames }
-                displayRows.add(firstSection, terminalsSegment(sections) to displayRows[firstSection].second)
-            }
-        }
-
-        val visibleRows = displayRows.filter { (segment, _) -> segment.row.time != 0L || show0Time }
-        val firstBossIndex = visibleRows.indexOfFirst { it.second }
+        val visibleRows = displayRows(segments).filter { it.segment.row.time != 0L || show0Time }
         val lines = visibleRows
-            .mapIndexed { i, (segment, _) ->
+            .mapIndexed { i, displayRow ->
+                val segment = displayRow.segment
                 val color = dynamic(segment)
                 Line(
-                    labelCell(indented(segment.row.name), color, p),
+                    labelCell(segment.row.name, color, p),
                     columns.map { cell(it, segment.row, segment.pb, p, color) },
-                    separatorBefore = separatorLines && i > 0 && i == firstBossIndex
+                    separatorBefore = i > 0 && displayRow.phase != visibleRows[i - 1].phase
                 )
             }
             .toMutableList()
@@ -415,7 +268,7 @@ object Splits : Module(
             val tickPace = runPace(segments, total.row) { it.tickTime * 50 }
             // PB Diff follows whichever time base is shown, preferring real time.
             val diffPace = if (Column.TIME !in columns && Column.TICK_TIME in columns) tickPace else pace
-            lines += Line(summaryLabel("§eRun Pace"), columns.map { column ->
+            lines += Line(summaryLabel("§eRun Pace", p), columns.map { column ->
                 when (column) {
                     Column.TIME -> pace?.let { Cell(formatTime(it), p.time) } ?: mutedCell(p)
                     Column.TICK_TIME -> tickPace?.let { Cell(formatTime(it), p.tick) } ?: mutedCell(p)
@@ -424,24 +277,14 @@ object Splits : Module(
                 }
             })
         }
-        if (showScore300 && isDungeon && (SplitsManager.currentDungeonFloor()?.drop(1)?.toIntOrNull() ?: 0) in 4..7) {
-            val reached = SplitsManager.score300Time()
-            lines += Line(summaryLabel("§a300 Score"), columns.map { column ->
-                when (column) {
-                    Column.TIME -> reached?.let { Cell(formatTime(it.time), p.time) } ?: mutedCell(p)
-                    Column.TICK_TIME -> reached?.let { Cell(formatTime(it.ticks * 50), p.tick) } ?: mutedCell(p)
-                    Column.LAG_LOST -> reached?.let { lagCell((it.time - it.ticks * 50).coerceAtLeast(0), p) } ?: mutedCell(p)
-                    else -> EMPTY_CELL
-                }
-            })
-        }
+        lines += extraSummaryLines(columns, p)
         if (showTotalTime) {
             val color = dynamic(total)
-            val label = if (color != null) Cell("Total", color) else summaryLabel("§eTotal")
+            val label = if (color != null) Cell("Total", color) else summaryLabel("§eTotal", p)
             lines += Line(label, columns.map { cell(it, total.row, total.pb, p, color) })
         }
         if (showLagLost && columns.isNotEmpty()) {
-            lines += Line(summaryLabel("§cLag Lost"), List(columns.size) { if (it == 0) lagCell(total.row.lag, p) else EMPTY_CELL })
+            lines += Line(summaryLabel("§cLag Lost", p), List(columns.size) { if (it == 0) lagCell(total.row.lag, p) else EMPTY_CELL })
         }
         return lines
     }
@@ -452,7 +295,7 @@ object Splits : Module(
         else -> Cell(name, 0xFFFFFF)
     }
 
-    private fun summaryLabel(name: String, p: Palette): Cell =
+    protected fun summaryLabel(name: String, p: Palette): Cell =
         if (p.summary != null) Cell(name.removeFormatting(), p.summary) else Cell(name, 0xFFFFFF)
 
     /**
@@ -472,30 +315,6 @@ object Splits : Module(
         }
     }
 
-    private fun indented(name: String) =
-        if (terminalSections && name in terminalSectionNames) " §7- $name" else name
-
-    /** Replaces the S1 - S4 rows with one Terminals row. */
-    private fun mergeTerminals(segments: List<Segment>): List<Segment> {
-        val sections = segments.filter { it.row.name in terminalSectionNames }
-        if (sections.isEmpty()) return segments
-        val firstIndex = segments.indexOf(sections.first())
-        return segments.filterNot { it in sections }.toMutableList().apply { add(firstIndex, terminalsSegment(sections)) }
-    }
-
-    private fun terminalsSegment(sections: List<Segment>) = Segment(
-            SplitRow(
-                TERMINALS_LABEL,
-                sections.sumOf { it.row.time },
-                sections.sumOf { it.row.tickTime },
-                isCurrent = sections.any { it.row.isCurrent },
-                completed = sections.all { it.row.completed },
-                lag = sections.sumOf { it.row.lag }
-            ),
-            sections.map { it.pb }.sumOrNull(),
-            sections.map { it.target }.sumOrNull()
-        )
-
     /** @param dynamic Overrides the time color in the dynamic schemes. */
     private fun cell(column: Column, row: SplitRow, pb: Long?, p: Palette, dynamic: Int?): Cell = when (column) {
         Column.NONE -> EMPTY_CELL
@@ -511,10 +330,12 @@ object Splits : Module(
         }
     }
 
-    private fun mutedCell(p: Palette) = Cell("-", p.muted)
+    protected fun mutedCell(p: Palette) = Cell("-", p.muted)
+
+    protected fun emptyCell() = EMPTY_CELL
 
     /** Lag is shown to 0.1s; finer values only reflect tick packet timing and make the text jitter. */
-    private fun lagCell(lag: Long, p: Palette): Cell {
+    protected fun lagCell(lag: Long, p: Palette): Cell {
         val rounded = lag / 100 * 100
         return if (rounded == 0L) Cell("0s", p.muted) else Cell("+${formatTime(rounded, 1)}", p.behind)
     }
@@ -585,19 +406,9 @@ object Splits : Module(
             Column.PB -> p.pb
         })
         val cells = columns.map(::sample)
-        val names = floor7SplitGroup.map { it.name }.flatMap { name ->
-            when {
-                name != terminalSectionNames.first() -> listOf(name)
-                terminalSections -> listOf(TERMINALS_LABEL, name)
-                else -> listOf(TERMINALS_LABEL)
-            }
-        }.filter { terminalSections || it !in terminalSectionNames }.map(::indented)
-        val summary = listOfNotNull(
-            "§eRun Pace".takeIf { showRunPace },
-            "§a300 Score".takeIf { showScore300 },
-            "§eTotal".takeIf { showTotalTime }
-        )
-        val lines = names.map { Line(labelCell(it, null, p), cells) } +
+        val summary = listOfNotNull("§eRun Pace".takeIf { showRunPace }) + extraSummaryNames() +
+            listOfNotNull("§eTotal".takeIf { showTotalTime })
+        val lines = previewNames().map { Line(labelCell(it, null, p), cells) } +
             summary.map { Line(summaryLabel(it, p), cells) } +
             listOfNotNull(Line(summaryLabel("§cLag Lost", p), List(columns.size) { if (it == 0) sample(Column.LAG_LOST) else EMPTY_CELL })
                 .takeIf { showLagLost && columns.isNotEmpty() })
@@ -625,7 +436,7 @@ object Splits : Module(
         }.sumOrNull()?.let { maxOf(it, time(total)) }
     }
 
-    private fun List<Long?>.sumOrNull(): Long? = if (any { it == null }) null else sumOf { it!! }
+    protected fun List<Long?>.sumOrNull(): Long? = if (any { it == null }) null else sumOf { it!! }
 
     private fun renderCurrentSplit(event: HudRenderEvent, rows: List<SplitRow>, p: Palette) {
         val current = rows.find { it.isCurrent } ?: return

@@ -83,7 +83,8 @@ object ConfigManager {
 
             ModuleManager.getAllModules().forEach { module ->
                 runCatching {
-                    val moduleJson = modulesJson.getAsJsonObject(module.name) ?: return@runCatching
+                    val moduleJson = (listOf(module.name) + module.legacyNames)
+                        .firstNotNullOfOrNull { modulesJson.getAsJsonObject(it) } ?: return@runCatching
 
                     val enabled = moduleJson.get("enabled")?.asBoolean ?: false
                     if (enabled != module.enabled) {

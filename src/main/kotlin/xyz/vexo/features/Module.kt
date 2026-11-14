@@ -12,11 +12,13 @@ import xyz.vexo.config.Setting
  * @param name The name of the module.
  * @param description The description of the module.
  * @param toggled Whether the module is enabled by default.
+ * @param legacyNames Former names, whose saved config is loaded if none exists under [name].
  */
 abstract class Module(
     val name: String,
     val description: String = "",
-    toggled: Boolean = false
+    toggled: Boolean = false,
+    val legacyNames: List<String> = emptyList()
 ) {
     val category: Category = Category.fromPackage(this::class.java) ?: Category.MISC
     val settings = mutableListOf<Setting<*>>()
@@ -40,7 +42,11 @@ abstract class Module(
     fun initSettings() {
         if (settings.isNotEmpty()) return
 
-        val fields = this::class.java.declaredFields
+        // Superclass fields first, so shared settings come before the module's own ones.
+        val fields = generateSequence<Class<*>>(this::class.java) { it.superclass }
+            .takeWhile { it != Module::class.java }
+            .toList().asReversed()
+            .flatMap { it.declaredFields.asList() }
 
         val memberMap = this::class.members
             .filterIsInstance<KProperty1<Module, *>>()

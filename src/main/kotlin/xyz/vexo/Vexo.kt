@@ -78,15 +78,15 @@ object Vexo : ClientModInitializer {
 		arrayOf(
 			// dungeons
 			CrystalPickupAlert, DungeonPartyFinder, DungeonProfitTracker, DungeonRequeue, HealerP5LeapAlert,
-			PadTimer, ParticleHider, PositionalMessages, RagAxeNow, StormPillarTimer,
+			DungeonSplits, PadTimer, ParticleHider, PositionalMessages, RagAxeNow, StormPillarTimer,
 
 			// kuudra
 			AutoKuudraRequeue, BackboneAlert, ChestTracker, EatenTimer, KuudraPartyFinderInfo, KuudraProfitTracker,
-			SoloDetector,
+			KuudraSplits, SoloDetector,
 
 			// misc
 			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions,
-			SlayerHelper, Splits, TimeChanger,
+			SlayerHelper, TimeChanger,
 
 			// chat
 			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog, MoreChatHistory
