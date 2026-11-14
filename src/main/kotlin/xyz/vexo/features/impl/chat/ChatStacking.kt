@@ -9,6 +9,7 @@ import net.minecraft.client.gui.components.ChatComponent
 import net.minecraft.client.multiplayer.chat.GuiMessage
 import net.minecraft.network.chat.Component
 import xyz.vexo.Vexo
+import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.config.impl.SliderSetting
 import xyz.vexo.features.Module
@@ -54,6 +55,23 @@ object ChatStacking : Module(
         increment = 10.0
     ).apply { dependsOn { mode == MODE_MESSAGES } }
 
+    private const val BRACKETS_ROUND = "Round (x2)"
+    private const val BRACKETS_SQUARE = "Square [x2]"
+    private const val BRACKETS_NONE = "None x2"
+
+    private val showCounter by BooleanSetting(
+        name = "Show Counter",
+        description = "Appends how often the message was repeated",
+        default = true
+    )
+
+    private val brackets by SelectorSetting(
+        name = "Counter Brackets",
+        description = "How the counter is wrapped",
+        default = BRACKETS_ROUND,
+        options = listOf(BRACKETS_ROUND, BRACKETS_SQUARE, BRACKETS_NONE)
+    ).apply { dependsOn { showCounter } }
+
     private class Stack(val count: Int, val time: Long, val index: Long, val message: GuiMessage?)
 
     private const val MAX_TRACKED = 2000
@@ -66,7 +84,7 @@ object ChatStacking : Module(
 
     private val file = File(Vexo.configDir, "chatstacks.json")
     private val separatorRegex = Regex("""^[-=_▬━─▃▀▄\s]+$""")
-    private val stackSuffixRegex = Regex(""" \(x\d+\)$""")
+    private val stackSuffixRegex = Regex(""" (?:\(x\d+\)|\[x\d+]|x\d+)$""")
 
     init {
         ClientLifecycleEvents.CLIENT_STARTED.register { load() }
@@ -90,8 +108,8 @@ object ChatStacking : Module(
             previous.count + 1
         } else 1
 
-        val display = if (count > 1) {
-            Component.empty().append(message).append(Component.literal(" (x$count)").withStyle(ChatFormatting.GRAY))
+        val display = if (count > 1 && showCounter) {
+            Component.empty().append(message).append(Component.literal(" ${counterText(count)}").withStyle(ChatFormatting.GRAY))
         } else message
 
         add.accept(display)
@@ -99,6 +117,12 @@ object ChatStacking : Module(
         val added = accessor.vexoAllMessages().firstOrNull()?.takeIf { it.content() === display }
         stacks[key] = Stack(count, now, messageCounter, added)
         return true
+    }
+
+    private fun counterText(count: Int) = when (brackets) {
+        BRACKETS_SQUARE -> "[x$count]"
+        BRACKETS_NONE -> "x$count"
+        else -> "(x$count)"
     }
 
     private fun isWithinWindow(stack: Stack, now: Long): Boolean = when (mode) {
@@ -113,8 +137,8 @@ object ChatStacking : Module(
             ?: all.indexOfFirst { it.content().string.removeFormatting().trim().replace(stackSuffixRegex, "") == key }
         if (index < 0) return
 
-        all.removeAt(index)
-        accessor.vexoRefreshTrimmedMessages()
+        val removed = all.removeAt(index)
+        accessor.vexoTrimmedMessages().removeIf { it.parent() === removed }
     }
 
     @JvmStatic
