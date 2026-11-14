@@ -64,8 +64,6 @@ object DungeonSplits : SplitsModule(
     /** Target times for the "Dynamic (Target)" scheme, keyed like [dungeonPBs]. */
     val dungeonTargets: Map<String, PersonalBest> = dungeonPBs.keys.zip(targetStores).toMap()
 
-    // Time editor, kept last so it sits at the bottom of the settings.
-
     private val editTimes by SelectorSetting(
         name = "Edit Times",
         description = "Whether the fields below edit your personal bests or your target times",

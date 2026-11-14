@@ -125,7 +125,7 @@ object DungeonScore {
 
     @EventHandler
     fun onClientTick(event: ClientTickEvent) {
-        if (++tickCounter % 10 != 0 || !DungeonUtils.inDungeon) return
+        if (++tickCounter % 10 != 0 || !LocationUtils.isIn(Location.Dungeon)) return
         runCatching { calculate() }.getOrNull()?.let { if (it > score) score = it }
     }
 

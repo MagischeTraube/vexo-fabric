@@ -8,31 +8,29 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
 import xyz.vexo.events.impl.PacketReceiveEvent
-import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 
 object DungeonUtils {
-
-    var inDungeon = false
-        private set
-
     val floor: String
-        get() = if (inDungeon) lastSeenFloor ?: "" else ""
+        get() = if (LocationUtils.isIn(Location.Dungeon)) lastSeenFloor ?: "" else ""
 
     val isMasterMode: Boolean
         get() = floor.startsWith("M")
 
-    @Volatile var lastSeenFloor: String? = null
-        private set
-
-    private var tickCounter = 0
-
-    private val dungeonIndicator = Regex("""Time Elapsed:""")
+    @Volatile private var lastSeenFloor: String? = null
 
     private val catacombsFloorRegex = Regex("""The Catacombs \((E|[FM][1-7])\)""")
 
     fun parseFloor(text: String): String? =
         if ("Queue" in text) null else catacombsFloorRegex.find(text)?.groupValues?.get(1)
+
+    /**
+     * Returns the current dungeon floor, checking tablist first, then scoreboard as fallback
+     *
+     * @return The current floor name (e.g., "E", "M1", "F1"), or null if not in dungeon
+     */
+    fun currentFloor(): String? = lastSeenFloor
+        ?: runCatching { ScoreboardUtils.getEntries().firstNotNullOfOrNull { parseFloor(it) } }.getOrNull()
 
     @EventHandler
     fun onPacket(event: PacketReceiveEvent) {
@@ -42,14 +40,7 @@ object DungeonUtils {
             ?.let { lastSeenFloor = it }
     }
 
-    @EventHandler
-    fun onServerTick(event: ServerTickEvent) {
-        if (++tickCounter % 20 != 0) return
-        inDungeon = TablistUtils.getEntries().any { dungeonIndicator.containsMatchIn(it) }
-    }
-
     data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
-
 
     private val matePattern = Regex("""\[\d+] (?:\[[^\]]+] )?(\S+)[^(]*\((?:(\S+) \S+|(DEAD))\)""")
 
