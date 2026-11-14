@@ -104,6 +104,7 @@ object UuidResolver {
 
     /**
      * Resolves multiple Minecraft usernames to UUIDs, querying Mojang in batches of 10.
+     * A batch with a single name uses the single-lookup endpoint instead.
      *
      * @return Map of lowercase username -> UUID. Unresolvable names are missing from the map.
      */
@@ -126,6 +127,13 @@ object UuidResolver {
 
         for (batch in missing.chunked(BATCH_SIZE)) {
             if (System.currentTimeMillis() < blockedUntil) break
+
+            if (batch.size == 1) {
+                val key = batch[0]
+                resolve(key)?.let { result[key] = it }
+                continue
+            }
+
 
             try {
                 val fetched = fetchBatch(batch)
