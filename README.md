@@ -1,7 +1,8 @@
 # vexo-fabric
 
 ![release](https://img.shields.io/github/v/release/MagischeTraube/vexo-fabric?color=blue&label=Release)
-![downloads](https://img.shields.io/github/downloads/MagischeTraube/vexo-fabric/total?color=blue&label=Downloads)
+![downloads](https://img.shields.io/github/downloads/MagischeTraube/vexo-fabric/total?color=blue&label=GitHub%20Downloads)
+[![modrinth](https://img.shields.io/modrinth/dt/vexo-mod?color=blue&label=Modrinth%20Downloads&logo=modrinth)](https://modrinth.com/mod/vexo-mod)
 ![license](https://img.shields.io/github/license/MagischeTraube/vexo-fabric?color=blue&label=License)
 [![discord](https://img.shields.io/discord/1385629270352859296?color=blue&label=Discord)](https://discord.gg/wfW3aEEpVA)
 
@@ -21,13 +22,14 @@ A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, 
 |---|---|
 | **Healer P5 Leap Alert** | Displays a HUD message when all players have leaped to P5 in M7 — customizable text |
 | **Rag Axe Alert** | Shows a HUD title when it's time to use the Rag Axe |
+| **Crystal Pickup Alert** | Displays a HUD title when you pick up an Energy Crystal |
 | **Pad Timer** | Calculates when to crush Storm based on your chosen crush order (Green-Yellow or Purple-Yellow) |
+| **Storm Pillar Timer** | Displays a HUD title confirming when Storm has been crushed |
 | **Particle Hider** | Hides distracting particles during dungeon runs |
 | **Party Finder** | Enhances the Party Finder UI with extra player info (secrets, Fairy Perk, etc.) |
 | **Positional Messages** | Automatically sends party messages when standing on specific positions in M7 |
 | **Auto Dungeon Requeue** | Automatically starts a new run of the current floor after a configurable delay |
-| **Storm Pillar Timer** | Displays a HUD title confirming when Storm has been crushed |
-| **Necron Block Highlight** | Highlights the exact blocks to mine during the Necron fight |
+| **Dungeon Splits** | HUD with split timers for each phase of your dungeon run |
 | **Dungeon Profit Tracker** | Shows the profit of your Dungeon Croesus chests — values the loot and subtracts the cost |
 
 </details>
@@ -41,6 +43,7 @@ A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, 
 | **Solo Detector** | Alerts your party via `/pc` when all other teammates have been eliminated |
 | **Chest Tracker** | Tracks your Kuudra chest count toward the 60-chest limit and displays it on a HUD |
 | **Profit Tracker** | Shows the profit of your Kuudra Croesus chests — values the loot, subtracts the cost, and highlights the most profitable chest |
+| **Kuudra Splits** | HUD with split timers for each phase of your Kuudra run |
 | **Backbone Alert** | HUD bar that tracks Bonemerang backbone timing and tells you exactly when to Rend |
 | **Eaten Timer** | Displays a countdown when you get eaten by Kuudra |
 | **Fire Veil Overlay** | Shows the Fire Veil radius as a ring and marks the wand in the hotbar while active |
@@ -50,27 +53,31 @@ A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, 
 </details>
 
 <details>
+<summary>Chat</summary>
+
+| Feature | Description |
+|---|---|
+| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.) |
+| **Compact Chat** | Shortens long and repetitive chat messages (Loot Share, Capture, Torrhus, Hoppity, Autopet, and Stash) |
+| **Chat Stacking** | Stacks repeated messages into a single line with an optional counter |
+| **Chat Copy** | Right-click a chat message to copy it, with or without timestamp and color codes |
+| **Chat Scroll** | Scroll through chat without opening it and keep your scroll position when new messages arrive |
+| **Continuous Chat Log** | Keeps your chat history across restarts instead of starting with an empty chat |
+| **More Chat History** | Raises the chat history limit from 100 up to 100,000 messages |
+
+</details>
+
+<details>
 <summary>Quality of Life</summary>
 
 | Feature | Description |
 |---|---|
 | **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level |
-| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.) |
 | **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked |
 | **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard |
-| **Inventory Presets** | Slot Binding, Wardrobe and Loadouts in one module — each sub-feature has switchable named keybind/binding presets and its own on/off toggle |
-| Feature | Description                                                                                                    |
-|---|----------------------------------------------------------------------------------------------------------------|
-| **Slayer Helper** | Shows how many Slayer bosses remain and estimates time to the next level                                       |
-| **Chat Cleaner** | Filters out repetitive and spammy chat messages (dungeon spam, random spam, etc.)                              |
-| **Auto Rejoin** | Automatically rejoins Hypixel SkyBlock after being kicked                                                      |
-| **Screenshot Actions** | Adds crop/edit actions to screenshot notifications; supports auto-copy to clipboard                            |
-| **Wardrobe** | Quickly switch armor sets in the Wardrobe using keybinds                                                       |
-| **Loadouts** | Equip loadouts in the new Loadouts GUI with keybinds                                                           |
-| **Custom Recipe Gui** | Replaces the hypixel /recipe command with a custom GUI for browsing recipes                        |
-| **Slot Binding** | Pairs inventory slots with hotbar slots and swaps them on shift-click; supports named preset sets              |
-| **Time Control** | Change the ingame time with presets or a custom slider                                                         |
-| **Compact Chat** | Shortens long and repetitive chat messages (Loot Share, Capture, Torrhus, Hoppity, Autopet, and Stash) |
+| **Inventory Presets** | Slot Binding and Loadouts in one module — each with switchable named presets and its own on/off toggle |
+| **Custom Recipe GUI** | Replaces Hypixel's `/recipe` command with a custom GUI for browsing recipes |
+| **Time Changer** | Change the in-game time with presets or a custom slider |
 
 </details>
 
@@ -80,6 +87,7 @@ A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, 
 | Command | Description |
 |---|---|
 | `/vexo` | Opens the mod configuration menu |
+| `/recipe [item]` | Opens the custom recipe GUI (when Custom Recipe GUI is enabled) |
 | `/tyfr` | Leaves the party after the current Dungeon or Kuudra run ends |
 | `/kuudrastats [player]` | Shows Kuudra stats for yourself or the given player |
 | `/rewarp <warp>` | Warps to your private island, then to the given warp (useful for resetting warp cooldowns) |
@@ -102,7 +110,7 @@ A Hypixel SkyBlock mod for Minecraft 26.2 built on Fabric, focused on Dungeons, 
 
 1. Install [Fabric Loader](https://fabricmc.net/use/installer/) for Minecraft 26.2.
 2. Download and install the required dependencies (see below).
-3. Download the latest release of Vexo from the [Releases page](https://github.com/MagischeTraube/vexo-fabric/releases).
+3. Download the latest release of Vexo from [Modrinth](https://modrinth.com/mod/vexo-mod) or the [Releases page](https://github.com/MagischeTraube/vexo-fabric/releases).
 4. Place the `.jar` file in your `.minecraft/mods` folder.
 5. Launch Minecraft with the Fabric profile.
 
