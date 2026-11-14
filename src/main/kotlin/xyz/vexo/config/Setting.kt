@@ -39,7 +39,7 @@ abstract class Setting<T>(
     /**
      * Returns the current value of the setting.
      */
-    fun getCurrentValue(): T = value
+    open fun getCurrentValue(): T = value
 
     /**
      * Sets the value of the setting and calls the `onChange` callback if it is not `null`.

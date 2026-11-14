@@ -51,7 +51,7 @@ object ConfigManager {
 
                 val settingsJson = JsonObject()
                 getSettingsFromModule(module).forEach { setting ->
-                    runCatching { settingsJson.add(setting.name, setting.toJson()) }
+                    runCatching { setting.toJson().takeUnless { it.isJsonNull }?.let { settingsJson.add(setting.name, it) } }
                         .onFailure { logError(Exception("Failed to serialize setting '${module.name}/${setting.name}'", it), this) }
                 }
                 moduleJson.add("settings", settingsJson)

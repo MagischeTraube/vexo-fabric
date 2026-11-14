@@ -50,6 +50,7 @@ abstract class Module(
             field.isAccessible = true
             val value = runCatching { field.get(this) }.getOrNull()
             if (value is Setting<*>) settings += value
+            else if (value is Iterable<*>) settings += value.filterIsInstance<Setting<*>>()
             else {
                 val propName = field.name.removeSuffix("\$delegate")
 

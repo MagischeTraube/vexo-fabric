@@ -11,13 +11,13 @@ import xyz.vexo.config.Setting
  * @param description A description of the setting. Defaults to an empty string.
  * @param default The default value of the setting. Defaults to an empty string.
  */
-class StringSetting(
+open class StringSetting(
     name: String,
     description: String = "",
     default: String = ""
 ) : Setting<String>(name, description, value = default) {
 
-    override fun toJson() = JsonPrimitive(getCurrentValue())
+    override fun toJson(): JsonElement = JsonPrimitive(getCurrentValue())
 
     override fun fromJson(json: JsonElement) {
         if (json.isJsonPrimitive && json.asJsonPrimitive.isString) {
