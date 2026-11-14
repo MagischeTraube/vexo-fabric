@@ -84,26 +84,10 @@ object DungeonProfitTracker : Module(
         default = Color(78, 0, 2, 150)
     ).apply { dependsOn { highlightCroesus } }
 
-    private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
-    private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
     private val KEY_QTY_REGEX = Regex("""[x×]\s*([\d,]+)""")
 
     private val CATACOMBS_TITLE = Regex("""Catacombs - Floor""")
     private val CHEST_TITLES = setOf("Wood", "Gold", "Diamond", "Emerald", "Obsidian", "Bedrock")
-
-    private val NAME_TO_ID = mapOf(
-        "Necron's Handle" to "NECRON_HANDLE",
-        "Shiny Necron's Handle" to "SHINY_NECRON_HANDLE",
-        "Necron Dye" to "DYE_NECRON",
-        "Bonzo's Staff" to "BONZO_STAFF",
-        "Bonzo's Mask" to "BONZO_MASK",
-        "Scarf's Studies" to "SCARF_STUDIES",
-        "Adaptive Blade" to "STONE_BLADE",
-        "Shiny Wither Helmet" to "SHINY_WITHER_HELMET",
-        "Shiny Wither Chestplate" to "SHINY_WITHER_CHESTPLATE",
-        "Shiny Wither Leggings" to "SHINY_WITHER_LEGGINGS",
-        "Shiny Wither Boots" to "SHINY_WITHER_BOOTS",
-    )
 
     private val engine = ChestProfitEngine(this)
     private val slotHighlights = mutableMapOf<Slot, Int>()
@@ -165,45 +149,20 @@ object DungeonProfitTracker : Module(
     }
 
     override fun lootValueOrNull(name: String, qty: Long): Long? {
-        val id = lootIdFor(name) ?: return null
+        val id = ChestProfitEngine.lootIdFor(name) ?: return null
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
         if (unit < 0) return null
         return qty * unit.toLong()
     }
 
     override fun costEntry(line: String): Entry {
-        if (line.equals("FREE", ignoreCase = true)) return Entry(line, 0L)
-
         if (line.startsWith("Dungeon Chest Key")) {
             val qty = KEY_QTY_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull() ?: 1L
             val unit = PriceUtils.getPrice("DUNGEON_CHEST_KEY", sellOffer, includeTaxes).toLong()
             return Entry(line, qty * unit, error = unit < 0)
         }
-
-        val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
-        return Entry(line, coins ?: 0L)
+        return ChestProfitEngine.coinEntry(line)
     }
 
     override fun settingsFingerprint(): String = "$sellOffer|$includeTaxes"
-
-    private fun lootIdFor(name: String): String? {
-        ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
-            return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
-        }
-        NAME_TO_ID[name]?.let { return it }
-        if (name.endsWith(" Shard")) {
-            return "SHARD_" + name.removeSuffix(" Shard").uppercase().replace(' ', '_')
-        }
-        if (name.endsWith(" Essence")) {
-            return "ESSENCE_" + name.removeSuffix(" Essence").uppercase().replace(' ', '_')
-        }
-        return normalizedIdGuess(name)
-    }
-
-    private fun normalizedIdGuess(name: String): String? =
-        name.replace("'", "")
-            .replace(Regex("[^A-Za-z0-9]+"), "_")
-            .trim('_')
-            .uppercase()
-            .ifEmpty { null }
 }

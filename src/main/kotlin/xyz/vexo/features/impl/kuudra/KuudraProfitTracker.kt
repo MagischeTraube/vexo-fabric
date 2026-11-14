@@ -62,16 +62,11 @@ object KuudraProfitTracker : Module(
         default = 0.0, min = 0.0, max = 10.0, increment = 1.0
     ).apply { dependsOn { essenceOfCrimson > 0 && echoOfEssence > 0} }
 
-    private val armorSalvage by BooleanSetting(
-        "Armor Salvage",
-        "Value Kuudra armor by its Crimson Essence salvage value",
-        default = true
-    )
     private val salvagePerk by BooleanSetting(
         "Salvage Perk (+20%)",
         "Account for the +20% salvage essence perk",
         default = true
-    ).apply { dependsOn { armorSalvage } }
+    )
 
     private val valueMode by SelectorSetting(
         "Value Mode",
@@ -119,29 +114,7 @@ object KuudraProfitTracker : Module(
 
 
 
-    private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
     private val KUUDRA_TIER_TITLE = Regex("""Kuudra - (Basic|Hot|Burning|Fiery|Infernal)""")
-    private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
-
-    private val NAME_TO_ID = mapOf(
-        "Kuudra Teeth" to "KUUDRA_TEETH",
-        "Kuudra Mandible" to "KUUDRA_MANDIBLE",
-        "Kuudra Tentacle" to "KUUDRA_TENTACLE",
-        "Kuudra Core" to "KUUDRA_CORE",
-        "Burning Kuudra Core" to "BURNING_KUUDRA_CORE",
-        "Hot Potato Book" to "HOT_POTATO_BOOK",
-        "Fuming Potato Book" to "FUMING_POTATO_BOOK",
-        "Recombobulator 3000" to "RECOMBOBULATOR_3000",
-        "Heavy Pearl" to "HEAVY_PEARL",
-        "Tormentor" to "TORMENTOR",
-        "Mandraa" to "MANDRAA",
-        "Kismet Feather" to "KISMET_FEATHER",
-        "Ananke Feather" to "ANANKE_FEATHER",
-        "Hellstorm Staff" to "HELLSTORM_STAFF",
-        "Wheel of Fate" to "WHEEL_OF_FATE",
-        "Cinderbat Shard" to "SHARD_CINDER_BAT",
-        "Wither Spectre Shard" to "SHARD_WITHER_SPECTER",
-    )
 
     private val ZERO_VALUE = setOf("Magma Slug Shard", "Dusty Travel Scroll to the Kuudra Skull")
 
@@ -332,7 +305,7 @@ object KuudraProfitTracker : Module(
     }
 
     override fun settingsFingerprint(): String =
-        "$sellOffer|$includeTaxes|$lvl100Kuudra|$essenceOfCrimson|$echoOfEssence|$echoOfEchoes|$armorSalvage|$salvagePerk|$valueMode"
+        "$sellOffer|$includeTaxes|$lvl100Kuudra|$essenceOfCrimson|$echoOfEssence|$echoOfEchoes|$salvagePerk|$valueMode"
 
     private fun expectedBreakdown(table: TierTable, costs: List<Entry>): Breakdown {
         var guaranteedError = false
@@ -362,8 +335,8 @@ object KuudraProfitTracker : Module(
     }
 
     override fun lootTag(name: String): String {
-        if (armorSalvage && isSalvageable(name)) return " §8(Salvage ${salvageEssence(name)} Ess)"
-        val id = lootIdFor(name) ?: return ""
+        if (isSalvageable(name)) return " §8(Salvage ${salvageEssence(name)} Ess)"
+        val id = ChestProfitEngine.lootIdFor(name) ?: return ""
         if (!id.startsWith("ESSENCE_")) return ""
         val pct = essenceBonusPct(id)
         if (pct <= 0.0) return ""
@@ -379,8 +352,8 @@ object KuudraProfitTracker : Module(
     private fun crimsonPerkBonus(): Double {
         if (essenceOfCrimson <= 0.0) return 0.0
         val echoBuff = 1.0 +
-            echoOfEssence * ECHO_OF_ESSENCE_BUFF_PER_LEVEL +
-            echoOfEchoes * ECHO_OF_ECHOES_BUFF_PER_LEVEL
+                echoOfEssence * ECHO_OF_ESSENCE_BUFF_PER_LEVEL +
+                echoOfEchoes * ECHO_OF_ECHOES_BUFF_PER_LEVEL
         return essenceOfCrimson * ESSENCE_OF_CRIMSON_PER_LEVEL * echoBuff
     }
 
@@ -394,12 +367,12 @@ object KuudraProfitTracker : Module(
     override fun lootValueOrNull(name: String, qty: Long): Long? {
         if (name in ZERO_VALUE) return 0L
 
-        if (armorSalvage && isSalvageable(name)) {
+        if (isSalvageable(name)) {
             val price = crimsonPrice()
             return if (price < 0) null else qty * salvageEssence(name) * price
         }
 
-        val id = lootIdFor(name) ?: return null
+        val id = ChestProfitEngine.lootIdFor(name) ?: return null
         val unit = PriceUtils.getPrice(id, sellOffer, includeTaxes)
         if (unit < 0) return null
         var value = qty * unit.toLong()
@@ -431,8 +404,6 @@ object KuudraProfitTracker : Module(
     }
 
     override fun costEntry(line: String): Entry {
-        if (line.equals("FREE", ignoreCase = true)) return Entry(line, 0L)
-
         KEY_RECIPES[line]?.let { recipe ->
             val parts = buildList {
                 if (recipe.coins > 0) add(Entry("${ChestProfitEngine.formatCoins(recipe.coins)} Coins", recipe.coins))
@@ -444,21 +415,7 @@ object KuudraProfitTracker : Module(
             }
             return Entry(line, parts.sumOf { it.value }, parts, error = parts.any { it.error })
         }
-
-        val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
-        return Entry(line, coins ?: 0L)
-    }
-
-    private fun lootIdFor(name: String): String? {
-        ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
-            return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
-        }
-        NAME_TO_ID[name]?.let { return it }
-        return when {
-            name.endsWith(" Shard") -> "SHARD_" + name.removeSuffix(" Shard").uppercase().replace(' ', '_')
-            name.endsWith(" Essence") -> "ESSENCE_" + name.removeSuffix(" Essence").uppercase().replace(' ', '_')
-            else -> null
-        }
+        return ChestProfitEngine.coinEntry(line)
     }
 
     private fun prettyName(id: String): String =

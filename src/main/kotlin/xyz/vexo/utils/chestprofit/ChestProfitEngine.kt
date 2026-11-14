@@ -41,8 +41,7 @@ data class Breakdown(val loot: List<Entry>, val costs: List<Entry>, val total: L
 /**
  * Shared engine for reward-chest profit trackers: parses the `Contents`/`Cost` lore of chest
  * items, prices the rows through the owning module's [Valuer], caches the best chest per GUI
- * content snapshot, and renders the slot highlight and the breakdown panel. Everything
- * game-specific (name-to-id mapping, key recipes, bonus rules) lives in the [Valuer].
+ * content snapshot, and renders the slot highlight and the breakdown panel.
  */
 class ChestProfitEngine(private val valuer: Valuer) {
 
@@ -82,6 +81,37 @@ class ChestProfitEngine(private val valuer: Valuer) {
                 a >= 1_000 -> "%.1fk".format(value / 1e3)
                 else -> value.toString()
             }
+        }
+
+        private val ENCHANT_BOOK_REGEX = Regex("""Enchanted Book \((.+) ([IVXLCDM]+)\)""")
+        private val COINS_REGEX = Regex("""([\d,]+)\s*Coins?""", RegexOption.IGNORE_CASE)
+
+        /**
+         * Derives the API item id from a loot display name (books, shards, essences, everything else
+         * by upper-casing and replacing non-alphanumerics with underscores).
+         */
+        fun lootIdFor(name: String): String? {
+            ENCHANT_BOOK_REGEX.matchEntire(name)?.let { m ->
+                return "${m.groupValues[1].uppercase().replace(' ', '_')}_${m.groupValues[2]}"
+            }
+            if (name.endsWith(" Shard")) {
+                return "SHARD_" + name.removeSuffix(" Shard").uppercase().replace(' ', '_')
+            }
+            if (name.endsWith(" Essence")) {
+                return "ESSENCE_" + name.removeSuffix(" Essence").uppercase().replace(' ', '_')
+            }
+            return name.replace("'", "")
+                .replace(Regex("[^A-Za-z0-9]+"), "_")
+                .trim('_')
+                .uppercase()
+                .ifEmpty { null }
+        }
+
+        /** Cost row for `FREE` or a plain coin amount; 0 if the line is neither. */
+        fun coinEntry(line: String): Entry {
+            if (line.equals("FREE", ignoreCase = true)) return Entry(line, 0L)
+            val coins = COINS_REGEX.find(line)?.groupValues?.get(1)?.replace(",", "")?.toLongOrNull()
+            return Entry(line, coins ?: 0L)
         }
     }
 
