@@ -1,44 +1,19 @@
 package xyz.vexo.utils
 
-import kotlin.jvm.optionals.getOrNull
 import net.minecraft.core.component.DataComponents
-import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
-import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 
 object DungeonUtils {
-    val floor: String
-        get() = if (LocationUtils.isIn(Location.Dungeon)) lastSeenFloor ?: "" else ""
+    /** Current dungeon floor, or null outside of dungeons. The floor logic lives in [LocationUtils]. */
+    val floor: DungeonFloor?
+        get() = LocationUtils.dungeonFloor
 
     val isMasterMode: Boolean
-        get() = floor.startsWith("M")
-
-    @Volatile private var lastSeenFloor: String? = null
-
-    private val catacombsFloorRegex = Regex("""The Catacombs \((E|[FM][1-7])\)""")
-
-    fun parseFloor(text: String): String? =
-        if ("Queue" in text) null else catacombsFloorRegex.find(text)?.groupValues?.get(1)
-
-    /**
-     * Returns the current dungeon floor, checking tablist first, then scoreboard as fallback
-     *
-     * @return The current floor name (e.g., "E", "M1", "F1"), or null if not in dungeon
-     */
-    fun currentFloor(): String? = lastSeenFloor
-        ?: runCatching { ScoreboardUtils.getEntries().firstNotNullOfOrNull { parseFloor(it) } }.getOrNull()
-
-    @EventHandler
-    fun onPacket(event: PacketReceiveEvent) {
-        val packet = event.packet as? ClientboundSetPlayerTeamPacket ?: return
-        val params = packet.parameters.getOrNull() ?: return
-        parseFloor((params.playerPrefix.string + params.playerSuffix.string).removeFormatting())
-            ?.let { lastSeenFloor = it }
-    }
+        get() = LocationUtils.isMasterMode
 
     data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
 

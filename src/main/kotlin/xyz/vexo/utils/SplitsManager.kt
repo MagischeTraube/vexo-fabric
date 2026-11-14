@@ -1,10 +1,7 @@
 package xyz.vexo.utils
 
-import kotlin.jvm.optionals.getOrNull
-import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ChatMessagePacketEvent
-import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.impl.dungeons.DungeonSplits
@@ -45,35 +42,15 @@ enum class SplitArea { DUNGEON, KUUDRA }
  */
 object SplitsManager {
 
-    private data class RunLocation(val area: SplitArea, val id: String)
-
     @Volatile private var currentSplits = SplitsGroup(emptyList(), null, null)
     @Volatile private var tickCounter = 0L
     @Volatile private var lastTickRealTime = 0L
     @Volatile private var score300: MilestoneTime? = null
 
-    /** Last floor / tier seen in a sidebar team update; survives world changes on purpose (see [onPacket]). */
-    @Volatile private var lastSeenLocation: RunLocation? = null
-
-    private val KUUDRA_TIER_REGEX = Regex("""Kuudra's Hollow \(T([1-5])\)""")
-
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         val message = event.unformattedMessage
         if (message == "Starting in 1 second.") startRun() else onSplitMessage(message)
-    }
-
-    /**
-     * Caches the floor / tier from sidebar team packets as they arrive (like Odin and NoammAddons),
-     * instead of relying on a single sidebar read at run start. Not reset on world join: packets are
-     * handled on the network thread and can arrive before the join event fires on the main thread.
-     */
-    @EventHandler
-    fun onPacket(event: PacketReceiveEvent) {
-        val packet = event.packet as? ClientboundSetPlayerTeamPacket ?: return
-        val params = packet.parameters.getOrNull() ?: return
-        val text = (params.playerPrefix.string + params.playerSuffix.string).removeFormatting()
-        detectLocation(text)?.let { lastSeenLocation = it }
     }
 
     @EventHandler
@@ -101,25 +78,8 @@ object SplitsManager {
         score300 = null
     }
 
-    private fun detectLocation(text: String): RunLocation? {
-        if ("Queue" in text) return null
-        DungeonUtils.parseFloor(text)?.let { return RunLocation(SplitArea.DUNGEON, it) }
-        KUUDRA_TIER_REGEX.find(text)?.let { return RunLocation(SplitArea.KUUDRA, it.groupValues[1]) }
-        return null
-    }
-
-    /**
-     * Floor / tier from the cached team packets; the sidebar is only read as a fallback. Callers run on the
-     * network thread, where reading the scoreboard can race with the main thread, so that read may fail.
-     */
-    private fun currentLocation(): RunLocation? = lastSeenLocation
-        ?: runCatching { ScoreboardUtils.getEntries().firstNotNullOfOrNull { detectLocation(it) } }.getOrNull()
-
-    /**
-     * @return The current dungeon floor as shown on the scoreboard ("E", "F1" … "M7"), or null outside dungeons.
-     */
-    fun currentDungeonFloor(): String? =
-        currentLocation()?.takeIf { it.area == SplitArea.DUNGEON }?.id
+    /** @return The current dungeon floor, or null outside dungeons. */
+    fun currentDungeonFloor(): DungeonFloor? = LocationUtils.currentFloor()
 
     private fun startRun() {
         tickCounter = 0L
@@ -128,10 +88,10 @@ object SplitsManager {
     }
 
     private fun buildSplits(): SplitsGroup? {
-        val location = currentLocation() ?: return null
-        return when (location.area) {
-            SplitArea.DUNGEON -> buildDungeonSplits(location.id)
-            SplitArea.KUUDRA -> buildKuudraSplits(location.id.toInt())
+        return when (val run = LocationUtils.currentRunLocation()) {
+            is RunLocation.Dungeon -> buildDungeonSplits(run.floor)
+            is RunLocation.Kuudra -> buildKuudraSplits(run.tier)
+            null -> null
         }
     }
 
@@ -143,27 +103,23 @@ object SplitsManager {
         buildSplits()?.let { currentSplits = it }
     }
 
-    /**
-     * @param floor The floor as shown on the scoreboard, e.g. "E", "F7" or "M7".
-     */
-    private fun buildDungeonSplits(floor: String): SplitsGroup =
+    private fun buildDungeonSplits(floor: DungeonFloor): SplitsGroup =
         SplitsGroup(dungeonSplitList(floor), DungeonSplits.dungeonPBs[floor], SplitArea.DUNGEON)
 
-    /** Fresh split list for a floor ("E", "F1" … "M7"), the last entry being the total. */
-    private fun dungeonSplitList(floor: String): List<Split> {
-        val floorNumber = floor.drop(1).toIntOrNull() ?: 0
+    /** Fresh split list for a floor, the last entry being the total. */
+    private fun dungeonSplitList(floor: DungeonFloor): List<Split> {
+        val floorNumber = floor.number
         return buildList {
             add(Split(MORT_REGEX, "§2Blood Open"))
             add(Split(BLOOD_OPEN_REGEX, "§bBlood Clear"))
             add(Split(PORTAL_ENTRY_REGEX, "§dPortal Entry"))
-            val masterMode = floor.startsWith("M")
-            addAll(dungeonSplits.getOrElse(floorNumber) { emptyList() }.filterNot { !masterMode && floorNumber == 7 && it.name == "§4Cleared" })
+            addAll(dungeonSplits.getOrElse(floorNumber) { emptyList() }.filterNot { !floor.isMaster && floorNumber == 7 && it.name == "§4Cleared" })
             add(Split(DUNGEON_CLEARED_REGEX, "§1Total"))
         }.map { it.copy() }
     }
 
     /** Split names (the PB keys) of a floor, the last one being the total. */
-    fun dungeonSplitNames(floor: String): List<String> = dungeonSplitList(floor).map { it.name }
+    fun dungeonSplitNames(floor: DungeonFloor): List<String> = dungeonSplitList(floor).map { it.name }
 
     private fun buildKuudraSplits(tier: Int): SplitsGroup {
         val group = if (tier == 5) kuudraT5SplitsGroup else kuudraSplitsGroup
@@ -179,7 +135,7 @@ object SplitsManager {
         val index = splits.indices.firstOrNull { i ->
             val split = splits[i]
             split.time == 0L && split.regex.matches(message) &&
-                (!split.requiresPrevious || (i > 0 && splits[i - 1].time != 0L))
+                    (!split.requiresPrevious || (i > 0 && splits[i - 1].time != 0L))
         } ?: return
         val split = splits[index]
 
@@ -317,8 +273,6 @@ fun parseTime(text: String): Float? {
     }
     return seconds.takeIf { it > 0f }
 }
-
-// Declared before the split groups below, which use them while initializing.
 
 /** Names of the Goldor terminal section splits, in order. */
 val terminalSectionNames = listOf("§6S1", "§6S2", "§6S3", "§6S4")

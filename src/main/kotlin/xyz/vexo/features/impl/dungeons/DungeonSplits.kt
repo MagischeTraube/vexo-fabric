@@ -6,6 +6,7 @@ import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.HudRenderEvent
 import xyz.vexo.features.SplitsModule
+import xyz.vexo.utils.DungeonFloor
 import xyz.vexo.utils.PersonalBest
 import xyz.vexo.utils.PersonalBestTimeSetting
 import xyz.vexo.utils.SplitArea
@@ -53,16 +54,16 @@ object DungeonSplits : SplitsModule(
         default = false
     )
 
-    /** Dungeon personal bests keyed by floor as shown on the scoreboard ("E", "F1" … "M7"). */
-    val dungeonPBs: Map<String, PersonalBest> =
-        (listOf("E") + (1..7).map { "F$it" } + (1..7).map { "M$it" }).associateWith { PersonalBest("Dungeon$it") }
+    /** Dungeon personal bests keyed by floor. The store names ("DungeonE", "DungeonF1" … "DungeonM7") are unchanged. */
+    val dungeonPBs: Map<DungeonFloor, PersonalBest> =
+        DungeonFloor.entries.associateWith { PersonalBest("Dungeon${it.name}") }
 
     /** Kept as a list so [initSettings] registers (and saves) every store. */
     private val pbStores: List<PersonalBest> = dungeonPBs.values.toList()
-    private val targetStores: List<PersonalBest> = dungeonPBs.keys.map { PersonalBest("Target$it") }
+    private val targetStores: List<PersonalBest> = dungeonPBs.keys.map { PersonalBest("Target${it.name}") }
 
     /** Target times for the "Dynamic (Target)" scheme, keyed like [dungeonPBs]. */
-    val dungeonTargets: Map<String, PersonalBest> = dungeonPBs.keys.zip(targetStores).toMap()
+    val dungeonTargets: Map<DungeonFloor, PersonalBest> = dungeonPBs.keys.zip(targetStores).toMap()
 
     private val editTimes by SelectorSetting(
         name = "Edit Times",
@@ -85,11 +86,12 @@ object DungeonSplits : SplitsModule(
         options = (1..7).map { "Floor $it" }
     )
 
-    private fun selectedPbFloor(): String = (if (pbMode == "Master Mode") "M" else "F") + pbFloor.removePrefix("Floor ")
+    private fun selectedPbFloor(): DungeonFloor =
+        DungeonFloor.valueOf((if (pbMode == "Master Mode") "M" else "F") + pbFloor.removePrefix("Floor "))
 
     /** One text field per split of every floor; only the selected floor's fields are shown. */
-    private fun timeEditors(stores: Map<String, PersonalBest>, mode: String, description: String): List<Setting<*>> =
-        stores.filterKeys { it != "E" }.flatMap { (floor, store) ->
+    private fun timeEditors(stores: Map<DungeonFloor, PersonalBest>, mode: String, description: String): List<Setting<*>> =
+        stores.filterKeys { it != DungeonFloor.E }.flatMap { (floor, store) ->
             SplitsManager.dungeonSplitNames(floor).map { key ->
                 PersonalBestTimeSetting(
                     name = key.removeFormatting(),
@@ -155,7 +157,7 @@ object DungeonSplits : SplitsModule(
     override fun extraSummaryNames(): List<String> = listOfNotNull("§a300 Score".takeIf { showScore300 })
 
     override fun extraSummaryLines(columns: List<Column>, p: Palette): List<Line> {
-        val floorNumber = SplitsManager.currentDungeonFloor()?.drop(1)?.toIntOrNull() ?: 0
+        val floorNumber = SplitsManager.currentDungeonFloor()?.number ?: 0
         if (!showScore300 || floorNumber !in 4..7) return emptyList()
         val reached = SplitsManager.score300Time()
         return listOf(Line(summaryLabel("§a300 Score", p), columns.map { column ->

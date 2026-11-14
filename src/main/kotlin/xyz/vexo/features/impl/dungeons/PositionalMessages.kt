@@ -8,6 +8,7 @@ import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 import xyz.vexo.features.Module
+import xyz.vexo.utils.DungeonFloor
 import xyz.vexo.utils.DungeonUtils
 import xyz.vexo.utils.inArea
 import xyz.vexo.utils.inRadius
@@ -98,7 +99,7 @@ object PositionalMessages : Module(
     @EventHandler
     fun onServerTick(event: ServerTickEvent) {
         val floor = DungeonUtils.floor
-        if (floor != "M7" && floor != "F7") return
+        if (floor != DungeonFloor.M7 && floor != DungeonFloor.F7) return
 
         val playerPos = getOwnPlayerCoords() ?: return
         var foundSpot = false

@@ -63,12 +63,15 @@ object DungeonScore {
     )
 
     private val requiredSecretPercentage = mapOf(
-        "E" to 0.3, "F1" to 0.3, "F2" to 0.4, "F3" to 0.5, "F4" to 0.6, "F5" to 0.7, "F6" to 0.85, "F7" to 1.0
+        DungeonFloor.E to 0.3, DungeonFloor.F1 to 0.3, DungeonFloor.F2 to 0.4, DungeonFloor.F3 to 0.5,
+        DungeonFloor.F4 to 0.6, DungeonFloor.F5 to 0.7, DungeonFloor.F6 to 0.85, DungeonFloor.F7 to 1.0
     )
 
     private val timeLimit = mapOf(
-        "E" to 600, "F1" to 600, "F2" to 600, "F3" to 600, "F4" to 720, "F5" to 600, "F6" to 720, "F7" to 840,
-        "M1" to 480, "M2" to 480, "M3" to 480, "M4" to 480, "M5" to 480, "M6" to 600, "M7" to 840
+        DungeonFloor.E to 600, DungeonFloor.F1 to 600, DungeonFloor.F2 to 600, DungeonFloor.F3 to 600,
+        DungeonFloor.F4 to 720, DungeonFloor.F5 to 600, DungeonFloor.F6 to 720, DungeonFloor.F7 to 840,
+        DungeonFloor.M1 to 480, DungeonFloor.M2 to 480, DungeonFloor.M3 to 480, DungeonFloor.M4 to 480,
+        DungeonFloor.M5 to 480, DungeonFloor.M6 to 600, DungeonFloor.M7 to 840
     )
 
     @EventHandler
@@ -131,7 +134,7 @@ object DungeonScore {
 
     private fun calculate(): Int? {
         val floor = SplitsManager.currentDungeonFloor() ?: return null
-        val floorNumber = floor.drop(1).toIntOrNull() ?: 0
+        val floorNumber = floor.number
         val tab = TablistUtils.getEntries()
         val sidebar = ScoreboardUtils.getEntries()
         fun find(regex: Regex, lines: List<String> = tab) = lines.firstNotNullOfOrNull { regex.find(it) }
