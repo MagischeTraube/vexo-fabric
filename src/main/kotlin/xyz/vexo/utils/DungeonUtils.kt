@@ -1,10 +1,13 @@
 package xyz.vexo.utils
 
+import kotlin.jvm.optionals.getOrNull
 import net.minecraft.core.component.DataComponents
+import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.GuiRenderEvent
+import xyz.vexo.events.impl.PacketReceiveEvent
 import xyz.vexo.events.impl.ServerTickEvent
 import xyz.vexo.events.impl.WorldJoinEvent
 
@@ -12,23 +15,37 @@ object DungeonUtils {
 
     var inDungeon = false
         private set
-    var floor: String = ""
+
+    val floor: String
+        get() = if (inDungeon) lastSeenFloor ?: "" else ""
+
+    val isMasterMode: Boolean
+        get() = floor.startsWith("M")
+
+    @Volatile var lastSeenFloor: String? = null
         private set
 
     private var tickCounter = 0
 
     private val dungeonIndicator = Regex("""Time Elapsed:""")
 
-    private val floorPattern = Regex("""(?:Master Mode )?Floor ([IVX]+)""")
+    private val catacombsFloorRegex = Regex("""The Catacombs \((E|[FM][1-7])\)""")
+
+    fun parseFloor(text: String): String? =
+        if ("Queue" in text) null else catacombsFloorRegex.find(text)?.groupValues?.get(1)
+
+    @EventHandler
+    fun onPacket(event: PacketReceiveEvent) {
+        val packet = event.packet as? ClientboundSetPlayerTeamPacket ?: return
+        val params = packet.parameters.getOrNull() ?: return
+        parseFloor((params.playerPrefix.string + params.playerSuffix.string).removeFormatting())
+            ?.let { lastSeenFloor = it }
+    }
 
     @EventHandler
     fun onServerTick(event: ServerTickEvent) {
         if (++tickCounter % 20 != 0) return
-        val entries = TablistUtils.getEntries()
-        inDungeon = entries.any { dungeonIndicator.containsMatchIn(it) }
-        floor = if (inDungeon) {
-            entries.firstNotNullOfOrNull { floorPattern.find(it)?.value } ?: ""
-        } else ""
+        inDungeon = TablistUtils.getEntries().any { dungeonIndicator.containsMatchIn(it) }
     }
 
     data class DungeonMate(val name: String, val dungeonClass: String, val isDead: Boolean)
