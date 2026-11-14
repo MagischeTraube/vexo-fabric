@@ -236,6 +236,17 @@ class SettingsPanel : UIContainer() {
     }
 
     /**
+     * Rebuilds the settings list after the current UI event has finished.
+     * Rebuilding directly inside an event callback fails because Elementa locks
+     * the children list while it is iterating over it (e.g. during mouseRelease).
+     */
+    private fun refreshSettingsDeferred(activeKeybindSettings: MutableList<KeybindSetting>) {
+        Window.enqueueRenderOperation {
+            currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
+        }
+    }
+
+    /**
      * Creates the appropriate UI component for a setting.
      *
      * @param setting The setting to create a component for
@@ -248,17 +259,17 @@ class SettingsPanel : UIContainer() {
     ): UIComponent {
         return when (setting) {
             is BooleanSetting -> BooleanSettingComponent(setting) {
-                currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
+                refreshSettingsDeferred(activeKeybindSettings)
             }
 
             is SliderSetting -> SliderSettingComponent(setting) {
-                currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
+                refreshSettingsDeferred(activeKeybindSettings)
             }
 
             is StringSetting -> StringSettingComponent(setting)
 
             is SelectorSetting -> SelectorSettingComponent(setting) {
-                currentModule?.let { showModuleSettings(it, activeKeybindSettings) }
+                refreshSettingsDeferred(activeKeybindSettings)
             }
 
             is ColorSetting -> ColorSettingComponent(setting)
