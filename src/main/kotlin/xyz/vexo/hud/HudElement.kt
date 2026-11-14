@@ -13,6 +13,9 @@ class HudElement(
 ) {
     var visible: Boolean = initialVisible
 
+    /** Colored pieces shown on the move-HUD screen instead of [text], or null to show [text]. */
+    var preview: List<PreviewSegment>? = null
+
     /**
      * Shows the HudElement for a specified amount of ticks.
      *
@@ -66,3 +69,6 @@ class HudElement(
         runAfterClientTicks(ticks) { visible = false }
     }
 }
+
+/** A piece of preview text at [x], [y] in unscaled pixels, colored 0xRRGGBB. */
+class PreviewSegment(val text: String, val x: Int, val y: Int, val color: Int)

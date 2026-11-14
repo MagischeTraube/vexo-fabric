@@ -12,6 +12,7 @@ import xyz.vexo.clickgui.components.ClickGuiColor
 import xyz.vexo.config.impl.HudSetting
 import xyz.vexo.config.ConfigManager
 import xyz.vexo.utils.runAfterClientTicks
+import java.awt.Color
 
 /**
  * GUI for moving, scaling, and positioning active HUD elements.
@@ -86,12 +87,16 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
                 height = ChildBasedRangeConstraint() + 6.pixels()
             }
 
-            val lines = hudElement.text.split('\n').mapIndexed { i, line ->
-                UIText(line).constrain {
-                    x = 5.pixels()
-                    y = (3 + i * LINE_HEIGHT * hudElement.scale).pixels()
+            val segments = hudElement.preview?.map { it to Color(it.color) }
+                ?: hudElement.text.split('\n').mapIndexed { i, line ->
+                    PreviewSegment(line, 0, i * LINE_HEIGHT, 0) to ClickGuiColor.WHITE_TEXT_COLOR
+                }
+            val texts = segments.map { (segment, color) ->
+                UIText(segment.text).constrain {
+                    x = (5 + segment.x * hudElement.scale).pixels()
+                    y = (3 + segment.y * hudElement.scale).pixels()
                     textScale = hudElement.scale.pixels()
-                }.setColor(ClickGuiColor.WHITE_TEXT_COLOR) childOf this
+                }.setColor(color) childOf this
             }
 
             enableEffect(OutlineEffect(ClickGuiColor.ACCENT_COLOR, 1f))
@@ -126,9 +131,11 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
 
                 hudElement.scale = (hudElement.scale + delta).coerceAtLeast(0.1f)
 
-                lines.forEachIndexed { i, text ->
+                texts.forEachIndexed { i, text ->
+                    val segment = segments[i].first
                     text.setTextScale(hudElement.scale.pixels())
-                    text.setY((3 + i * LINE_HEIGHT * hudElement.scale).pixels())
+                    text.setX((5 + segment.x * hudElement.scale).pixels())
+                    text.setY((3 + segment.y * hudElement.scale).pixels())
                 }
             }
 

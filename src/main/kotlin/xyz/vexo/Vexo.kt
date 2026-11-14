@@ -72,7 +72,7 @@ object Vexo : ClientModInitializer {
 		}
 
 		arrayOf(
-			DungeonUtils, LocationUtils, PartyUtils, RewarpCommandQueue, TyfrTrigger
+			DungeonScore, DungeonUtils, LocationUtils, PartyUtils, RewarpCommandQueue, SplitsManager, TyfrTrigger
 		).forEach { EventBus.subscribe(it) }
 
 		arrayOf(
@@ -86,7 +86,7 @@ object Vexo : ClientModInitializer {
 
 			// misc
 			AutoRejoin, FireVeilOverlay, InventoryPresets, CustomRecipeGui,RecolorLava, ScreenshotActions,
-			SlayerHelper, TimeChanger,
+			SlayerHelper, Splits, TimeChanger,
 
 			// chat
 			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog
