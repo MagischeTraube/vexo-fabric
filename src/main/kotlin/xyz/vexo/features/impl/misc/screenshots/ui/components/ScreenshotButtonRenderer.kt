@@ -5,13 +5,12 @@ import xyz.vexo.Vexo
 import xyz.vexo.features.impl.misc.screenshots.config.ScreenshotColors
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotMode
 import xyz.vexo.features.impl.misc.screenshots.util.SelectionBounds
-import xyz.vexo.features.impl.misc.screenshots.config.ButtonConfig
 
 object ScreenshotButtonRenderer {
     /**
-     * Renders the screenshot buttons.
+     * Renders all screenshot buttons based on the current selection and mode.
      *
-     * @param graphics The graphics to render on.
+     * @param graphics The graphics object to render with.
      * @param mouseX The current mouse X position.
      * @param mouseY The current mouse Y position.
      * @param selection The current selection bounds.
@@ -30,102 +29,70 @@ object ScreenshotButtonRenderer {
         val bottom = selection.bottom.toInt()
 
         val baseX = ButtonPositionManager.getBaseX(left, right)
-        val baseY = ButtonPositionManager.getBaseY(
-            top,
-            bottom,
-            currentMode == ScreenshotMode.DRAW
-        )
+        val baseY = ButtonPositionManager.getBaseY(top, bottom, currentMode == ScreenshotMode.DRAW)
 
-        val saveButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.SAVE, baseX, baseY)
-        val saveFullButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.SAVE_FULL, baseX, baseY)
-        val modeButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.MODE, baseX, baseY)
-        val undoButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.UNDO, baseX, baseY)
-        val moveButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.MOVE, baseX, baseY)
+        for (type in ScreenshotButtonType.entries) {
+            val layout = ScreenshotButtonLayouts.get(type, baseX, baseY)
+            val hovered = layout.contains(mouseX, mouseY) ||
+                    (type == ScreenshotButtonType.MOVE && ButtonPositionManager.isDragging())
 
-        val isSaveHovered = saveButton.contains(mouseX, mouseY)
-        val isSaveFullHovered = saveFullButton.contains(mouseX, mouseY)
-        val isModeHovered = modeButton.contains(mouseX, mouseY)
-        val isUndoHovered = undoButton.contains(mouseX, mouseY)
-        val isMoveHovered = undoButton.contains(mouseX, mouseY) || ButtonPositionManager.isDragging()
+            drawButton(
+                graphics,
+                layout,
+                ScreenshotButtonLayouts.label(type, currentMode),
+                if (hovered) hoverColor(type) else normalColor(type)
+            )
+        }
+    }
 
-        // Save
-        graphics.fill(
-            saveButton.x, saveButton.y,
-            saveButton.x + saveButton.width, saveButton.y + saveButton.height,
-            if (isSaveHovered) ScreenshotColors.saveSelectionHover else ScreenshotColors.saveSelectionNormal
-        )
-        val saveLabel = "Save"
+    /**
+     * Draws a single button with the given layout, label, and color.
+     *
+     * @param graphics The graphics object to render with.
+     * @param layout The layout of the button.
+     * @param label The label of the button.
+     * @param color The color of the button.
+     */
+    private fun drawButton(graphics: GuiGraphicsExtractor, layout: ButtonLayout, label: String, color: Int) {
+        val font = Vexo.mc.font
+        graphics.fill(layout.x, layout.y, layout.x + layout.width, layout.y + layout.height, color)
         graphics.text(
-            Vexo.mc.font,
-            saveLabel,
-            saveButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(saveLabel)) / 2,
-            saveButton.y + (ButtonConfig.HEIGHT - Vexo.mc.font.lineHeight) / 2,
+            font,
+            label,
+            layout.x + (layout.width - font.width(label)) / 2,
+            layout.y + (layout.height - font.lineHeight) / 2,
             ScreenshotColors.handleFill,
             false
         )
+    }
 
-        // Save full
-        graphics.fill(
-            saveFullButton.x, saveFullButton.y,
-            saveFullButton.x + saveFullButton.width, saveFullButton.y + saveFullButton.height,
-            if (isSaveFullHovered) ScreenshotColors.saveFullHover else ScreenshotColors.saveFullNormal
-        )
-        val saveFullLabel = "Save Full"
-        graphics.text(
-            Vexo.mc.font,
-            saveFullLabel,
-            saveFullButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(saveFullLabel)) / 2,
-            saveFullButton.y + (ButtonConfig.HEIGHT - Vexo.mc.font.lineHeight) / 2,
-            ScreenshotColors.handleFill,
-            false
-        )
+    /**
+     * Returns the normal color for a given button type.
+     *
+     * @param type The button type.
+     * @return The normal color for the button type.
+     */
+    private fun normalColor(type: ScreenshotButtonType): Int = when (type) {
+        ScreenshotButtonType.SAVE -> ScreenshotColors.saveSelectionNormal
+        ScreenshotButtonType.SAVE_FULL -> ScreenshotColors.saveFullNormal
+        ScreenshotButtonType.MODE -> ScreenshotColors.modeButtonNormal
+        ScreenshotButtonType.UNDO -> ScreenshotColors.undoButtonNormal
+        ScreenshotButtonType.MOVE -> ScreenshotColors.moveButtonNormal
+        ScreenshotButtonType.COPY_DELETE -> ScreenshotColors.copyDeleteNormal
+    }
 
-        // Mode (Draw / Select)
-        graphics.fill(
-            modeButton.x, modeButton.y,
-            modeButton.x + modeButton.width, modeButton.y + modeButton.height,
-            if (isModeHovered) ScreenshotColors.modeButtonHover else ScreenshotColors.modeButtonNormal
-        )
-        val modeLabel = if (currentMode == ScreenshotMode.SELECT) "Draw" else "Select"
-        graphics.text(
-            Vexo.mc.font,
-            modeLabel,
-            modeButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(modeLabel)) / 2,
-            modeButton.y + (ButtonConfig.HEIGHT - Vexo.mc.font.lineHeight) / 2,
-            ScreenshotColors.handleFill,
-            false
-        )
-
-        // Undo
-        graphics.fill(
-            undoButton.x, undoButton.y,
-            undoButton.x + undoButton.width, undoButton.y + undoButton.height,
-            if (isUndoHovered) ScreenshotColors.undoButtonHover else ScreenshotColors.undoButtonNormal
-        )
-        val undoLabel = "Undo"
-        graphics.text(
-            Vexo.mc.font,
-            undoLabel,
-            undoButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(undoLabel)) / 2,
-            undoButton.y + (ButtonConfig.HEIGHT - Vexo.mc.font.lineHeight) / 2,
-            ScreenshotColors.handleFill,
-            false
-        )
-
-        // Move
-        graphics.fill(
-            moveButton.x, moveButton.y,
-            moveButton.x + moveButton.width, moveButton.y + moveButton.height,
-            if (isMoveHovered) ScreenshotColors.moveButtonHover else ScreenshotColors.moveButtonNormal
-        )
-        val moveLabel = "Move"
-        graphics.text(
-            Vexo.mc.font,
-            moveLabel,
-            moveButton.x + (ButtonConfig.WIDTH - Vexo.mc.font.width(moveLabel)) / 2,
-            moveButton.y + (ButtonConfig.HEIGHT - Vexo.mc.font.lineHeight) / 2,
-            ScreenshotColors.handleFill,
-            false
-        )
+    /**
+     * Returns the hover color for a given button type.
+     *
+     * @param type The button type.
+     * @return The hover color for the button type.
+     */
+    private fun hoverColor(type: ScreenshotButtonType): Int = when (type) {
+        ScreenshotButtonType.SAVE -> ScreenshotColors.saveSelectionHover
+        ScreenshotButtonType.SAVE_FULL -> ScreenshotColors.saveFullHover
+        ScreenshotButtonType.MODE -> ScreenshotColors.modeButtonHover
+        ScreenshotButtonType.UNDO -> ScreenshotColors.undoButtonHover
+        ScreenshotButtonType.MOVE -> ScreenshotColors.moveButtonHover
+        ScreenshotButtonType.COPY_DELETE -> ScreenshotColors.copyDeleteHover
     }
 }

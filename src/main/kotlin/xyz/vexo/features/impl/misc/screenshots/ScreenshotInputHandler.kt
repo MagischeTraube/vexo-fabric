@@ -1,5 +1,7 @@
 package xyz.vexo.features.impl.misc.screenshots
 
+import kotlin.math.max
+import kotlin.math.min
 import net.minecraft.client.gui.screens.Screen
 import org.lwjgl.glfw.GLFW
 import xyz.vexo.Vexo.mc
@@ -9,11 +11,10 @@ import xyz.vexo.features.impl.misc.screenshots.config.ColorPickerConfig
 import xyz.vexo.features.impl.misc.screenshots.config.HandleConfig
 import xyz.vexo.features.impl.misc.screenshots.config.ScreenshotColors
 import xyz.vexo.features.impl.misc.screenshots.ui.components.ButtonPositionManager
+import xyz.vexo.features.impl.misc.screenshots.ui.components.ColorPickerRenderer
 import xyz.vexo.features.impl.misc.screenshots.ui.components.ScreenshotButtonLayouts
 import xyz.vexo.features.impl.misc.screenshots.ui.components.ScreenshotButtonType
 import xyz.vexo.features.impl.misc.screenshots.util.SelectionBounds
-import kotlin.math.max
-import kotlin.math.min
 
 object ScreenshotInputHandler {
     /**
@@ -38,8 +39,13 @@ object ScreenshotInputHandler {
             val modeButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.MODE, baseX, baseY)
             val undoButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.UNDO, baseX, baseY)
             val moveButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.MOVE, baseX, baseY)
+            val copyDeleteButton = ScreenshotButtonLayouts.get(ScreenshotButtonType.COPY_DELETE, baseX, baseY)
 
             when {
+                copyDeleteButton.contains(mouseX, mouseY) -> {
+                    ScreenshotHud.copyWithoutSaving(screen, cropToSelection = true)
+                    return
+                }
                 saveButton.contains(mouseX, mouseY)     -> { ScreenshotHud.saveScreenshot(screen, cropToSelection = true);  return }
                 saveFullButton.contains(mouseX, mouseY) -> { ScreenshotHud.saveScreenshot(screen, cropToSelection = false); return }
                 modeButton.contains(mouseX, mouseY)     -> {
@@ -59,8 +65,7 @@ object ScreenshotInputHandler {
             if (ScreenshotHud.currentMode == ScreenshotMode.DRAW) {
                 val size = ColorPickerConfig.SIZE
                 val gap = ColorPickerConfig.GAP
-                val buttonsBaseX = ButtonPositionManager.getBaseX(left, right)
-                val startX = buttonsBaseX + (ButtonConfig.TOTAL_WIDTH / 2) - (ColorPickerConfig.TOTAL_WIDTH / 2)
+                val startX = ColorPickerRenderer.getStartX(ButtonPositionManager.getBaseX(left, right))
                 val y = ButtonPositionManager.getBaseY(top, bottom, true) + ButtonConfig.HEIGHT + ColorPickerConfig.Y_OFFSET_BELOW_BUTTONS
 
                 for (i in ScreenshotColors.drawColors.indices) {

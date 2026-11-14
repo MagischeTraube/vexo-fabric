@@ -1,6 +1,9 @@
 package xyz.vexo.features.impl.misc.screenshots.ui.components
 
+import kotlin.math.max
+import xyz.vexo.features.impl.misc.screenshots.ScreenshotMode
 import xyz.vexo.features.impl.misc.screenshots.config.ButtonConfig
+import xyz.vexo.Vexo
 
 /**
  * Represents the layout of a button.
@@ -26,11 +29,12 @@ data class ButtonLayout(
  * @property index The index of the button.
  */
 enum class ScreenshotButtonType(val index: Int) {
-    SAVE(0),
-    SAVE_FULL(1),
-    MODE(2),
-    UNDO(3),
-    MOVE(4)
+    COPY_DELETE(0),
+    SAVE(1),
+    SAVE_FULL(2),
+    MODE(3),
+    UNDO(4),
+    MOVE(5),
 }
 
 /**
@@ -38,14 +42,37 @@ enum class ScreenshotButtonType(val index: Int) {
  */
 object ScreenshotButtonLayouts {
 
-    fun get(type: ScreenshotButtonType, baseX: Int, baseY: Int): ButtonLayout {
-        val x = baseX + type.index * (ButtonConfig.WIDTH + ButtonConfig.GAP)
+    private const val PADDING_X = 8
 
-        return ButtonLayout(
-            x,
-            baseY,
-            ButtonConfig.WIDTH,
-            ButtonConfig.HEIGHT
-        )
+    fun label(type: ScreenshotButtonType, currentMode: ScreenshotMode): String = when (type) {
+        ScreenshotButtonType.COPY_DELETE -> "Copy and Delete"
+        ScreenshotButtonType.SAVE -> "Save"
+        ScreenshotButtonType.SAVE_FULL -> "Save Full"
+        ScreenshotButtonType.MODE -> if (currentMode == ScreenshotMode.SELECT) "Mode: Draw" else "Mode: Select"
+        ScreenshotButtonType.UNDO -> "Undo"
+        ScreenshotButtonType.MOVE -> "Move Buttons"
+    }
+
+    private fun widthOf(type: ScreenshotButtonType): Int {
+        val font = Vexo.mc.font
+        val textWidth = if (type == ScreenshotButtonType.MODE) {
+            max(font.width("Mode: Draw"), font.width("Mode: Select"))
+        } else {
+            font.width(label(type, ScreenshotMode.SELECT))
+        }
+        return max(ButtonConfig.WIDTH, textWidth + PADDING_X * 2)
+    }
+
+    fun totalWidth(): Int {
+        val types = ScreenshotButtonType.entries
+        return types.sumOf { widthOf(it) } + ButtonConfig.GAP * (types.size - 1)
+    }
+
+    fun get(type: ScreenshotButtonType, baseX: Int, baseY: Int): ButtonLayout {
+        val offset = ScreenshotButtonType.entries
+            .filter { it.index < type.index }
+            .sumOf { widthOf(it) + ButtonConfig.GAP }
+
+        return ButtonLayout(baseX + offset, baseY, widthOf(type), ButtonConfig.HEIGHT)
     }
 }

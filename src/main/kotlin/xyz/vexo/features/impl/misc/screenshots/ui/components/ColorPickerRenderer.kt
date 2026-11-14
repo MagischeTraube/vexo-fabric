@@ -7,8 +7,21 @@ import xyz.vexo.features.impl.misc.screenshots.ScreenshotMode
 import xyz.vexo.features.impl.misc.screenshots.config.ButtonConfig
 import xyz.vexo.features.impl.misc.screenshots.config.ColorPickerConfig
 import xyz.vexo.features.impl.misc.screenshots.util.SelectionBounds
+import xyz.vexo.Vexo
 
 object ColorPickerRenderer {
+    /**
+     * Calculates the start X position for the color picker based on the buttons base X position.
+     *
+     * @param buttonsBaseX The base X position of the buttons.
+     * @return The start X position for the color picker.
+     */
+    fun getStartX(buttonsBaseX: Int): Int {
+        val screenWidth = Vexo.mc.window.guiScaledWidth
+        val x = buttonsBaseX + (ScreenshotButtonLayouts.totalWidth() / 2) - (ColorPickerConfig.TOTAL_WIDTH / 2)
+        return x.coerceIn(0, (screenWidth - ColorPickerConfig.TOTAL_WIDTH).coerceAtLeast(0))
+    }
+
     /**
      * Renders the color picker.
      *
@@ -28,7 +41,7 @@ object ColorPickerRenderer {
         val buttonsBaseX = ButtonPositionManager.getBaseX(left, right)
         val buttonsBaseY = ButtonPositionManager.getBaseY(top, bottom, currentMode == ScreenshotMode.DRAW)
 
-        val startX = buttonsBaseX + (ButtonConfig.TOTAL_WIDTH / 2) - (ColorPickerConfig.TOTAL_WIDTH / 2)
+        val startX = getStartX(buttonsBaseX)
         val y = buttonsBaseY + ButtonConfig.HEIGHT + ColorPickerConfig.Y_OFFSET_BELOW_BUTTONS
 
         for (i in ScreenshotColors.drawColors.indices) {

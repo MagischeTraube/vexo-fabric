@@ -28,7 +28,10 @@ object ButtonPositionManager {
      * @return The base X position of the buttons.
      */
     fun getBaseX(left: Int, right: Int): Int {
-        return customX ?: (((left + right) / 2) - ButtonConfig.TOTAL_WIDTH / 2)
+        val totalWidth = ScreenshotButtonLayouts.totalWidth()
+        val screenWidth = Vexo.mc.window.guiScaledWidth
+        val x = customX ?: (((left + right) / 2) - totalWidth / 2)
+        return x.coerceIn(0, (screenWidth - totalWidth).coerceAtLeast(0))
     }
 
     /**
@@ -39,30 +42,24 @@ object ButtonPositionManager {
      * @param drawMode Whether the color picker is enabled.
      * @return The base Y position of the buttons.
      */
-    fun getBaseY(
-        selectionTop: Int,
-        selectionBottom: Int,
-        drawMode: Boolean
-    ): Int {
-        customY?.let { return it }
-
+    fun getBaseY(selectionTop: Int, selectionBottom: Int, drawMode: Boolean): Int {
         val screenHeight = Vexo.mc.window.guiScaledHeight
 
-        var requiredHeight =
-            ButtonConfig.Y_OFFSET_BELOW_SELECTION + ButtonConfig.HEIGHT
-
+        var blockHeight = ButtonConfig.HEIGHT
         if (drawMode) {
-            requiredHeight +=
-                ColorPickerConfig.Y_OFFSET_BELOW_BUTTONS +
-                        ColorPickerConfig.SIZE
+            blockHeight += ColorPickerConfig.Y_OFFSET_BELOW_BUTTONS + ColorPickerConfig.SIZE
         }
+        val maxY = (screenHeight - blockHeight).coerceAtLeast(0)
 
-        return if (selectionBottom + requiredHeight > screenHeight) {
-            (selectionBottom - requiredHeight)
-                .coerceAtLeast(selectionTop)
-        } else {
-            selectionBottom + ButtonConfig.Y_OFFSET_BELOW_SELECTION
+        val y = customY ?: run {
+            val requiredHeight = ButtonConfig.Y_OFFSET_BELOW_SELECTION + blockHeight
+            if (selectionBottom + requiredHeight > screenHeight) {
+                (selectionBottom - requiredHeight).coerceAtLeast(selectionTop)
+            } else {
+                selectionBottom + ButtonConfig.Y_OFFSET_BELOW_SELECTION
+            }
         }
+        return y.coerceIn(0, maxY)
     }
 
     /**

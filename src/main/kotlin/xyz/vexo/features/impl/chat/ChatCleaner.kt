@@ -266,7 +266,8 @@ object ChatCleaner : Module(
     )
 
     val torrhusRegex = listOf(
-        Regex("""You stick your hand into the honeyhive and feel around...""")
+        Regex("""You stick your hand into the honeyhive and feel around..."""),
+        Regex("""A Honeybuzz appeared, angry at you for stealing its honey!""")
     )
 
     val safariMessagesRegex = listOf(

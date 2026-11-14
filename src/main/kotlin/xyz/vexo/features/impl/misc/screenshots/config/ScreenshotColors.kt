@@ -6,6 +6,8 @@ object ScreenshotColors {
     val outsideSelectionOverlay    = Color(17, 17, 17, 153).rgb
     val handleFill           = Color(255, 255, 255, 255).rgb
     val handleBorder         = Color(68, 68, 68, 255).rgb
+    val copyDeleteNormal     = Color(239, 68, 68, 255).rgb
+    val copyDeleteHover      = Color(220, 38, 38, 255).rgb
     val saveSelectionNormal  = Color(34, 204, 102, 255).rgb
     val saveSelectionHover   = Color(27, 168, 84, 255).rgb
     val saveFullNormal       = Color(59, 130, 246, 255).rgb

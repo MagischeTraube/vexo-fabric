@@ -1,10 +1,15 @@
 package xyz.vexo.features.impl.misc.screenshots
 
-import java.awt.Color
-import javax.imageio.ImageIO
-
 import com.mojang.blaze3d.pipeline.RenderTarget
 import com.mojang.blaze3d.platform.NativeImage
+
+import java.awt.Color
+import javax.imageio.ImageIO
+import java.io.File
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
 import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents
@@ -15,10 +20,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.renderer.texture.DynamicTexture
 import net.minecraft.resources.Identifier.fromNamespaceAndPath
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 import xyz.vexo.Vexo
 import xyz.vexo.Vexo.mc
@@ -181,6 +182,56 @@ object ScreenshotHud {
             } catch (e: Exception) {
                 logError(e, this@ScreenshotHud)
                 modMessage("§cError processing screenshots!")
+            }
+        }
+    }
+
+    /**
+     * Copies the current screenshot to the clipboard without keeping a file on disk.
+     *
+     * @param screen The current screen.
+     * @param cropToSelection Whether to crop the screenshot to the current selection.
+     */
+    internal fun copyWithoutSaving(screen: Screen, cropToSelection: Boolean) {
+        val originalImage = image ?: return
+        val guiScale = mc.window.guiScale
+
+        val imageCopy = NativeImage(originalImage.width, originalImage.height, false)
+        imageCopy.copyFrom(originalImage)
+
+        val rectsToDraw = ArrayList(drawnRectangles)
+        val currentSelection = selection
+
+        if (screen is ScreenshotScreen) screen.onClose()
+        ScreenshotActions.displayScreenshotHud = false
+        destroy()
+
+        Vexo.scope.launch(Dispatchers.Default) {
+            val tempFile = File.createTempFile("vexo_screenshot_", ".png")
+            try {
+                ScreenshotProcessor.drawRectangles(imageCopy, rectsToDraw, guiScale.toDouble())
+
+                val finalImage = if (cropToSelection) {
+                    ScreenshotProcessor.cropToSelection(imageCopy, currentSelection, guiScale.toDouble())
+                } else {
+                    imageCopy
+                }
+
+                withContext(Dispatchers.IO) {
+                    finalImage.writeToFile(tempFile.toPath())
+                }
+
+                val awtImage = withContext(Dispatchers.IO) { ImageIO.read(tempFile) }
+                ClipboardUtils.copyImageToClipboard(awtImage)
+                mc.execute { modMessage("Screenshot copied to clipboard!") }
+
+                finalImage.close()
+                if (cropToSelection) imageCopy.close()
+            } catch (e: Exception) {
+                logError(e, this@ScreenshotHud)
+                mc.execute { modMessage("§cFailed to copy screenshot!") }
+            } finally {
+                tempFile.delete()
             }
         }
     }
