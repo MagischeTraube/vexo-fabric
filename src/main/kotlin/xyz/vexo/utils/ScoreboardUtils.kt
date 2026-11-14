@@ -1,6 +1,8 @@
 package xyz.vexo.utils
 
+import net.minecraft.network.chat.Component
 import net.minecraft.world.scores.DisplaySlot
+import net.minecraft.world.scores.PlayerTeam
 import xyz.vexo.Vexo.mc
 
 object ScoreboardUtils {
@@ -15,7 +17,11 @@ object ScoreboardUtils {
         return scoreboard.listPlayerScores(objective)
             .filter { !it.isHidden }
             .sortedByDescending { it.value() }
-            .map { it.owner().removeFormatting() }
+            .map { score ->
+                val owner = score.owner()
+                PlayerTeam.formatNameForTeam(scoreboard.getPlayersTeam(owner), Component.literal(owner))
+                    .string.removeFormatting()
+            }
     }
 
     /**

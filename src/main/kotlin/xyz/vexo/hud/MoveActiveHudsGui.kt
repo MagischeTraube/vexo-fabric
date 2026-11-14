@@ -82,15 +82,17 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
             constrain {
                 x = hudElement.x.pixels()
                 y = hudElement.y.pixels()
-                width = ChildBasedSizeConstraint() + 10.pixels()
-                height = ChildBasedSizeConstraint() + 6.pixels()
+                width = ChildBasedRangeConstraint() + 10.pixels()
+                height = ChildBasedRangeConstraint() + 6.pixels()
             }
 
-            val text = UIText(hudElement.text).constrain {
-                x = 5.pixels()
-                y = 3.pixels()
-                textScale = hudElement.scale.pixels()
-            }.setColor(ClickGuiColor.WHITE_TEXT_COLOR) childOf this
+            val lines = hudElement.text.split('\n').mapIndexed { i, line ->
+                UIText(line).constrain {
+                    x = 5.pixels()
+                    y = (3 + i * LINE_HEIGHT * hudElement.scale).pixels()
+                    textScale = hudElement.scale.pixels()
+                }.setColor(ClickGuiColor.WHITE_TEXT_COLOR) childOf this
+            }
 
             enableEffect(OutlineEffect(ClickGuiColor.ACCENT_COLOR, 1f))
 
@@ -124,7 +126,10 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
 
                 hudElement.scale = (hudElement.scale + delta).coerceAtLeast(0.1f)
 
-                text.setTextScale(hudElement.scale.pixels())
+                lines.forEachIndexed { i, text ->
+                    text.setTextScale(hudElement.scale.pixels())
+                    text.setY((3 + i * LINE_HEIGHT * hudElement.scale).pixels())
+                }
             }
 
         }
@@ -152,4 +157,8 @@ class MoveActiveHudsGui : WindowScreen(ElementaVersion.V10) {
     }
 
     override fun isPauseScreen(): Boolean = false
+
+    private companion object {
+        const val LINE_HEIGHT = 9
+    }
 }
