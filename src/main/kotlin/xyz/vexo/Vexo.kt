@@ -89,7 +89,7 @@ object Vexo : ClientModInitializer {
 			SlayerHelper, Splits, TimeChanger,
 
 			// chat
-			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog
+			ChatCleaner, ChatCopy, ChatStacking, CompactChat, ContinuousChatLog, MoreChatHistory
 		).forEach { ModuleManager.register(it) }
 
 		GuiPrefs.load()

@@ -95,7 +95,7 @@ object ContinuousChatLog : Module(
                     add(message(Component.literal("§8§m          §r §7Restored chat log §8§m          "), GuiMessageSource.SYSTEM_CLIENT))
                 }
                 addAll(restored.asReversed())
-            }.take(100)
+            }.take(MoreChatHistory.limit())
 
             all.clear()
             all.addAll(combined)

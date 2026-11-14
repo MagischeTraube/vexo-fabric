@@ -9,12 +9,15 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xyz.vexo.events.impl.ChatMessageEvent;
 import net.minecraft.client.multiplayer.chat.GuiMessage;
 import xyz.vexo.features.impl.chat.ChatCopy;
 import xyz.vexo.features.impl.chat.ChatStacking;
+import xyz.vexo.features.impl.chat.MoreChatHistory;
 import xyz.vexo.utils.UtilsKt;
 
 @Mixin(ChatComponent.class)
@@ -59,5 +62,10 @@ public abstract class ChatComponentMixin {
     @Inject(method = "addMessageToQueue", at = @At("HEAD"))
     private void vexo$recordTimestamp(GuiMessage message, CallbackInfo ci) {
         ChatCopy.recordTime(message, System.currentTimeMillis());
+    }
+
+    @ModifyConstant(method = {"addMessageToQueue", "addMessageToDisplayQueue"}, constant = @Constant(intValue = 100))
+    private int vexo$historyLimit(int original) {
+        return MoreChatHistory.limit();
     }
 }
