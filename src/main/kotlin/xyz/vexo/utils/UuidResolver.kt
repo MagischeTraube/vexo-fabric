@@ -42,6 +42,8 @@ object UuidResolver {
     private const val MOJANG_BULK_API = "https://api.mojang.com/profiles/minecraft"
     private const val BATCH_SIZE = 10
 
+    private val RETRY_DELAYS_MS = longArrayOf(1_000L, 2_000L, 5_000L)
+
     private val gson get() = Vexo.gson
 
     private val VALID_NAME = Regex("^\\w{1,16}$")
@@ -51,14 +53,16 @@ object UuidResolver {
         .build()
 
     /**
-     * A cached mapping. Validity is based on [fetchedAt] only, [lastAccessed]
+     * A cached mapping. Validity is based on [fetchedAt] only, [accessedAt]
      * is used solely for least-recently-used eviction.
      */
-    private class Entry(val uuid: String, val fetchedAt: Long, lastAccessed: Long = fetchedAt) {
-        @Volatile var lastAccessed: Long = lastAccessed
-    }
+    private class Entry(val uuid: String, val fetchedAt: Long, @Volatile var accessedAt: Long = fetchedAt)
 
-    private class HttpStatusException(val code: Int, api: String) : IOException("$api returned $code")
+    private class HttpStatusException(val code: Int, api: String) :
+        IOException("$api returned $code")
+
+    private fun statusException(response: HttpResponse<*>, api: String): HttpStatusException =
+        HttpStatusException(response.statusCode(), api)
 
     private val cache: ConcurrentHashMap<String, Entry> by lazy { loadFromDisk() }
     private val notFound = ConcurrentHashMap<String, Long>()
@@ -88,6 +92,9 @@ object UuidResolver {
         val now = System.currentTimeMillis()
 
         lookup(key, now)?.let { return it }
+
+        inFlight[key]?.let { return it.await() }
+
         if (isNotFound(key, now) || now < blockedUntil) return null
 
         val created = Vexo.scope.async(start = CoroutineStart.LAZY) { fetchSingle(key) }
@@ -175,7 +182,7 @@ object UuidResolver {
             cache.remove(key, entry)
             return null
         }
-        entry.lastAccessed = now
+        entry.accessedAt = now
         return entry.uuid
     }
 
@@ -233,30 +240,61 @@ object UuidResolver {
         cache.entries.removeIf { now - it.value.fetchedAt > TTL_MS }
         if (cache.size < MAX_SIZE) return
 
-        val sorted = cache.entries.sortedBy { it.value.lastAccessed }
+        val sorted = cache.entries.sortedBy { it.value.accessedAt }
         sorted.take((sorted.size / 4).coerceAtLeast(1))
             .forEach { cache.remove(it.key, it.value) }
     }
 
     /**
-     * Applies a cooldown after a failed request. Rate limits (HTTP 429) block for longer.
+     * Applies a cooldown after a failed request. Rate limits (HTTP 429) block for
+     * [RATE_LIMIT_COOLDOWN_MS], all other errors for [ERROR_COOLDOWN_MS].
      */
     private fun onRequestFailed(e: Exception) {
-        val cooldown = if (e is HttpStatusException && e.code == 429) RATE_LIMIT_COOLDOWN_MS else ERROR_COOLDOWN_MS
+        val cooldown = if (e is HttpStatusException && e.code == 429) {
+            RATE_LIMIT_COOLDOWN_MS
+        } else {
+            ERROR_COOLDOWN_MS
+        }
         blockedUntil = System.currentTimeMillis() + cooldown
         logError(e, this)
     }
+
+    /**
+     * Runs [block] and retries it after transient failures, waiting 1s, 2s and 5s
+     * before the 1st, 2nd and 3rd retry. If the last retry fails too, the exception
+     * is rethrown. Only cancellation and HTTP 404/204 are never retried.
+     */
+    private suspend fun <T> withRetry(block: suspend () -> T): T {
+        var attempt = 0
+        while (true) {
+            try {
+                return block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!isRetryable(e) || attempt >= RETRY_DELAYS_MS.size) throw e
+                delay(RETRY_DELAYS_MS[attempt++].toDuration(DurationUnit.MILLISECONDS))
+            }
+        }
+    }
+
+    /**
+     * Everything is retried except HTTP 404 and 204 (name does not exist).
+     */
+    private fun isRetryable(e: Exception): Boolean =
+        !(e is HttpStatusException && (e.code == 404 || e.code == 204))
 
     /**
      * Loads the cache from disk. Only runs on first access.
      *
      * File format: `{"name": {"uuid": "...", "fetchedAt": millis, "accessedAt": millis}, ...}`.
      * Expired or malformed entries are skipped. If the file holds more than [MAX_SIZE]
-     * valid entries, only the most recently accessed ones are kept.
+     * valid entries, only the most recently accessed ones are kept and a save is scheduled.
      * A corrupt file results in an empty cache.
      */
     private fun loadFromDisk(): ConcurrentHashMap<String, Entry> {
         val entries = ConcurrentHashMap<String, Entry>()
+        var trimmed = false
 
         try {
             if (cacheFile.exists()) {
@@ -272,10 +310,11 @@ object UuidResolver {
 
                 if (entries.size > MAX_SIZE) {
                     entries.entries
-                        .sortedBy { it.value.lastAccessed }
+                        .sortedBy { it.value.accessedAt }
                         .take(entries.size - MAX_SIZE)
                         .forEach { entries.remove(it.key) }
                     dirty = true
+                    trimmed = true
                 }
             }
         } catch (e: Exception) {
@@ -283,6 +322,7 @@ object UuidResolver {
         }
 
         cacheLoaded = true
+        if (trimmed) scheduleSave()
         return entries
     }
 
@@ -324,7 +364,7 @@ object UuidResolver {
                 val entryJson = JsonObject()
                 entryJson.addProperty("uuid", entry.uuid)
                 entryJson.addProperty("fetchedAt", entry.fetchedAt)
-                entryJson.addProperty("accessedAt", entry.lastAccessed)
+                entryJson.addProperty("accessedAt", entry.accessedAt)
                 root.add(username, entryJson)
             }
 
@@ -344,33 +384,36 @@ object UuidResolver {
 
     /**
      * Resolves a single (lowercase) username via the Mojang API and updates the cache.
+     * Transient failures are retried via [withRetry] (1s, 2s, 5s).
      * 404/204 mark the name as non-existent without triggering a cooldown.
      * Never throws except for [CancellationException].
      */
     private suspend fun fetchSingle(key: String): String? {
         try {
-            val request = HttpRequest.newBuilder(URI.create("$MOJANG_API/$key"))
-                .timeout(Duration.ofSeconds(10))
-                .GET()
-                .build()
+            return withRetry {
+                val request = HttpRequest.newBuilder(URI.create("$MOJANG_API/$key"))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build()
 
-            val response = withContext(Dispatchers.IO) {
-                httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            }
-            val now = System.currentTimeMillis()
+                val response = withContext(Dispatchers.IO) {
+                    httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+                }
+                val now = System.currentTimeMillis()
 
-            return when (response.statusCode()) {
-                200 -> {
-                    val uuid = gson.fromJson(response.body(), JsonObject::class.java)
-                        ?.get("id")?.asString
-                    if (uuid != null) store(key, uuid, now) else markNotFound(key, now)
-                    uuid
+                when (response.statusCode()) {
+                    200 -> {
+                        val uuid = gson.fromJson(response.body(), JsonObject::class.java)
+                            ?.get("id")?.asString
+                        if (uuid != null) store(key, uuid, now) else markNotFound(key, now)
+                        uuid
+                    }
+                    204, 404 -> {
+                        markNotFound(key, now)
+                        null
+                    }
+                    else -> throw statusException(response, "Mojang API")
                 }
-                204, 404 -> {
-                    markNotFound(key, now)
-                    null
-                }
-                else -> throw HttpStatusException(response.statusCode(), "Mojang API")
             }
         } catch (e: CancellationException) {
             throw e
@@ -382,27 +425,30 @@ object UuidResolver {
 
     /**
      * Resolves multiple Minecraft usernames in a single Mojang API request.
+     * Transient failures are retried via [withRetry] (1s, 2s, 5s).
      *
      * @param names The usernames to resolve (maximum 10 per request)
      * @return Map of lowercase usernames to their UUIDs
      */
     private suspend fun fetchBatch(names: List<String>): Map<String, String> =
-        withContext(Dispatchers.IO) {
-            val body = gson.toJson(names)
-            val request = HttpRequest.newBuilder(URI.create(MOJANG_BULK_API))
-                .header("Content-Type", "application/json")
-                .timeout(Duration.ofSeconds(10))
-                .POST(HttpRequest.BodyPublishers.ofString(body))
-                .build()
+        withRetry {
+            withContext(Dispatchers.IO) {
+                val body = gson.toJson(names)
+                val request = HttpRequest.newBuilder(URI.create(MOJANG_BULK_API))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build()
 
-            val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() != 200) {
-                throw HttpStatusException(response.statusCode(), "Mojang bulk API")
-            }
+                val response = httpClient.send(request, HttpResponse.BodyHandlers.ofString())
+                if (response.statusCode() != 200) {
+                    throw statusException(response, "Mojang bulk API")
+                }
 
-            gson.fromJson(response.body(), JsonArray::class.java).associate {
-                val obj = it.asJsonObject
-                obj.get("name").asString.lowercase() to obj.get("id").asString
+                gson.fromJson(response.body(), JsonArray::class.java).associate {
+                    val obj = it.asJsonObject
+                    obj.get("name").asString.lowercase() to obj.get("id").asString
+                }
             }
         }
 }
