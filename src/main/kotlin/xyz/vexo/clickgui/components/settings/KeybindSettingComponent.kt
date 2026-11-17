@@ -1,11 +1,9 @@
 package xyz.vexo.clickgui.components.settings
 
 import org.lwjgl.glfw.GLFW
-import gg.essential.elementa.UIComponent
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.UIText
-import gg.essential.elementa.components.Window
 import gg.essential.elementa.constraints.CenterConstraint
 import gg.essential.elementa.dsl.*
 import xyz.vexo.clickgui.gpx
@@ -20,9 +18,9 @@ class KeybindSettingComponent(
     private val setting: KeybindSetting
 ) : UIContainer() {
 
-    private var keyListenerRegistered = false
-
     init {
+        setting.listening = false
+
         constrain {
             width = 100.percent()
             height = 40.gpx()
@@ -52,16 +50,32 @@ class KeybindSettingComponent(
             textScale = 1.gpx()
         }.apply { setColor(Theme.textPrimary()) } childOf keybindButton
 
-        keybindButton.onMouseClick {
-            if (!keyListenerRegistered) {
-                registerKeyListener(keybindText, keybindBackground)
-                keyListenerRegistered = true
-            }
-
-            setting.listening = !setting.listening
-            keybindText.setText(if (setting.listening) "..." else getKeyName(setting.getCurrentValue()))
-            keybindBackground.colorTo(if (setting.listening) Theme.accent() else Theme.card())
+        fun stopListening() {
+            setting.listening = false
+            keybindText.setText(getKeyName(setting.getCurrentValue()))
+            keybindBackground.colorTo(Theme.card())
         }
+
+        keybindButton.onMouseClick { event ->
+            event.stopPropagation()
+            if (setting.listening) {
+                keybindButton.releaseWindowFocus()
+                return@onMouseClick
+            }
+            setting.listening = true
+            keybindButton.grabWindowFocus()
+            keybindText.setText("...")
+            keybindBackground.colorTo(Theme.accent())
+        }
+
+        keybindButton.onKeyType { _, keyCode ->
+            if (!setting.listening) return@onKeyType
+            val unbind = keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_DELETE || keyCode == GLFW.GLFW_KEY_BACKSPACE
+            setting.updateValue(if (unbind) -1 else keyCode)
+            keybindButton.releaseWindowFocus()
+        }
+
+        keybindButton.onFocusLost { stopListening() }
 
         keybindButton.onMouseEnter {
             if (!setting.listening) keybindBackground.colorTo(Theme.cardHover())
@@ -72,46 +86,26 @@ class KeybindSettingComponent(
         }
     }
 
-    private fun registerKeyListener(keybindText: UIText, keybindBackground: UIComponent) {
-        val window = Window.of(this)
-        window.onKeyType { _, keyCode ->
-            if (setting.listening) {
-                when (keyCode) {
-                    GLFW.GLFW_KEY_ESCAPE,
-                    GLFW.GLFW_KEY_DELETE,
-                    GLFW.GLFW_KEY_BACKSPACE -> {
-                        setting.updateValue(-1)
-                        keybindText.setText(getKeyName(-1))
-                    }
-                    else -> {
-                        setting.updateValue(keyCode)
-                        keybindText.setText(getKeyName(keyCode))
-                    }
-                }
-                keybindBackground.colorTo(Theme.card())
-                setting.listening = false
-            }
-        }
+    private companion object {
+        val specialKeys = mapOf(
+            GLFW.GLFW_KEY_SPACE to "SPACE",
+            GLFW.GLFW_KEY_ESCAPE to "ESC",
+            GLFW.GLFW_KEY_ENTER to "ENTER",
+            GLFW.GLFW_KEY_TAB to "TAB",
+            GLFW.GLFW_KEY_BACKSPACE to "BACK",
+            GLFW.GLFW_KEY_DELETE to "DEL",
+            GLFW.GLFW_KEY_LEFT_SHIFT to "LSHIFT",
+            GLFW.GLFW_KEY_RIGHT_SHIFT to "RSHIFT",
+            GLFW.GLFW_KEY_LEFT_CONTROL to "LCTRL",
+            GLFW.GLFW_KEY_RIGHT_CONTROL to "RCTRL",
+            GLFW.GLFW_KEY_LEFT_ALT to "LALT",
+            GLFW.GLFW_KEY_RIGHT_ALT to "RALT",
+            GLFW.GLFW_KEY_UP to "UP",
+            GLFW.GLFW_KEY_DOWN to "DOWN",
+            GLFW.GLFW_KEY_LEFT to "LEFT",
+            GLFW.GLFW_KEY_RIGHT to "RIGHT"
+        )
     }
-
-    private val specialKeys = mapOf(
-        GLFW.GLFW_KEY_SPACE to "SPACE",
-        GLFW.GLFW_KEY_ESCAPE to "ESC",
-        GLFW.GLFW_KEY_ENTER to "ENTER",
-        GLFW.GLFW_KEY_TAB to "TAB",
-        GLFW.GLFW_KEY_BACKSPACE to "BACK",
-        GLFW.GLFW_KEY_DELETE to "DEL",
-        GLFW.GLFW_KEY_LEFT_SHIFT to "LSHIFT",
-        GLFW.GLFW_KEY_RIGHT_SHIFT to "RSHIFT",
-        GLFW.GLFW_KEY_LEFT_CONTROL to "LCTRL",
-        GLFW.GLFW_KEY_RIGHT_CONTROL to "RCTRL",
-        GLFW.GLFW_KEY_LEFT_ALT to "LALT",
-        GLFW.GLFW_KEY_RIGHT_ALT to "RALT",
-        GLFW.GLFW_KEY_UP to "UP",
-        GLFW.GLFW_KEY_DOWN to "DOWN",
-        GLFW.GLFW_KEY_LEFT to "LEFT",
-        GLFW.GLFW_KEY_RIGHT to "RIGHT"
-    )
 
     private fun getKeyName(keyCode: Int): String {
         if (keyCode == -1) return "None"
