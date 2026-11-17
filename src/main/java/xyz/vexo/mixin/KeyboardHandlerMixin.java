@@ -2,7 +2,6 @@ package xyz.vexo.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyboardHandler;
-import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,11 +25,11 @@ public class KeyboardHandlerMixin {
             return;
         }
 
-        InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(keyEvent.key());
+        InputConstants.Key key = InputConstants.Type.KEYBOARD.getOrCreate(keyEvent.key());
 
-        if (action == GLFW.GLFW_PRESS) {
+        if (action == InputConstants.PRESS) {
             new KeybindEvent(key).postAndCatch();
-        } else if (action == GLFW.GLFW_RELEASE) {
+        } else if (action == InputConstants.RELEASE) {
             new KeybindReleaseEvent(key).postAndCatch();
         }
     }

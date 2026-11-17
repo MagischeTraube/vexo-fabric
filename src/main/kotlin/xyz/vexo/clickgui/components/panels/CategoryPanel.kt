@@ -6,7 +6,7 @@ import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.universal.UScreen
-import net.minecraft.util.Util
+import com.mojang.blaze3d.Blaze3D
 import xyz.vexo.Vexo.mc
 import xyz.vexo.clickgui.gpx
 import xyz.vexo.clickgui.gsib
@@ -74,7 +74,7 @@ class CategoryPanel(
 
         createButton("Discord") {
             try {
-                Util.getPlatform().openUri("https://discord.gg/wfW3aEEpVA")
+                Blaze3D.openUri(java.net.URI("https://discord.gg/wfW3aEEpVA"))
             } catch (e: Exception) {
                 e.printStackTrace()
             }

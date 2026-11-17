@@ -3,7 +3,7 @@ package xyz.vexo.features.impl.misc.screenshots
 import kotlin.math.max
 import kotlin.math.min
 import net.minecraft.client.gui.screens.Screen
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
 import xyz.vexo.Vexo.mc
 import xyz.vexo.features.impl.misc.ScreenshotActions
 import xyz.vexo.features.impl.misc.screenshots.config.ButtonConfig
@@ -202,16 +202,16 @@ object ScreenshotInputHandler {
      */
     fun handleKeyPress(key: Int, screen: Screen): Boolean {
         return when (key) {
-            GLFW.GLFW_KEY_ESCAPE -> {
+            InputConstants.KEY_ESCAPE -> {
                 ScreenshotActions.displayScreenshotHud = false
                 ScreenshotHud.destroy()
                 true
             }
-            GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+            InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
                 if (ScreenshotHud.selectionIsConfirmed) ScreenshotHud.saveScreenshot(screen, cropToSelection = true)
                 false
             }
-            GLFW.GLFW_KEY_R -> {
+            InputConstants.KEY_R -> {
                 ScreenshotHud.reset()
                 true
             }

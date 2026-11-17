@@ -11,7 +11,6 @@ import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.inventory.ContainerInput
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
-import org.lwjgl.glfw.GLFW
 import xyz.vexo.Vexo
 import xyz.vexo.Vexo.mc
 import xyz.vexo.config.impl.BooleanSetting
@@ -347,12 +346,12 @@ object InventoryPresets : Module(
         (mc.gui.screen() as? InventoryScreen as? AbstractContainerScreenAccessor)?.vexoHoveredSlot()
 
     private fun shiftDown(): Boolean =
-        InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_LEFT_SHIFT) ||
-            InputConstants.isKeyDown(mc.window, GLFW.GLFW_KEY_RIGHT_SHIFT)
+        InputConstants.isKeyDown(InputConstants.KEY_LSHIFT) ||
+            InputConstants.isKeyDown(InputConstants.KEY_RSHIFT)
 
     private fun bindKeyDown(): Boolean {
         val bindKeyCode = bindKey.getCurrentValue()
-        return bindKeyCode != -1 && InputConstants.isKeyDown(mc.window, bindKeyCode)
+        return bindKeyCode != -1 && InputConstants.isKeyDown(bindKeyCode)
     }
 
     private fun swapWithHotbarSlot(menu: AbstractContainerMenu, menuSlot: Int, hotbarIndex: Int) {

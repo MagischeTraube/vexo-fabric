@@ -5,7 +5,7 @@ import xyz.vexo.config.impl.BooleanSetting
 import xyz.vexo.config.impl.SelectorSetting
 import xyz.vexo.events.EventHandler
 import xyz.vexo.events.impl.KeybindEvent
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
 import xyz.vexo.Vexo.mc
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotHud
 import xyz.vexo.features.impl.misc.screenshots.ScreenshotScreen
@@ -38,7 +38,7 @@ object ScreenshotActions : Module(
     val screenshotKeybind by KeybindSetting(
         "Screenshot Keybind",
         description = "Keybind to open screenshot hud",
-        default = GLFW.GLFW_KEY_F6
+        default = InputConstants.KEY_F6
     )
 
     @JvmStatic

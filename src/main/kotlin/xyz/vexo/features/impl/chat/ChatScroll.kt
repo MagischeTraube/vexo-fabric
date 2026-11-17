@@ -112,7 +112,7 @@ object ChatScroll : Module(
 
     private fun scrollKeyDown(): Boolean {
         val key = scrollKey.getCurrentValue()
-        return key != -1 && InputConstants.isKeyDown(mc.window, key)
+        return key != -1 && InputConstants.isKeyDown(key)
     }
 
     private fun close() {
