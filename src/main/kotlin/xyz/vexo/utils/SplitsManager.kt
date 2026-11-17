@@ -47,10 +47,31 @@ object SplitsManager {
     @Volatile private var lastTickRealTime = 0L
     @Volatile private var score300: MilestoneTime? = null
 
+    @Volatile private var lastObjectiveDone = false
+    @Volatile private var gateDestroyed = false
+
     @EventHandler
     fun onChat(event: ChatMessagePacketEvent) {
         val message = event.unformattedMessage
-        if (message == "Starting in 1 second.") startRun() else onSplitMessage(message)
+        if (message == "Starting in 1 second.") return startRun()
+        onSplitMessage(message)
+        if (finishesSection(message)) onSplitMessage(SECTION_FINISHED)
+    }
+
+    private fun finishesSection(message: String): Boolean {
+        when {
+            LAST_OBJECTIVE_REGEX.matches(message) -> lastObjectiveDone = true
+            message == GATE_DESTROYED_MESSAGE -> gateDestroyed = true
+            else -> return false
+        }
+        if (!lastObjectiveDone || !gateDestroyed) return false
+        resetSectionProgress()
+        return true
+    }
+
+    private fun resetSectionProgress() {
+        lastObjectiveDone = false
+        gateDestroyed = false
     }
 
     @EventHandler
@@ -76,6 +97,7 @@ object SplitsManager {
         currentSplits = SplitsGroup(emptyList(), null, null)
         tickCounter = 0L
         score300 = null
+        resetSectionProgress()
     }
 
     /** @return The current dungeon floor, or null outside dungeons. */
@@ -84,6 +106,7 @@ object SplitsManager {
     private fun startRun() {
         tickCounter = 0L
         score300 = null
+        resetSectionProgress()
         currentSplits = buildSplits() ?: SplitsGroup(emptyList(), null, null)
     }
 
@@ -277,8 +300,12 @@ fun parseTime(text: String): Float? {
 /** Names of the Goldor terminal section splits, in order. */
 val terminalSectionNames = listOf("§6S1", "§6S2", "§6S3", "§6S4")
 
-/** Last terminal / lever / device of a section, e.g. "Player activated a terminal! (7/7)". */
-private val TERMINAL_SECTION_DONE_REGEX = Regex("""^.{1,16} (?:activated|completed) a (?:terminal|lever|device)! \((\d)/\1\)$""")
+/** e.g. "Player activated a terminal! (7/7)" */
+private val LAST_OBJECTIVE_REGEX = Regex("""^.{1,16} (?:activated|completed) a (?:terminal|lever|device)! \((\d)/\1\)$""")
+private const val GATE_DESTROYED_MESSAGE = "The gate has been destroyed!"
+
+private const val SECTION_FINISHED = "\u0000vexo:section_finished"
+private val SECTION_FINISHED_REGEX = Regex(Regex.escape(SECTION_FINISHED))
 
 private val kuudraT5SplitsGroup = listOf(
     Split(Regex("^\\[NPC] Elle: Okay adventurers, I will go and fish up Kuudra!$"), "§2Supplies"),
@@ -340,9 +367,9 @@ val floor7SplitGroup = listOf(
     Split(entryRegexes[6], "§5Maxor"),
     Split(Regex("\\[BOSS] Storm: Pathetic Maxor, just like expected\\."), "§3Storm"),
     Split(Regex("\\[BOSS] Goldor: Who dares trespass into my domain\\?"), "§6S1"),
-    Split(TERMINAL_SECTION_DONE_REGEX, "§6S2", requiresPrevious = true),
-    Split(TERMINAL_SECTION_DONE_REGEX, "§6S3", requiresPrevious = true),
-    Split(TERMINAL_SECTION_DONE_REGEX, "§6S4", requiresPrevious = true),
+    Split(SECTION_FINISHED_REGEX, "§6S2", requiresPrevious = true),
+    Split(SECTION_FINISHED_REGEX, "§6S3", requiresPrevious = true),
+    Split(SECTION_FINISHED_REGEX, "§6S4", requiresPrevious = true),
     Split(Regex("The Core entrance is opening!"), "§7Goldor"),
     Split(Regex("\\[BOSS] Necron: You went further than any human before, congratulations\\."), "§cNecron"),
     Split(Regex("^\\[BOSS] Wither King: You\\.\\.\\. again\\?$"), "§4Cleared"),
