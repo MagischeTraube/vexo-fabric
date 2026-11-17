@@ -75,14 +75,13 @@ class SliderSettingComponent(
         var dragging = false
         sliderHandle.onMouseClick { dragging = true }
         sliderTrack.onMouseClick { dragging = true }
-        sliderHandle.onMouseRelease {
+        fun stopDragging() {
+            if (!dragging) return
             dragging = false
             onUpdate?.invoke()
         }
-        sliderTrack.onMouseRelease {
-            dragging = false
-            onUpdate?.invoke()
-        }
+        sliderHandle.onMouseRelease { stopDragging() }
+        sliderTrack.onMouseRelease { stopDragging() }
 
         sliderTrack.onMouseDrag { mouseX, _, _ ->
             if (!dragging) return@onMouseDrag
