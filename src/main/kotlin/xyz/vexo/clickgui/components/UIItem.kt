@@ -3,6 +3,7 @@ package xyz.vexo.clickgui.components
 import gg.essential.elementa.UIComponent
 import gg.essential.elementa.dsl.constrain
 import gg.essential.elementa.effects.ScissorEffect
+import gg.essential.elementa.renderer.ElementaExtractor
 import gg.essential.universal.UMatrixStack
 import gg.essential.universal.UResolution
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -25,20 +26,25 @@ class UIItem @JvmOverloads constructor(
 
     override fun draw(matrixStack: UMatrixStack) {
         beforeDrawCompat(matrixStack)
-
-        if (!itemStack.isEmpty) {
-            UIItemRenderer.enqueue(
-                UIItemRenderer.Entry(
-                    itemStack = itemStack,
-                    x = getLeft().roundToInt(),
-                    y = getTop().roundToInt(),
-                    seed = seed,
-                    clip = captureClip()
-                )
-            )
-        }
-
+        enqueueItem()
         super.draw(matrixStack)
+    }
+
+    override fun extractComponent(extractor: ElementaExtractor) {
+        enqueueItem()
+    }
+
+    private fun enqueueItem() {
+        if (itemStack.isEmpty) return
+        UIItemRenderer.enqueue(
+            UIItemRenderer.Entry(
+                itemStack = itemStack,
+                x = getLeft().roundToInt(),
+                y = getTop().roundToInt(),
+                seed = seed,
+                clip = captureClip()
+            )
+        )
     }
 
     private fun captureClip(): IntArray? {
