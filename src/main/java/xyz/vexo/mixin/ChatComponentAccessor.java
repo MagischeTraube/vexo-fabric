@@ -19,6 +19,9 @@ public interface ChatComponentAccessor {
     @Accessor("chatScrollbarPos")
     int vexoScrollPos();
 
+    @Accessor("chatScrollbarPos")
+    void vexoSetScrollPos(int pos);
+
     @Invoker("refreshTrimmedMessages")
     void vexoRefreshTrimmedMessages();
 

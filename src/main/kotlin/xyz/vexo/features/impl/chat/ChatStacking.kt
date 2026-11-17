@@ -137,8 +137,7 @@ object ChatStacking : Module(
             ?: all.indexOfFirst { it.content().string.removeFormatting().trim().replace(stackSuffixRegex, "") == key }
         if (index < 0) return
 
-        val removed = all.removeAt(index)
-        accessor.vexoTrimmedMessages().removeIf { it.parent() === removed }
+        ChatScroll.removeLines(accessor, all.removeAt(index))
     }
 
     @JvmStatic

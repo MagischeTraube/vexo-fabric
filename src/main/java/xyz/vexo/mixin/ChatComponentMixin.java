@@ -1,5 +1,8 @@
 package xyz.vexo.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.chat.GuiMessageSource;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
@@ -16,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import xyz.vexo.events.impl.ChatMessageEvent;
 import net.minecraft.client.multiplayer.chat.GuiMessage;
 import xyz.vexo.features.impl.chat.ChatCopy;
+import xyz.vexo.features.impl.chat.ChatScroll;
 import xyz.vexo.features.impl.chat.ChatStacking;
 import xyz.vexo.features.impl.chat.MoreChatHistory;
 import xyz.vexo.utils.UtilsKt;
@@ -25,6 +29,9 @@ public abstract class ChatComponentMixin {
 
     @Unique
     private static boolean vexo$reentrant = false;
+
+    @Shadow
+    private int chatScrollbarPos;
 
     @Shadow
     private void addMessage(Component message, MessageSignature signature, GuiMessageSource source, GuiMessageTag tag) {
@@ -62,6 +69,24 @@ public abstract class ChatComponentMixin {
     @Inject(method = "addMessageToQueue", at = @At("HEAD"))
     private void vexo$recordTimestamp(GuiMessage message, CallbackInfo ci) {
         ChatCopy.recordTime(message, System.currentTimeMillis());
+    }
+
+    @ModifyExpressionValue(
+            method = {"getHeight", "addMessageToDisplayQueue"},
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/ChatComponent;isChatFocused()Z")
+    )
+    private boolean vexo$focusedWhilePeeking(boolean original) {
+        return original || ChatScroll.isPeeking();
+    }
+
+    // vanilla clamps before the new line is added, which shifts the view when scrolled to the top
+    @WrapOperation(
+            method = "addMessageToDisplayQueue",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/components/ChatComponent;scrollChat(I)V")
+    )
+    private void vexo$keepScrollPosition(ChatComponent chat, int amount, Operation<Void> original) {
+        if (ChatScroll.shouldLockPosition()) chatScrollbarPos += amount;
+        else original.call(chat, amount);
     }
 
     @ModifyConstant(method = {"addMessageToQueue", "addMessageToDisplayQueue"}, constant = @Constant(intValue = 100))
