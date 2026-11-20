@@ -81,6 +81,7 @@ object UuidResolver {
 
     /**
      * Resolves a Minecraft username to a UUID.
+     * The local players own name is answered directly from mc.player.uuid without any request.
      * Concurrent calls for the same name share one request.
      *
      * @param username The Minecraft username to resolve
@@ -91,6 +92,7 @@ object UuidResolver {
         val key = username.lowercase()
         val now = System.currentTimeMillis()
 
+        selfUuid(key)?.let { return it }
         lookup(key, now)?.let { return it }
 
         inFlight[key]?.let { return it.await() }
@@ -112,6 +114,7 @@ object UuidResolver {
     /**
      * Resolves multiple Minecraft usernames to UUIDs, querying Mojang in batches of 10.
      * A batch with a single name uses the single-lookup endpoint instead.
+     * The local players own name is answered directly from mc.player.uuid without any request.
      *
      * @return Map of lowercase username -> UUID. Unresolvable names are missing from the map.
      */
@@ -124,7 +127,7 @@ object UuidResolver {
             val key = name.lowercase()
             if (key in result || key in missing) continue
 
-            val uuid = lookup(key, now)
+            val uuid = selfUuid(key)?: lookup(key, now)
             if (uuid != null) {
                 result[key] = uuid
             } else if (VALID_NAME.matches(name) && !isNotFound(key, now)) {
@@ -173,8 +176,24 @@ object UuidResolver {
     }
 
     /**
+     * Returns the local player's UUID if the key matches their username, otherwise null.
+     *
+     * @param key The username to check
+     * @return The UUID if the key matches the local player's username, otherwise null
+     */
+    private fun selfUuid(key: String): String? {
+        val player = Vexo.mc.player ?: return null
+        if (!player.name.string.equals(key, ignoreCase = true)) return null
+        return player.uuid.toString().replace("-", "")
+    }
+
+    /**
      * Returns the cached UUID for [key] if present and not expired.
      * Expired entries are removed. Does not extend the entry's lifetime.
+     *
+     * @param key The username to look up
+     * @param now The current time in milliseconds
+     * @return The UUID if found and not expired, otherwise null
      */
     private fun lookup(key: String, now: Long): String? {
         val entry = cache[key] ?: return null
@@ -188,6 +207,10 @@ object UuidResolver {
 
     /**
      * Checks whether [key] was recently reported as non-existent by Mojang.
+     *
+     * @param key The username to check
+     * @param now The current time in milliseconds
+     * @return True if the key was recently reported as non-existent, otherwise false
      */
     private fun isNotFound(key: String, now: Long): Boolean {
         val ts = notFound[key] ?: return false
@@ -201,6 +224,9 @@ object UuidResolver {
     /**
      * Remembers that [key] does not exist. If the map is full, expired entries are dropped
      * first, then the oldest 25%.
+     *
+     * @param key The username to mark as not found
+     * @param now The current time in milliseconds
      */
     private fun markNotFound(key: String, now: Long) {
         if (notFound.size >= NOT_FOUND_MAX_SIZE) {
@@ -235,6 +261,8 @@ object UuidResolver {
     /**
      * Removes expired entries first. If the cache is still full, removes the
      * 25% least recently accessed entries.
+     *
+     * @param now The current time in milliseconds
      */
     private fun evict(now: Long) {
         cache.entries.removeIf { now - it.value.fetchedAt > TTL_MS }
@@ -248,6 +276,8 @@ object UuidResolver {
     /**
      * Applies a cooldown after a failed request. Rate limits (HTTP 429) block for
      * [RATE_LIMIT_COOLDOWN_MS], all other errors for [ERROR_COOLDOWN_MS].
+     *
+     * @param e The exception that occurred
      */
     private fun onRequestFailed(e: Exception) {
         val cooldown = if (e is HttpStatusException && e.code == 429) {
@@ -263,6 +293,9 @@ object UuidResolver {
      * Runs [block] and retries it after transient failures, waiting 1s, 2s and 5s
      * before the 1st, 2nd and 3rd retry. If the last retry fails too, the exception
      * is rethrown. Only cancellation and HTTP 404/204 are never retried.
+     *
+     * @param block The suspend function to execute
+     * @return The result of the block
      */
     private suspend fun <T> withRetry(block: suspend () -> T): T {
         var attempt = 0
@@ -387,6 +420,9 @@ object UuidResolver {
      * Transient failures are retried via [withRetry] (1s, 2s, 5s).
      * 404/204 mark the name as non-existent without triggering a cooldown.
      * Never throws except for [CancellationException].
+     *
+     * @param key The lowercase username to resolve
+     * @return The UUID if found, otherwise null
      */
     private suspend fun fetchSingle(key: String): String? {
         try {
