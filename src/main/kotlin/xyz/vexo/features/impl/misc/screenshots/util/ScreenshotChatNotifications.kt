@@ -3,7 +3,7 @@ package xyz.vexo.features.impl.misc.screenshots.util
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import net.minecraft.ChatFormatting
-import net.minecraft.util.Util
+import com.mojang.blaze3d.Blaze3D
 import xyz.vexo.Vexo
 import xyz.vexo.utils.ClipboardUtils
 import xyz.vexo.utils.chatbuttons.CallbackButton
@@ -29,11 +29,11 @@ object ScreenshotChatNotifications {
                         hoverText = "Open screenshots folder",
                         buttonColor = ChatFormatting.GREEN
                     ) {
-                        Util.getPlatform().openUri(imageFile.parentFile.toURI())
+                        Blaze3D.openPath(imageFile.parentFile.toPath())
                     },
                     CallbackButton(text = "Open", hoverText = "Open image", buttonColor = ChatFormatting.YELLOW) {
                         try {
-                            Util.getPlatform().openUri(imageFile.toURI())
+                            Blaze3D.openPath(imageFile.toPath())
                         } catch (e: Exception) {
                             logError(e, this@ScreenshotChatNotifications)
                             modMessage("§cFailed to open image.")

@@ -27,7 +27,6 @@ object DungeonSplits : SplitsModule(
     hasTargets = true
 ) {
     private const val TERMINALS_LABEL = "§6Terminals"
-    /** Blood Open, Blood Clear and Portal Entry make up the clear phase. */
     private const val CLEAR_SPLITS = 3
 
     private val separatorLines by BooleanSetting(
@@ -54,7 +53,6 @@ object DungeonSplits : SplitsModule(
         default = false
     )
 
-    /** Dungeon personal bests keyed by floor. The store names ("DungeonE", "DungeonF1" … "DungeonM7") are unchanged. */
     val dungeonPBs: Map<DungeonFloor, PersonalBest> =
         DungeonFloor.entries.associateWith { PersonalBest("Dungeon${it.name}") }
 

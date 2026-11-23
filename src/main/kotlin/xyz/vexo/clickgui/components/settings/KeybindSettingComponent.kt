@@ -1,6 +1,7 @@
 package xyz.vexo.clickgui.components.settings
 
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
+import org.lwjgl.sdl.SDLKeyboard
 import gg.essential.elementa.components.UIContainer
 import gg.essential.elementa.components.UIRoundedRectangle
 import gg.essential.elementa.components.UIText
@@ -70,8 +71,11 @@ class KeybindSettingComponent(
 
         keybindButton.onKeyType { _, keyCode ->
             if (!setting.listening) return@onKeyType
-            val unbind = keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_DELETE || keyCode == GLFW.GLFW_KEY_BACKSPACE
-            setting.updateValue(if (unbind) -1 else keyCode)
+            // UniversalCraft hands us an SDL keycode, but Minecraft (InputConstants, KeyEvent.key(),
+            // isKeyDown) works with SDL scancodes — store the scancode so it matches KeybindEvent.
+            val scancode = SDLKeyboard.SDL_GetScancodeFromKey(keyCode, null)
+            val unbind = scancode == InputConstants.KEY_ESCAPE || scancode == InputConstants.KEY_DELETE || scancode == InputConstants.KEY_BACKSPACE
+            setting.updateValue(if (unbind) -1 else scancode)
             keybindButton.releaseWindowFocus()
         }
 
@@ -88,31 +92,29 @@ class KeybindSettingComponent(
 
     private companion object {
         val specialKeys = mapOf(
-            GLFW.GLFW_KEY_SPACE to "SPACE",
-            GLFW.GLFW_KEY_ESCAPE to "ESC",
-            GLFW.GLFW_KEY_ENTER to "ENTER",
-            GLFW.GLFW_KEY_TAB to "TAB",
-            GLFW.GLFW_KEY_BACKSPACE to "BACK",
-            GLFW.GLFW_KEY_DELETE to "DEL",
-            GLFW.GLFW_KEY_LEFT_SHIFT to "LSHIFT",
-            GLFW.GLFW_KEY_RIGHT_SHIFT to "RSHIFT",
-            GLFW.GLFW_KEY_LEFT_CONTROL to "LCTRL",
-            GLFW.GLFW_KEY_RIGHT_CONTROL to "RCTRL",
-            GLFW.GLFW_KEY_LEFT_ALT to "LALT",
-            GLFW.GLFW_KEY_RIGHT_ALT to "RALT",
-            GLFW.GLFW_KEY_UP to "UP",
-            GLFW.GLFW_KEY_DOWN to "DOWN",
-            GLFW.GLFW_KEY_LEFT to "LEFT",
-            GLFW.GLFW_KEY_RIGHT to "RIGHT"
+            InputConstants.KEY_SPACE to "SPACE",
+            InputConstants.KEY_ESCAPE to "ESC",
+            InputConstants.KEY_RETURN to "ENTER",
+            InputConstants.KEY_TAB to "TAB",
+            InputConstants.KEY_BACKSPACE to "BACK",
+            InputConstants.KEY_DELETE to "DEL",
+            InputConstants.KEY_LSHIFT to "LSHIFT",
+            InputConstants.KEY_RSHIFT to "RSHIFT",
+            InputConstants.KEY_LCONTROL to "LCTRL",
+            InputConstants.KEY_RCONTROL to "RCTRL",
+            InputConstants.KEY_LALT to "LALT",
+            InputConstants.KEY_RALT to "RALT",
+            InputConstants.KEY_UP to "UP",
+            InputConstants.KEY_DOWN to "DOWN",
+            InputConstants.KEY_LEFT to "LEFT",
+            InputConstants.KEY_RIGHT to "RIGHT"
         )
     }
 
     private fun getKeyName(keyCode: Int): String {
         if (keyCode == -1) return "None"
-        if (keyCode in GLFW.GLFW_KEY_F1..GLFW.GLFW_KEY_F24) {
-            return "F${keyCode - GLFW.GLFW_KEY_F1 + 1}"
-        }
-        GLFW.glfwGetKeyName(keyCode, 0)?.let { return it.uppercase() }
-        return specialKeys[keyCode] ?: "Key $keyCode"
+        specialKeys[keyCode]?.let { return it }
+        val name = SDLKeyboard.SDL_GetScancodeName(keyCode)
+        return if (name.isNullOrEmpty()) "Key $keyCode" else name.uppercase()
     }
 }
