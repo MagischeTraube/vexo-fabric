@@ -208,7 +208,16 @@ object ScreenshotInputHandler {
                 true
             }
             InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
-                if (ScreenshotHud.selectionIsConfirmed) ScreenshotHud.saveScreenshot(screen, cropToSelection = true)
+                if (ScreenshotHud.selectionIsConfirmed) {
+                    when (ScreenshotActions.enterAction) {
+                        "Save Selection"        -> ScreenshotHud.saveScreenshot(screen, cropToSelection = true,  copyToClipboard = false)
+                        "Save Selection + Copy" -> ScreenshotHud.saveScreenshot(screen, cropToSelection = true,  copyToClipboard = true)
+                        "Save Full"             -> ScreenshotHud.saveScreenshot(screen, cropToSelection = false, copyToClipboard = false)
+                        "Save Full + Copy"      -> ScreenshotHud.saveScreenshot(screen, cropToSelection = false, copyToClipboard = true)
+                        "Copy Selection"        -> ScreenshotHud.copyWithoutSaving(screen, cropToSelection = true)
+                        "Copy Full"             -> ScreenshotHud.copyWithoutSaving(screen, cropToSelection = false)
+                    }
+                }
                 false
             }
             InputConstants.KEY_R -> {

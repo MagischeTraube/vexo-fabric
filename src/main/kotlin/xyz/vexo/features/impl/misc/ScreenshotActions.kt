@@ -35,6 +35,20 @@ object ScreenshotActions : Module(
         default = true
     )
 
+    val enterAction by SelectorSetting(
+        "Enter Action",
+        description = "Which action is triggered when pressing Enter in the screenshot HUD",
+        default = "Save Selection",
+        options = listOf(
+            "Save Selection",
+            "Save Selection + Copy",
+            "Save Full",
+            "Save Full + Copy",
+            "Copy Selection",
+            "Copy Full"
+        )
+    )
+
     val screenshotKeybind by KeybindSetting(
         "Screenshot Keybind",
         description = "Keybind to open screenshot hud",

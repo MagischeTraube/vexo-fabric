@@ -10,7 +10,7 @@ import xyz.vexo.features.impl.misc.TimeChanger;
 public class ClientClockManagerMixin {
 
     @ModifyReturnValue(method = "totalTicks", at = @At("RETURN"))
-    private long getTotalTicks(long original) {
+    private long vexo$getTotalTicks(long original) {
         return TimeChanger.INSTANCE.getEnabled()
                 ? TimeChanger.INSTANCE.getTicks()
                 : original;

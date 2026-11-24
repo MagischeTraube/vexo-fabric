@@ -124,8 +124,13 @@ object ScreenshotHud {
      *
      * @param screen The current screen.
      * @param cropToSelection Whether to crop the screenshot to the current selection.
+     * @param copyToClipboard Whether to copy the screenshot to the clipboard after saving.
      */
-    internal fun saveScreenshot(screen: Screen, cropToSelection: Boolean) {
+    internal fun saveScreenshot(
+        screen: Screen,
+        cropToSelection: Boolean,
+        copyToClipboard: Boolean = ScreenshotActions.autoCopyToClipboard
+    ) {
         if (ScreenshotActions.saveMode.getCurrentValue() == "Never") return
         val originalImage = image ?: return
         val guiScale = mc.window.guiScale
@@ -163,7 +168,7 @@ object ScreenshotHud {
                     finalImage.writeToFile(outputFile.toPath())
                 }
 
-                if (ScreenshotActions.autoCopyToClipboard) {
+                if (copyToClipboard) {
                     try {
                         val awtImage = withContext(Dispatchers.IO) { ImageIO.read(outputFile) }
                         ClipboardUtils.copyImageToClipboard(awtImage)
